@@ -18,6 +18,7 @@ from dds import (  # noqa: E402
 )
 from dds.analysis import summarize_layers  # noqa: E402
 from dds.cli import run_cli  # noqa: E402
+from dds.io import save_simulation_bundle  # noqa: E402
 from dds.occupancy import occupancy_fraction  # noqa: E402
 
 
@@ -44,25 +45,36 @@ def build_example_deposits() -> list[PointDeposit | LineDeposit]:
 
 @dataclass
 class Args:
-    """Run a basic dds simulation."""
+    """Run a basic dds simulation. Optionally save dense outputs."""
 
     threshold: float = 0.5
+    output_dir: Path | None = None
 
 
 def main(args: Args) -> None:
-
     domain = build_example_domain()
     deposits = build_example_deposits()
     simulator = Simulator(domain, deposits)
 
     occupancy = simulator.simulate_occupancy(threshold=args.threshold)
-    density = simulator.simulate_deposition_index()
+    deposition_index = simulator.simulate_deposition_index()
 
     print(f"Grid shape: {occupancy.shape}")
     print(f"Occupied voxels: {int(occupancy.sum())}")
     print(f"Occupancy fraction: {occupancy_fraction(occupancy):.4f}")
-    print(f"Max deposition index: {float(density.max()):.4f}")
+    print(f"Max deposition index: {float(deposition_index.max()):.4f}")
     print(f"Layer summary: {summarize_layers(deposits)}")
+
+    if args.output_dir is not None:
+        written = save_simulation_bundle(
+            args.output_dir,
+            domain=domain,
+            occupancy=occupancy,
+            deposition_index=deposition_index,
+            metadata={"example": "basic_simulation", "threshold": args.threshold},
+        )
+        for label, path in written.items():
+            print(f"Saved {label}: {path}")
 
 if __name__ == "__main__":
     run_cli(Args, main)

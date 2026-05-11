@@ -10,6 +10,7 @@
 - A small stateful `Simulator` API for repeated dense-field queries
 - Analytic SDF primitives, booleans, and spatial transforms in `dds.geometry`
 - Mesh extraction, mesh IO, and dense-field or mesh-to-SDF conversions
+- Dense result export helpers for arrays and simulation bundles
 - Tyro-backed typed CLI handling for repo scripts and examples
 
 ## Installation
@@ -144,6 +145,42 @@ Mesh API:
 
 Mesh conversions assume triangle meshes. Signed-distance and containment queries are intended for watertight meshes.
 
+## Exporting Results
+
+`dds.io` provides simple helpers for writing dense outputs to disk.
+
+```python
+from dds import Domain
+from dds.io import save_array, save_simulation_bundle
+
+domain = Domain.from_bounds(
+    xmin=0.0,
+    xmax=4.0,
+    ymin=0.0,
+    ymax=4.0,
+    zmin=0.0,
+    zmax=2.0,
+    voxel_size=0.5,
+)
+
+written = save_simulation_bundle(
+    "outputs/basic",
+    domain=domain,
+    occupancy=occupancy,
+    deposition_index=deposition_index,
+    metadata={"example": "basic_simulation"},
+)
+
+save_array("outputs/basic/raw_density.npy", deposition_index)
+```
+
+Bundle outputs:
+
+- `occupancy.npy` when an occupancy field is provided
+- `deposition_index.npy` when a deposition index field is provided
+- `density.npy` when a density-like field is provided
+- `metadata.json` containing serialized domain metadata and caller metadata
+
 ## Design Assumptions
 
 - The import package is `dds`; the repository and distribution branding are `3DP-DDS` and `3dp-dds`.
@@ -168,6 +205,7 @@ src/dds/
   simulator.py
   occupancy.py
   analysis.py
+  io.py
   utils.py
   geometry/
     __init__.py
@@ -199,4 +237,10 @@ Adjust the occupancy threshold used by the example:
 python examples/basic_simulation.py --threshold 0.35
 ```
 
-The example creates a simple deposition scene, prints summary metrics, and exercises the dense simulator without visualization features.
+Write the example outputs to disk:
+
+```bash
+python examples/basic_simulation.py --output-dir outputs/basic
+```
+
+The example creates a simple deposition scene, prints summary metrics, and can write `occupancy.npy`, `deposition_index.npy`, and `metadata.json` without pulling in visualization features.
