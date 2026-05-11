@@ -11,9 +11,11 @@ from .primitives import (
     Polyline3D,
     ToolpathDepositSequence,
 )
+from .queries import AnalysisBundle, analysis_bundle
 from .simulator import Simulator, sample_field, simulate_deposition_index, simulate_occupancy
 
 __all__ = [
+    "AnalysisBundle",
     "DepositionAttributes",
     "Domain",
     "LineDeposit",
@@ -23,6 +25,7 @@ __all__ = [
     "Polyline3D",
     "Simulator",
     "ToolpathDepositSequence",
+    "analysis_bundle",
     "geometry",
     "sample_field",
     "simulate_deposition_index",

@@ -1,5 +1,5 @@
 # 3DP-DDS
-`3DP-DDS` is a Python library for dense deposition simulation on a 3D voxel grid. The import package is `dds`. The current library includes the dense simulator, analytic SDF geometry, and mesh extraction and conversion helpers in the same install.
+`3DP-DDS` is a Python library for dense deposition simulation on a 3D voxel grid. The import package is `dds`. The current library includes the dense simulator, headless analysis queries, analytic SDF geometry, and mesh extraction and conversion helpers in the same install.
 
 ## Current Scope
 
@@ -8,6 +8,7 @@
 - Smooth compact deposition kernels for point and line deposits
 - Dense scalar accumulation, occupancy extraction, and deposition index sampling
 - A small stateful `Simulator` API for repeated dense-field queries
+- Cached headless `AnalysisBundle` queries over dense fields, derived surfaces, and SDFs
 - Analytic SDF primitives, booleans, and spatial transforms in `dds.geometry`
 - Mesh extraction, mesh IO, and dense-field or mesh-to-SDF conversions
 - Dense result export helpers for arrays and simulation bundles
@@ -145,6 +146,42 @@ Mesh API:
 
 Mesh conversions assume triangle meshes. Signed-distance and containment queries are intended for watertight meshes.
 
+## Headless Analysis Queries
+
+`dds.queries` provides cached, headless analysis over dense fields and derived surfaces. `AnalysisBundle` is the main analysis object, and `Simulator.analysis_bundle()` reuses it until deposits change.
+
+```python
+from dds import Simulator
+from dds.queries import sample_points, signed_distance_at
+
+simulator = Simulator(domain, deposits)
+bundle = simulator.analysis_bundle()
+
+inside_density = bundle.sample_density_at((10.25, 10.25, 0.25), interpolation="trilinear")
+inside_mesh = bundle.contains_point((10.25, 10.25, 0.25), representation="mesh", threshold=0.5)
+surface_distance = signed_distance_at(bundle, (12.0, 10.25, 0.25), threshold=0.5)
+
+samples = sample_points(
+    bundle,
+    [(10.25, 10.25, 0.25), (20.0, 20.0, 1.0)],
+    fields=("density", "occupancy", "deposition_index", "signed_distance"),
+    threshold=0.5,
+    interpolation="trilinear",
+)
+```
+
+Headless analysis API:
+
+- `AnalysisBundle`, `analysis_bundle(...)`
+- `contains_point(...)`
+- `sample_density_at(...)`
+- `sample_deposition_index_at(...)`
+- `signed_distance_at(...)`
+- `surface_normal_at(...)`
+- `sample_points(...)`
+
+The analysis layer intentionally returns NumPy values and geometry objects only. It does not create visualization datasets in this branch stage.
+
 ## Exporting Results
 
 `dds.io` provides simple helpers for writing dense outputs to disk.
@@ -206,6 +243,7 @@ src/dds/
   occupancy.py
   analysis.py
   io.py
+  queries.py
   utils.py
   geometry/
     __init__.py
