@@ -1,5 +1,17 @@
-"""SDF-oriented geometry helpers for dds."""
+"""SDF- and mesh-oriented geometry helpers for dds."""
 
+from .adapters import (
+    MeshSDF3,
+    density_to_sdf,
+    density_to_sdf_field,
+    mesh_to_occupancy,
+    mesh_to_sdf_field,
+    occupancy_to_sdf,
+    occupancy_to_sdf_field,
+    read_mesh,
+    write_mesh,
+)
+from .mesh import TriangleMesh, density_to_mesh, extract_mesh_from_field, occupancy_to_mesh, sdf_to_mesh
 from .ops import difference, dilate, erode, intersection, shell, union
 from .primitives import (
     ORIGIN,
@@ -27,8 +39,10 @@ from .transforms import orient, rotate, rotation_matrix, scale, translate
 
 __all__ = [
     "GridSDF3",
+    "MeshSDF3",
     "ORIGIN",
     "SDF3",
+    "TriangleMesh",
     "X",
     "Y",
     "Z",
@@ -40,23 +54,35 @@ __all__ = [
     "capsule_chain",
     "cone",
     "cylinder",
+    "density_to_mesh",
+    "density_to_sdf",
+    "density_to_sdf_field",
     "difference",
     "dilate",
     "ellipsoid",
     "erode",
+    "extract_mesh_from_field",
     "intersection",
+    "mesh_to_occupancy",
+    "mesh_to_sdf_field",
+    "occupancy_to_mesh",
+    "occupancy_to_sdf",
+    "occupancy_to_sdf_field",
     "orient",
     "plane",
+    "read_mesh",
     "rotate",
     "rotation_matrix",
     "rounded_box",
     "rounded_cone",
     "rounded_cylinder",
     "scale",
+    "sdf_to_mesh",
     "shell",
     "slab",
     "sphere",
     "torus",
     "translate",
     "union",
+    "write_mesh",
 ]

@@ -83,6 +83,13 @@ class SDF3:
         values = self._evaluate(points)
         return values.reshape(domain.grid_shape)
 
+    def to_mesh(self, domain: Domain, *, level: float = 0.0, step_size: int = 1) -> Any:
+        """Sample the SDF on a domain and extract an isosurface mesh."""
+
+        from .mesh import sdf_to_mesh
+
+        return sdf_to_mesh(domain, self.sample(domain), level=level, step_size=step_size)
+
     def translate(self, offset: Sequence[float] | npt.ArrayLike) -> "SDF3":
         from .transforms import translate
 

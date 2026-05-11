@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
+from dds import DepositionAttributes, Domain, LineDeposit, PointDeposit, simulate_occupancy
 from dds.geometry import (
+    GridSDF3,
+    MeshSDF3,
+    TriangleMesh,
     box,
     capped_cone,
     capped_cylinder,
@@ -11,20 +17,75 @@ from dds.geometry import (
     capsule_chain,
     cone,
     cylinder,
+    density_to_mesh,
+    density_to_sdf_field,
     difference,
     ellipsoid,
     intersection,
+    mesh_to_sdf_field,
+    occupancy_to_mesh,
+    occupancy_to_sdf,
+    occupancy_to_sdf_field,
     orient,
+    read_mesh,
     rotate,
     rotation_matrix,
     rounded_box,
     rounded_cone,
     rounded_cylinder,
+    sdf_to_mesh,
     slab,
     sphere,
     torus,
     union,
+    write_mesh,
 )
+
+
+def make_domain() -> Domain:
+    return Domain.from_bounds(
+        xmin=-6.0,
+        xmax=6.0,
+        ymin=-6.0,
+        ymax=6.0,
+        zmin=-6.0,
+        zmax=6.0,
+        voxel_size=0.5,
+    )
+
+
+def make_box_mesh() -> TriangleMesh:
+    vertices = np.asarray(
+        [
+            [-1.0, -1.0, -1.0],
+            [1.0, -1.0, -1.0],
+            [1.0, 1.0, -1.0],
+            [-1.0, 1.0, -1.0],
+            [-1.0, -1.0, 1.0],
+            [1.0, -1.0, 1.0],
+            [1.0, 1.0, 1.0],
+            [-1.0, 1.0, 1.0],
+        ],
+        dtype=float,
+    )
+    faces = np.asarray(
+        [
+            [0, 1, 2],
+            [0, 2, 3],
+            [4, 6, 5],
+            [4, 7, 6],
+            [0, 4, 5],
+            [0, 5, 1],
+            [1, 5, 6],
+            [1, 6, 2],
+            [2, 6, 7],
+            [2, 7, 3],
+            [3, 7, 4],
+            [3, 4, 0],
+        ],
+        dtype=np.int64,
+    )
+    return TriangleMesh(vertices=vertices, faces=faces)
 
 
 def test_primitives_follow_signed_distance_convention() -> None:
@@ -147,3 +208,99 @@ def test_rotation_matrix_rotates_axes_as_expected() -> None:
     matrix = rotation_matrix(np.pi / 2.0, (0.0, 0.0, 1.0))
     rotated = np.array([1.0, 0.0, 0.0]) @ matrix.T
     np.testing.assert_allclose(rotated, np.array([0.0, 1.0, 0.0]), atol=1e-6)
+
+
+def test_extract_mesh_from_sdf_and_density_respects_domain() -> None:
+    domain = make_domain()
+    sampled = sphere(radius=2.0).sample(domain)
+    mesh = sdf_to_mesh(domain, sampled)
+
+    assert mesh.n_vertices > 0
+    assert mesh.n_faces > 0
+    lower, upper = mesh.bounds
+    assert lower[0] < -1.0 and upper[0] > 1.0
+
+    density = np.maximum(1.5 - sampled, 0.0)
+    density_mesh = density_to_mesh(domain, density, threshold=0.5)
+    assert density_mesh.n_faces > 0
+
+
+def test_occupancy_to_mesh_returns_empty_for_no_level_crossing() -> None:
+    domain = make_domain()
+    empty_mesh = occupancy_to_mesh(domain, np.zeros(domain.grid_shape, dtype=bool))
+    assert empty_mesh.is_empty
+
+
+def test_mesh_io_roundtrip_preserves_vertex_and_face_counts(tmp_path: Path) -> None:
+    mesh = make_box_mesh()
+    path = tmp_path / "cube.ply"
+    write_mesh(path, mesh)
+    loaded = read_mesh(path)
+
+    assert loaded.n_vertices == mesh.n_vertices
+    assert loaded.n_faces == mesh.n_faces
+
+
+def test_mesh_to_sdf_field_inverts_trimesh_sign_convention() -> None:
+    domain = make_domain()
+    mesh = make_box_mesh()
+    sdf_values = mesh_to_sdf_field(domain, mesh)
+
+    center_index = domain.world_to_index((0.0, 0.0, 0.0), clip=True)
+    outside_index = domain.world_to_index((3.0, 0.0, 0.0), clip=True)
+
+    assert sdf_values[center_index] < 0.0
+    assert sdf_values[outside_index] > 0.0
+
+
+def test_non_watertight_mesh_rejected_for_signed_distance_queries() -> None:
+    mesh = TriangleMesh(
+        vertices=np.asarray([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]], dtype=float),
+        faces=np.asarray([[0, 1, 2]], dtype=np.int64),
+    )
+
+    with pytest.raises(ValueError):
+        MeshSDF3(mesh)
+
+
+def test_grid_sdf_wrapper_allows_csg_with_sampled_occupancy() -> None:
+    domain = make_domain()
+    occupancy = sphere(radius=2.0).sample(domain) <= 0.0
+    sampled = occupancy_to_sdf(domain, occupancy)
+    carved = sampled - sphere(radius=0.75)
+
+    assert isinstance(sampled, GridSDF3)
+    assert carved([0.0, 0.0, 0.0]) > 0.0
+    assert carved([2.5, 0.0, 0.0]) > 0.0
+
+
+def test_deposition_occupancy_to_sdf_and_mesh_is_nonempty() -> None:
+    domain = Domain.from_bounds(
+        xmin=0.0,
+        xmax=10.0,
+        ymin=0.0,
+        ymax=10.0,
+        zmin=0.0,
+        zmax=4.0,
+        voxel_size=0.5,
+    )
+    attrs = DepositionAttributes(width=1.2, height=0.8, layer_id=0)
+    deposits = [
+        PointDeposit(x=2.25, y=2.25, z=0.25, attributes=attrs),
+        LineDeposit(start=(2.25, 2.25, 0.25), end=(6.25, 2.25, 0.25), attributes=attrs),
+    ]
+
+    occupancy = simulate_occupancy(domain, deposits, threshold=0.5)
+    sdf_values = occupancy_to_sdf_field(domain, occupancy)
+    mesh = sdf_to_mesh(domain, sdf_values)
+
+    assert mesh.n_faces > 0
+
+
+def test_density_to_sdf_field_uses_threshold() -> None:
+    domain = make_domain()
+    density = np.zeros(domain.grid_shape, dtype=float)
+    density[domain.world_to_index((0.0, 0.0, 0.0), clip=True)] = 1.0
+    sdf_values = density_to_sdf_field(domain, density, threshold=0.5)
+    center = domain.world_to_index((0.0, 0.0, 0.0), clip=True)
+    assert sdf_values[center] <= 0.0

@@ -1,5 +1,5 @@
 # 3DP-DDS
-`3DP-DDS` is a lightweight Python library for sampling deposited material on a dense 3D grid from point and line-based deposition events. The current scope is the core dense simulator: domain setup, deposition primitives, kernel sampling, occupancy extraction, and a small stateful `Simulator` API.
+`3DP-DDS` is a Python library for dense deposition simulation on a 3D voxel grid. The import package is `dds`. The current library includes the dense simulator, analytic SDF geometry, and mesh extraction and conversion helpers in the same install.
 
 ## Current Scope
 
@@ -8,7 +8,8 @@
 - Smooth compact deposition kernels for point and line deposits
 - Dense scalar accumulation, occupancy extraction, and deposition index sampling
 - A small stateful `Simulator` API for repeated dense-field queries
-- Optional SDF-based geometry primitives, booleans, and transforms
+- Analytic SDF primitives, booleans, and spatial transforms in `dds.geometry`
+- Mesh extraction, mesh IO, and dense-field or mesh-to-SDF conversions
 - Tyro-backed typed CLI handling for repo scripts and examples
 
 ## Installation
@@ -59,7 +60,7 @@ deposition_index = simulate_deposition_index(domain, deposits)
 
 ## Geometry and SDFs
 
-`dds.geometry` adds a small analytic SDF layer on top of the dense simulator. This stage includes the core SDF abstraction, boolean composition, spatial transforms, and a stable primitive subset.
+`dds.geometry` adds an analytic SDF layer on top of the dense simulator.
 
 Key conventions:
 
@@ -90,34 +91,68 @@ combined = shape - cut
 sampled = combined.sample(domain)
 ```
 
-Base geometry API:
+Geometry API:
 
-- `SDF3`, `GridSDF3`, `as_sdf3`
+- `SDF3`, `GridSDF3`, `MeshSDF3`, `as_sdf3`
 - `sphere`, `box`, `cylinder`, `capsule`, `plane`, `slab`, `ellipsoid`, `torus`
+- `rounded_box`, `capped_cylinder`, `rounded_cylinder`, `capped_cone`, `cone`, `rounded_cone`, `capsule_chain`
 - `union`, `intersection`, `difference`, `dilate`, `erode`, `shell`
 - `translate`, `scale`, `rotate`, `orient`, `rotation_matrix`
 
-Advanced primitives:
+## Mesh Extraction and Conversion
 
-- `rounded_box`
-- `capped_cylinder`
-- `rounded_cylinder`
-- `capped_cone`
-- `cone`
-- `rounded_cone`
-- `capsule_chain`
+The mesh layer converts dense fields and SDFs into triangle meshes, reads and writes triangle mesh files, and samples watertight meshes back into dense fields.
+
+```python
+from dds import Domain
+from dds.geometry import (
+    density_to_mesh,
+    density_to_sdf,
+    mesh_to_sdf_field,
+    occupancy_to_mesh,
+    read_mesh,
+    sphere,
+    write_mesh,
+)
+
+domain = Domain.from_bounds(
+    xmin=-6.0,
+    xmax=6.0,
+    ymin=-6.0,
+    ymax=6.0,
+    zmin=-6.0,
+    zmax=6.0,
+    voxel_size=0.25,
+)
+
+density = (-sphere(radius=2.0).sample(domain)).clip(min=0.0)
+surface = density_to_mesh(domain, density, threshold=0.5)
+write_mesh("outputs/sphere.ply", surface)
+
+reloaded = read_mesh("outputs/sphere.ply")
+sampled_sdf = mesh_to_sdf_field(domain, reloaded)
+wrapped = density_to_sdf(domain, density, threshold=0.5)
+occupancy_surface = occupancy_to_mesh(domain, wrapped.sample(domain) <= 0.0)
+```
+
+Mesh API:
+
+- `TriangleMesh`, `read_mesh`, `write_mesh`
+- `extract_mesh_from_field`, `occupancy_to_mesh`, `density_to_mesh`, `sdf_to_mesh`
+- `mesh_to_occupancy`, `mesh_to_sdf_field`
+- `occupancy_to_sdf_field`, `density_to_sdf_field`, `occupancy_to_sdf`, `density_to_sdf`
+
+Mesh conversions assume triangle meshes. Signed-distance and containment queries are intended for watertight meshes.
 
 ## Design Assumptions
 
-- The import package is `dds`; the repository/distribution branding remains `3DP-DDS` / `3dp-dds`.
+- The import package is `dds`; the repository and distribution branding are `3DP-DDS` and `3dp-dds`.
 - Dense array indexing follows `(x, y, z)` ordering via NumPy `indexing="ij"`.
-- Geometry SDF sign convention is `negative inside`, `positive outside`, `zero on the surface`.
-- `width` is the full bead width in the XY plane, `height` is the full bead height in Z.
+- `width` is the full bead width in the XY plane, and `height` is the full bead height in Z.
 - Point deposits use an ellipsoidal compact kernel.
 - Line deposits use a capsule-like closest-distance model with Z scaling to support anisotropic bead height.
 - The v0 deposition index is the weighted sum of deposit contributions per voxel.
-- Occupancy is derived by thresholding the accumulated scalar field. The default threshold `0.5` is a practical confidence-style threshold, not a strict geometric boundary.
-- Deposits fully outside the domain are skipped; partial overlaps are clipped to the intersecting sampling window.
+- Occupancy is derived by thresholding the accumulated scalar field.
 
 ## Package Layout
 
@@ -140,6 +175,8 @@ src/dds/
     ops.py
     primitives.py
     transforms.py
+    mesh.py
+    adapters.py
 ```
 
 ## Example Script
@@ -162,4 +199,4 @@ Adjust the occupancy threshold used by the example:
 python examples/basic_simulation.py --threshold 0.35
 ```
 
-The example creates a simple deposition scene, prints summary metrics, and exercises the dense simulator without geometry or visualization extras.
+The example creates a simple deposition scene, prints summary metrics, and exercises the dense simulator without visualization features.
