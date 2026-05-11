@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -296,4 +297,40 @@ class Simulator:
             threshold=threshold,
             interpolation=interpolation,
             normalize=normalize,
+        )
+
+    def subvolume_stats(
+        self,
+        bounds: tuple[tuple[float, float, float], tuple[float, float, float]],
+        *,
+        threshold: float = 0.5,
+        normalize: bool = False,
+        step_size: int = 1,
+    ) -> dict[str, float]:
+        """Return summary statistics for a bounded region of interest."""
+
+        return self.analysis_bundle().subvolume_stats(
+            bounds,
+            threshold=threshold,
+            normalize=normalize,
+            step_size=step_size,
+        )
+
+    def mesh_analysis(
+        self,
+        *,
+        build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+        critical_angle_deg: float = 45.0,
+        threshold: float = 0.5,
+        normalize: bool = False,
+        step_size: int = 1,
+    ) -> dict[str, Any]:
+        """Return cached headless mesh-analysis metrics for the current surface."""
+
+        return self.analysis_bundle().mesh_analysis(
+            build_direction=build_direction,
+            critical_angle_deg=critical_angle_deg,
+            threshold=threshold,
+            normalize=normalize,
+            step_size=step_size,
         )

@@ -11,6 +11,7 @@
 - Cached headless `AnalysisBundle` queries over dense fields, derived surfaces, and SDFs
 - Analytic SDF primitives, booleans, and spatial transforms in `dds.geometry`
 - Mesh extraction, mesh IO, and dense-field or mesh-to-SDF conversions
+- Headless triangle-mesh metrics, overhang analysis, and ROI summaries
 - Dense result export helpers for arrays and simulation bundles
 - Tyro-backed typed CLI handling for repo scripts and examples
 
@@ -182,6 +183,31 @@ Headless analysis API:
 
 The analysis layer intentionally returns NumPy values and geometry objects only. It does not create visualization datasets in this branch stage.
 
+## Headless Mesh Analysis
+
+`dds.mesh_analysis` and the matching `dds.geometry` re-exports provide pure triangle-mesh metrics without any viewer dependency.
+
+```python
+from dds.geometry import mesh_surface_area, overhang_angles
+
+bundle = simulator.analysis_bundle()
+analysis = bundle.mesh_analysis(build_direction=(0.0, 0.0, 1.0), critical_angle_deg=45.0)
+stats = bundle.subvolume_stats(((0.0, 0.0, 0.0), (20.0, 20.0, 2.0)), threshold=0.5)
+
+surface_area = mesh_surface_area(analysis["mesh"])
+angles = overhang_angles(analysis["mesh"], build_direction=(0.0, 0.0, 1.0))
+```
+
+Headless mesh-analysis API:
+
+- `face_normals(...)`, `vertex_normals(...)`
+- `face_centroids(...)`, `face_areas(...)`
+- `overhang_angles(...)`, `downfacing_mask(...)`, `support_risk_mask(...)`
+- `normal_rgb_from_normals(...)`
+- `mesh_bounds_stats(...)`, `mesh_surface_area(...)`, `mesh_volume_estimate(...)`
+- `AnalysisBundle.mesh_analysis(...)`
+- `AnalysisBundle.subvolume_stats(...)`
+
 ## Exporting Results
 
 `dds.io` provides simple helpers for writing dense outputs to disk.
@@ -243,6 +269,7 @@ src/dds/
   occupancy.py
   analysis.py
   io.py
+  mesh_analysis.py
   queries.py
   utils.py
   geometry/

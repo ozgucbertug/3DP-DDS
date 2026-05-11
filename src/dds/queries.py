@@ -35,6 +35,14 @@ def _coerce_points(points: npt.ArrayLike) -> tuple[npt.NDArray[np.float64], bool
     return array, False
 
 
+def _normalize_vector(vector: tuple[float, float, float] | npt.ArrayLike, *, name: str) -> npt.NDArray[np.float64]:
+    array = np.asarray(ensure_finite_triplet(vector, name), dtype=float)
+    norm = float(np.linalg.norm(array))
+    if norm <= EPSILON:
+        raise ValueError(f"{name} must not be the zero vector.")
+    return array / norm
+
+
 def _surface_cache_key(
     threshold: float,
     *,
@@ -145,6 +153,9 @@ class AnalysisBundle:
     _surface_mesh_cache: dict[tuple[float, bool, int], Any] = field(default_factory=dict)
     _surface_sdf_cache: dict[tuple[float, bool], Any] = field(default_factory=dict)
     _mesh_sdf_cache: dict[tuple[float, bool, int], Any | None] = field(default_factory=dict)
+    _mesh_analysis_cache: dict[tuple[float, bool, int, tuple[float, float, float], float], dict[str, Any]] = field(
+        default_factory=dict
+    )
 
     def __post_init__(self) -> None:
         self.density = np.asarray(self.density, dtype=float)
@@ -401,6 +412,98 @@ class AnalysisBundle:
                 )
         return result
 
+    def subvolume_stats(
+        self,
+        bounds: tuple[tuple[float, float, float], tuple[float, float, float]],
+        *,
+        threshold: float = 0.5,
+        normalize: bool = False,
+        step_size: int = 1,
+    ) -> dict[str, float]:
+        minimum, maximum = bounds
+        index_bounds = self.domain.index_bounds_for_aabb(minimum, maximum)
+        if index_bounds is None:
+            return {
+                "voxel_count": 0.0,
+                "occupied_voxel_count": 0.0,
+                "occupied_fraction": 0.0,
+                "density_mean": 0.0,
+                "density_max": 0.0,
+                "deposition_index_mean": 0.0,
+                "deposition_index_max": 0.0,
+                "mesh_area": 0.0,
+            }
+
+        slices = tuple(slice(start, stop) for start, stop in index_bounds)
+        density = self.density_field(normalize=normalize)[slices]
+        deposition_index = self.deposition_index_field(normalize=normalize)[slices]
+        occupancy = self.occupancy_field(threshold=threshold, normalize=normalize)[slices]
+        voxel_count = float(np.prod(density.shape))
+        occupied_voxel_count = float(np.count_nonzero(occupancy))
+
+        mesh_area = 0.0
+        mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
+        if not mesh.is_empty:
+            from .mesh_analysis import face_areas, face_centroids
+
+            centroids = face_centroids(mesh)
+            areas = face_areas(mesh)
+            min_array = np.asarray(ensure_finite_triplet(minimum, "minimum"), dtype=float)
+            max_array = np.asarray(ensure_finite_triplet(maximum, "maximum"), dtype=float)
+            inside = np.all((centroids >= min_array) & (centroids <= max_array), axis=1)
+            mesh_area = float(np.sum(areas[inside]))
+
+        return {
+            "voxel_count": voxel_count,
+            "occupied_voxel_count": occupied_voxel_count,
+            "occupied_fraction": occupied_voxel_count / voxel_count if voxel_count else 0.0,
+            "density_mean": float(np.mean(density)) if density.size else 0.0,
+            "density_max": float(np.max(density)) if density.size else 0.0,
+            "deposition_index_mean": float(np.mean(deposition_index)) if deposition_index.size else 0.0,
+            "deposition_index_max": float(np.max(deposition_index)) if deposition_index.size else 0.0,
+            "mesh_area": mesh_area,
+        }
+
+    def mesh_analysis(
+        self,
+        *,
+        build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+        critical_angle_deg: float = 45.0,
+        threshold: float = 0.5,
+        normalize: bool = False,
+        step_size: int = 1,
+    ) -> dict[str, Any]:
+        build_dir = tuple(float(value) for value in _normalize_vector(build_direction, name="build_direction"))
+        key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size) + (
+            build_dir,
+            float(critical_angle_deg),
+        )
+        if key not in self._mesh_analysis_cache:
+            from .mesh_analysis import (
+                downfacing_mask,
+                face_areas,
+                face_centroids,
+                face_normals,
+                overhang_angles,
+                support_risk_mask,
+            )
+
+            mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
+            self._mesh_analysis_cache[key] = {
+                "mesh": mesh,
+                "face_normals": face_normals(mesh),
+                "face_centroids": face_centroids(mesh),
+                "face_areas": face_areas(mesh),
+                "overhang_angles": overhang_angles(mesh, build_direction=build_dir),
+                "downfacing_mask": downfacing_mask(mesh, build_direction=build_dir),
+                "support_risk_mask": support_risk_mask(
+                    mesh,
+                    build_direction=build_dir,
+                    critical_angle_deg=critical_angle_deg,
+                ),
+            }
+        return self._mesh_analysis_cache[key]
+
 
 def analysis_bundle(source: Any) -> AnalysisBundle:
     return _resolve_bundle(source)
@@ -436,3 +539,11 @@ def surface_normal_at(
 
 def sample_points(source: Any, points: npt.ArrayLike, **kwargs: Any) -> dict[str, npt.NDArray[np.generic]]:
     return _resolve_bundle(source).sample_points(points, **kwargs)
+
+
+def subvolume_stats(
+    source: Any,
+    bounds: tuple[tuple[float, float, float], tuple[float, float, float]],
+    **kwargs: Any,
+) -> dict[str, float]:
+    return _resolve_bundle(source).subvolume_stats(bounds, **kwargs)

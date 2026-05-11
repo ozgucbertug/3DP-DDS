@@ -1,4 +1,4 @@
-"""SDF- and mesh-oriented geometry helpers for dds."""
+"""SDF-, mesh-, and mesh-analysis helpers for dds."""
 
 from .adapters import (
     MeshSDF3,
@@ -36,6 +36,19 @@ from .primitives import (
 )
 from .sdf import GridSDF3, SDF3, as_sdf3
 from .transforms import orient, rotate, rotation_matrix, scale, translate
+from ..mesh_analysis import (
+    downfacing_mask,
+    face_areas,
+    face_centroids,
+    face_normals,
+    mesh_bounds_stats,
+    mesh_surface_area,
+    mesh_volume_estimate,
+    normal_rgb_from_normals,
+    overhang_angles,
+    support_risk_mask,
+    vertex_normals,
+)
 
 __all__ = [
     "GridSDF3",
@@ -59,16 +72,25 @@ __all__ = [
     "density_to_sdf_field",
     "difference",
     "dilate",
+    "downfacing_mask",
     "ellipsoid",
     "erode",
     "extract_mesh_from_field",
+    "face_areas",
+    "face_centroids",
+    "face_normals",
     "intersection",
+    "mesh_bounds_stats",
     "mesh_to_occupancy",
     "mesh_to_sdf_field",
+    "mesh_surface_area",
+    "mesh_volume_estimate",
+    "normal_rgb_from_normals",
     "occupancy_to_mesh",
     "occupancy_to_sdf",
     "occupancy_to_sdf_field",
     "orient",
+    "overhang_angles",
     "plane",
     "read_mesh",
     "rotate",
@@ -81,8 +103,10 @@ __all__ = [
     "shell",
     "slab",
     "sphere",
+    "support_risk_mask",
     "torus",
     "translate",
     "union",
+    "vertex_normals",
     "write_mesh",
 ]
