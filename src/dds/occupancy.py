@@ -1,0 +1,25 @@
+"""Helpers for turning scalar accumulation fields into occupancy maps."""
+
+from __future__ import annotations
+
+import numpy as np
+import numpy.typing as npt
+
+
+def occupancy_from_density(
+    density: npt.NDArray[np.float64],
+    threshold: float = 0.5,
+) -> npt.NDArray[np.bool_]:
+    """Threshold a scalar field into a binary occupancy grid."""
+
+    if threshold < 0.0:
+        raise ValueError("threshold must be non-negative.")
+    return density >= threshold
+
+
+def occupancy_fraction(occupancy: npt.NDArray[np.bool_]) -> float:
+    """Return the occupied fraction of a boolean grid."""
+
+    if occupancy.size == 0:
+        return 0.0
+    return float(np.count_nonzero(occupancy) / occupancy.size)
