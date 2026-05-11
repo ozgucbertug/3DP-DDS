@@ -8,6 +8,7 @@
 - Smooth compact deposition kernels for point and line deposits
 - Dense scalar accumulation, occupancy extraction, and deposition index sampling
 - A small stateful `Simulator` API for repeated dense-field queries
+- Optional SDF-based geometry primitives, booleans, and transforms
 - Tyro-backed typed CLI handling for repo scripts and examples
 
 ## Installation
@@ -56,10 +57,51 @@ occupancy = simulate_occupancy(domain, deposits, threshold=0.5)
 deposition_index = simulate_deposition_index(domain, deposits)
 ```
 
+## Geometry and SDFs
+
+`dds.geometry` adds a small analytic SDF layer on top of the dense simulator. This stage includes the core SDF abstraction, boolean composition, spatial transforms, and a stable primitive subset.
+
+Key conventions:
+
+- SDF sign convention is `negative inside`, `positive outside`, `zero on the surface`
+- Boolean operations are continuous SDF booleans, not exact mesh booleans
+- `GridSDF3` uses SciPy-backed trilinear interpolation for sampled fields
+
+```python
+from dds import Domain
+from dds.geometry import box, cylinder, sphere, union
+
+domain = Domain.from_bounds(
+    xmin=-8.0,
+    xmax=8.0,
+    ymin=-8.0,
+    ymax=8.0,
+    zmin=-8.0,
+    zmax=8.0,
+    voxel_size=0.25,
+)
+
+shape = union(
+    sphere(radius=3.0),
+    box(size=(4.0, 4.0, 6.0)),
+)
+cut = cylinder(radius=0.8, height=8.0)
+combined = shape - cut
+sampled = combined.sample(domain)
+```
+
+Base geometry API:
+
+- `SDF3`, `GridSDF3`, `as_sdf3`
+- `sphere`, `box`, `cylinder`, `capsule`, `plane`, `slab`, `ellipsoid`, `torus`
+- `union`, `intersection`, `difference`, `dilate`, `erode`, `shell`
+- `translate`, `scale`, `rotate`, `orient`, `rotation_matrix`
+
 ## Design Assumptions
 
 - The import package is `dds`; the repository/distribution branding remains `3DP-DDS` / `3dp-dds`.
 - Dense array indexing follows `(x, y, z)` ordering via NumPy `indexing="ij"`.
+- Geometry SDF sign convention is `negative inside`, `positive outside`, `zero on the surface`.
 - `width` is the full bead width in the XY plane, `height` is the full bead height in Z.
 - Point deposits use an ellipsoidal compact kernel.
 - Line deposits use a capsule-like closest-distance model with Z scaling to support anisotropic bead height.
@@ -82,6 +124,12 @@ src/dds/
   occupancy.py
   analysis.py
   utils.py
+  geometry/
+    __init__.py
+    sdf.py
+    ops.py
+    primitives.py
+    transforms.py
 ```
 
 ## Example Script
@@ -105,14 +153,3 @@ python examples/basic_simulation.py --threshold 0.35
 ```
 
 The example creates a simple deposition scene, prints summary metrics, and exercises the dense simulator without geometry or visualization extras.
-
-## Roadmap
-
-The current architecture is intended to make these additions natural later:
-
-- Geometry and mesh conversion helpers
-- Array export helpers for downstream analysis
-- Richer query and analysis APIs on top of cached dense fields
-- Streamed toolpath ingestion and partial/incremental field updates
-- Sparse or multi-resolution voxel structures
-- Sensor-updated nominal vs observed deposition comparison

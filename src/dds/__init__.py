@@ -1,5 +1,6 @@
 """Public API for the dds package."""
 
+from . import geometry
 from .attributes import DepositionAttributes
 from .domain import Domain
 from .primitives import (
@@ -22,6 +23,7 @@ __all__ = [
     "Polyline3D",
     "Simulator",
     "ToolpathDepositSequence",
+    "geometry",
     "sample_field",
     "simulate_deposition_index",
     "simulate_occupancy",
