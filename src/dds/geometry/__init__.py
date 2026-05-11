@@ -1,7 +1,27 @@
 """SDF-oriented geometry helpers for dds."""
 
 from .ops import difference, dilate, erode, intersection, shell, union
-from .primitives import ORIGIN, X, Y, Z, box, capsule, cylinder, ellipsoid, plane, slab, sphere, torus
+from .primitives import (
+    ORIGIN,
+    X,
+    Y,
+    Z,
+    box,
+    capped_cone,
+    capped_cylinder,
+    capsule,
+    capsule_chain,
+    cone,
+    cylinder,
+    ellipsoid,
+    plane,
+    rounded_box,
+    rounded_cone,
+    rounded_cylinder,
+    slab,
+    sphere,
+    torus,
+)
 from .sdf import GridSDF3, SDF3, as_sdf3
 from .transforms import orient, rotate, rotation_matrix, scale, translate
 
@@ -14,7 +34,11 @@ __all__ = [
     "Z",
     "as_sdf3",
     "box",
+    "capped_cone",
+    "capped_cylinder",
     "capsule",
+    "capsule_chain",
+    "cone",
     "cylinder",
     "difference",
     "dilate",
@@ -25,6 +49,9 @@ __all__ = [
     "plane",
     "rotate",
     "rotation_matrix",
+    "rounded_box",
+    "rounded_cone",
+    "rounded_cylinder",
     "scale",
     "shell",
     "slab",

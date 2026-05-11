@@ -97,6 +97,16 @@ Base geometry API:
 - `union`, `intersection`, `difference`, `dilate`, `erode`, `shell`
 - `translate`, `scale`, `rotate`, `orient`, `rotation_matrix`
 
+Advanced primitives:
+
+- `rounded_box`
+- `capped_cylinder`
+- `rounded_cylinder`
+- `capped_cone`
+- `cone`
+- `rounded_cone`
+- `capsule_chain`
+
 ## Design Assumptions
 
 - The import package is `dds`; the repository/distribution branding remains `3DP-DDS` / `3dp-dds`.
