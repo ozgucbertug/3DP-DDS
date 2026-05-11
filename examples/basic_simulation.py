@@ -3,6 +3,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
@@ -28,7 +29,7 @@ def build_example_domain() -> Domain:
         xmax=20.0,
         ymin=0.0,
         ymax=20.0,
-        zmin=0.0,
+        zmin=-1.0,
         zmax=6.0,
         voxel_size=0.1,
     )
@@ -45,10 +46,12 @@ def build_example_deposits() -> list[PointDeposit | LineDeposit]:
 
 @dataclass
 class Args:
-    """Run a basic dds simulation. Optionally save dense outputs."""
+    """Run a basic dds simulation. Optionally save dense outputs or inspect them interactively."""
 
     threshold: float = 0.5
     output_dir: Path | None = None
+    view: bool = False
+    view_mode: Literal["surface", "occupancy", "density"] = "surface"
 
 
 def main(args: Args) -> None:
@@ -75,6 +78,15 @@ def main(args: Args) -> None:
         )
         for label, path in written.items():
             print(f"Saved {label}: {path}")
+
+    if args.view:
+        from dds import SimulationWorkbench
+
+        workbench = SimulationWorkbench(simulator, threshold=args.threshold, off_screen=False)
+        workbench.set_representation(args.view_mode)
+        workbench.show()
+        workbench.app.exec()
+
 
 if __name__ == "__main__":
     run_cli(Args, main)

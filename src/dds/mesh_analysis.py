@@ -137,7 +137,7 @@ def support_risk_mask(
 
 
 def normal_rgb_from_normals(normals: npt.ArrayLike) -> npt.NDArray[np.uint8]:
-    """Map normal components from `[-1, 1]` to RGB bytes."""
+    """Map `x, y, z` normal components from `[-1, 1]` to `R, G, B` bytes."""
 
     normal_array = np.asarray(normals, dtype=float)
     if normal_array.ndim != 2 or normal_array.shape[1] != 3:

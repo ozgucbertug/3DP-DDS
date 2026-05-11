@@ -1,5 +1,7 @@
 """Public API for the dds package."""
 
+from typing import TYPE_CHECKING, Any
+
 from . import geometry
 from .attributes import DepositionAttributes
 from .domain import Domain
@@ -14,6 +16,9 @@ from .primitives import (
 from .queries import AnalysisBundle, analysis_bundle
 from .simulator import Simulator, sample_field, simulate_deposition_index, simulate_occupancy
 
+if TYPE_CHECKING:
+    from .workbench import SimulationWorkbench
+
 __all__ = [
     "AnalysisBundle",
     "DepositionAttributes",
@@ -23,6 +28,7 @@ __all__ = [
     "Point3D",
     "PointDeposit",
     "Polyline3D",
+    "SimulationWorkbench",
     "Simulator",
     "ToolpathDepositSequence",
     "analysis_bundle",
@@ -33,3 +39,16 @@ __all__ = [
 ]
 
 __version__ = "0.1.0"
+
+
+def __getattr__(name: str) -> Any:
+    if name == "SimulationWorkbench":
+        try:
+            from .workbench import SimulationWorkbench
+        except ImportError as exc:
+            raise ImportError(
+                'SimulationWorkbench requires optional visualization dependencies. '
+                'Install them with `pip install -e ".[viz]"`.'
+            ) from exc
+        return SimulationWorkbench
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

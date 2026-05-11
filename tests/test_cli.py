@@ -45,4 +45,7 @@ def test_basic_simulation_example_exposes_tyro_help() -> None:
 
     assert result.returncode == 0
     assert "--threshold" in result.stdout
+    assert "--view" in result.stdout
+    assert "--view-mode {surface,occupancy,density}" in result.stdout
+    assert "slice" not in result.stdout
     assert "Run a basic dds simulation." in result.stdout
