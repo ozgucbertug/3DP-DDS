@@ -13,6 +13,7 @@ from .primitives import (
     Polyline3D,
     ToolpathDepositSequence,
 )
+from .results import SimulationResult, simulate
 from .analysis import AnalysisBundle, analysis_bundle
 from .simulator import Simulator, sample_field, simulate_deposition_index, simulate_occupancy
 
@@ -30,10 +31,12 @@ __all__ = [
     "PointDeposit",
     "Polyline3D",
     "SimulationWorkbench",
+    "SimulationResult",
     "Simulator",
     "ToolpathDepositSequence",
     "analysis_bundle",
     "geometry",
+    "simulate",
     "sample_field",
     "simulate_deposition_index",
     "simulate_occupancy",

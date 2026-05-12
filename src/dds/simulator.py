@@ -13,6 +13,7 @@ from .domain import Domain
 from .fields import accumulate_density, sample_field as sample_dense_field
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
+from .results import DensityComposition, SimulationResult, simulate
 
 
 def sample_field(
@@ -131,6 +132,21 @@ class Simulator:
         if self._analysis_bundle_cache is None:
             self._analysis_bundle_cache = AnalysisBundle(self.domain, self._density_field(normalize=False))
         return self._analysis_bundle_cache
+
+    def result(
+        self,
+        *,
+        compositions: tuple[DensityComposition, ...] = ("max",),
+        threshold: float = 0.5,
+    ) -> SimulationResult:
+        """Return a reusable SimulationResult for the current deposits."""
+
+        return simulate(
+            self.domain,
+            self.deposits,
+            compositions=compositions,
+            threshold=threshold,
+        )
 
     def sample_field(
         self,

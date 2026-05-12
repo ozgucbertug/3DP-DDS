@@ -9,8 +9,10 @@ from dds import (
     Domain,
     LineDeposit,
     PointDeposit,
+    SimulationResult,
     Simulator,
     sample_field,
+    simulate,
     simulate_deposition_index,
     simulate_occupancy,
 )
@@ -147,3 +149,39 @@ def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
     assert simulator.query_deposition_index((2.5, 2.5, 2.5)) > 0.0
     assert simulator.is_occupied((-1.0, -1.0, -1.0)) is False
     assert simulator.query_deposition_index((-1.0, -1.0, -1.0)) == pytest.approx(0.0)
+
+
+def test_simulate_returns_rich_result_with_max_based_geometry() -> None:
+    domain = make_domain()
+    deposits = [
+        PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
+        PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
+    ]
+
+    result = simulate(domain, deposits, threshold=0.5)
+
+    assert isinstance(result, SimulationResult)
+    assert result.density("max").shape == domain.grid_shape
+    assert result.density_max.max() <= 1.0
+    assert result.density_sum is None
+    assert result.occupancy(threshold=0.5)[2, 2, 2]
+    assert result.analysis_bundle().contains_point((2.5, 2.5, 2.5), representation="occupancy", threshold=0.5)
+
+
+def test_simulator_result_matches_stateless_simulate() -> None:
+    domain = make_domain()
+    deposits = [
+        LineDeposit(
+            start=(1.5, 2.5, 3.5),
+            end=(6.5, 2.5, 3.5),
+            profile=make_profile(),
+            metadata=make_metadata(),
+        )
+    ]
+    simulator = Simulator(domain, deposits)
+
+    direct = simulate(domain, deposits, threshold=0.5)
+    cached = simulator.result(threshold=0.5)
+
+    np.testing.assert_allclose(cached.density("max"), direct.density("max"))
+    assert cached.default_threshold == pytest.approx(0.5)
