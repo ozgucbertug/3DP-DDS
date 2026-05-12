@@ -8,12 +8,11 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import deposition_index_from_density, normalize_field
+from .analysis import AnalysisBundle, deposition_index_from_density, normalize_field
 from .domain import Domain
 from .fields import accumulate_density, sample_field as sample_dense_field
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
-from .queries import AnalysisBundle
 
 
 def sample_field(

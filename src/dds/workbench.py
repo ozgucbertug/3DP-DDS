@@ -19,10 +19,11 @@ except ImportError as exc:
 
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals, overhang_angles
-from .queries import AnalysisBundle, analysis_bundle
+from .analysis import AnalysisBundle, analysis_bundle
 
 Representation = Literal["surface", "occupancy", "density"]
 ColorMode = Literal["plain", "normals", "overhang"]
+DensityComposition = Literal["max", "sum"]
 
 
 def _field_to_image_data(
@@ -87,6 +88,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         threshold: float = 0.5,
         build_direction: str | tuple[float, float, float] = "+Z",
         off_screen: bool = False,
+        density_sum: npt.ArrayLike | None = None,
         parent: QtWidgets.QWidget | None = None,
     ) -> None:
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -101,6 +103,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "density": 1.0,
         }
         self.color_mode: ColorMode = "plain"
+        self.density_composition: DensityComposition = "max"
         self.build_direction = self._coerce_build_direction(build_direction)
         self.off_screen = bool(off_screen)
         self.clip_enabled = False
@@ -119,6 +122,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._last_roi_stats: dict[str, float] | None = None
         self._surface_polydata_cache: dict[float, Any] = {}
         self._occupied_bounds_cache: dict[float, tuple[float, float, float, float, float, float]] = {}
+        self._density_sum = None if density_sum is None else np.asarray(density_sum, dtype=float)
+        if self._density_sum is not None and self._density_sum.shape != self.bundle.domain.grid_shape:
+            raise ValueError(
+                f"density_sum shape {self._density_sum.shape} does not match domain grid shape {self.bundle.domain.grid_shape}."
+            )
 
         self._build_ui()
         self._apply_window_style()
@@ -248,10 +256,23 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         opacity_row_layout.addWidget(opacity_widget)
         display_layout.addRow(opacity_row)
 
-        surface_box, surface_layout = self._add_section(sidebar_layout, "Surface")
-        self.surface_box = surface_box
-        self.surface_layout = surface_layout
-        self.color_mode_row = QtWidgets.QWidget(surface_box)
+        self.density_composition_row = QtWidgets.QWidget(display_box)
+        density_composition_row_layout = QtWidgets.QVBoxLayout(self.density_composition_row)
+        density_composition_row_layout.setContentsMargins(0, 0, 0, 0)
+        density_composition_row_layout.setSpacing(6)
+        self._density_composition_label = QtWidgets.QLabel("Composition", self.density_composition_row)
+        density_composition_row_layout.addWidget(self._density_composition_label)
+        self.density_composition_combo = QtWidgets.QComboBox(self.density_composition_row)
+        self._configure_combo_box(self.density_composition_combo, min_width=170)
+        self.density_composition_combo.addItem("Envelope (max)", "max")
+        self.density_composition_combo.addItem("Accumulation (sum)", "sum")
+        self.density_composition_combo.currentIndexChanged.connect(
+            lambda _index: self.set_density_composition(self.density_composition_combo.currentData())
+        )
+        density_composition_row_layout.addWidget(self.density_composition_combo)
+        display_layout.addRow(self.density_composition_row)
+
+        self.color_mode_row = QtWidgets.QWidget(display_box)
         color_mode_row_layout = QtWidgets.QVBoxLayout(self.color_mode_row)
         color_mode_row_layout.setContentsMargins(0, 0, 0, 0)
         color_mode_row_layout.setSpacing(6)
@@ -266,7 +287,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             lambda _index: self.set_color_mode(self.color_mode_combo.currentData())
         )
         color_mode_row_layout.addWidget(self.color_mode_combo)
-        surface_layout.addRow(self.color_mode_row)
+        display_layout.addRow(self.color_mode_row)
+
+        surface_box, surface_layout = self._add_section(sidebar_layout, "Surface")
+        self.surface_box = surface_box
+        self.surface_layout = surface_layout
 
         self.build_direction_row = QtWidgets.QWidget(surface_box)
         build_direction_row_layout = QtWidgets.QVBoxLayout(self.build_direction_row)
@@ -528,8 +553,13 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         )
         return grid.threshold(value=0.5, scalars="occupancy", preference="cell")
 
+    def _active_density_field(self) -> npt.NDArray[np.float64]:
+        if self.density_composition == "sum" and self._density_sum is not None:
+            return self._density_sum
+        return self.bundle.density_field()
+
     def _density_grid(self) -> Any:
-        density = np.asarray(self.bundle.density_field(), dtype=float)
+        density = np.asarray(self._active_density_field(), dtype=float)
         view_values = density.copy()
         maximum = float(np.max(view_values)) if view_values.size else 0.0
         if maximum > 0.0:
@@ -543,13 +573,13 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         )
 
     def _density_clim(self) -> tuple[float, float]:
-        maximum = float(np.max(self.bundle.density_field()))
+        maximum = float(np.max(self._active_density_field()))
         upper = maximum if maximum > 0.0 else 1.0
         lower = max(self.threshold * 0.2, upper * 0.05 if upper > 0.0 else 0.0)
         return (lower, upper)
 
     def _threshold_slider_upper(self) -> float:
-        density_max = float(np.max(self.bundle.density_field()))
+        density_max = float(np.max(self._active_density_field()))
         return max(1.0, density_max * 1.1, self.threshold)
 
     def _threshold_to_slider(self, value: float) -> int:
@@ -847,11 +877,14 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _sync_surface_controls(self) -> None:
         surface_mode = self.representation == "surface"
         overhang_mode = surface_mode and self.color_mode == "overhang"
-        self.surface_box.setVisible(surface_mode)
+        density_mode = self.representation == "density" and self._density_sum is not None
         self.color_mode_row.setVisible(surface_mode)
+        self.surface_box.setVisible(overhang_mode)
         self.build_direction_row.setVisible(overhang_mode)
         self.color_mode_combo.setEnabled(surface_mode)
         self.build_direction_combo.setEnabled(overhang_mode)
+        self.density_composition_row.setVisible(density_mode)
+        self.density_composition_combo.setEnabled(density_mode)
 
     def _set_row_visible(self, label_widget: QtWidgets.QWidget | None, field_widget: QtWidgets.QWidget, visible: bool) -> None:
         if label_widget is not None:
@@ -1013,6 +1046,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             raise ValueError("representation must be 'surface', 'occupancy', or 'density'.")
         camera_state = self._capture_camera_state()
         self.representation = representation
+        if representation != "density":
+            self.set_density_composition("max", rebuild=False)
         self._sync_opacity_controls()
         self._sync_surface_controls()
         self._sync_status_controls()
@@ -1047,6 +1082,29 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.view_opacity[self.representation] = value
         self._rebuild_scene()
         self._sync_opacity_controls()
+
+    def set_density_composition(self, composition: DensityComposition, *, rebuild: bool = True) -> None:
+        if composition not in {"max", "sum"}:
+            raise ValueError("density_composition must be 'max' or 'sum'.")
+        if composition == "sum" and self._density_sum is None:
+            composition = "max"
+        if self.density_composition == composition:
+            index = self.density_composition_combo.findData(composition)
+            if index >= 0 and self.density_composition_combo.currentIndex() != index:
+                self.density_composition_combo.blockSignals(True)
+                self.density_composition_combo.setCurrentIndex(index)
+                self.density_composition_combo.blockSignals(False)
+            return
+        self.density_composition = composition
+        index = self.density_composition_combo.findData(composition)
+        if index >= 0 and self.density_composition_combo.currentIndex() != index:
+            self.density_composition_combo.blockSignals(True)
+            self.density_composition_combo.setCurrentIndex(index)
+            self.density_composition_combo.blockSignals(False)
+        self._sync_surface_controls()
+        self._sync_threshold_controls()
+        if rebuild and self.representation == "density":
+            self._rebuild_scene()
 
     def set_color_mode(self, value: ColorMode) -> None:
         if value not in {"plain", "normals", "overhang"}:

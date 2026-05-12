@@ -8,10 +8,10 @@ from typing import Any, Literal
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import deposition_index_from_density, normalize_field
-from .domain import Domain
-from .occupancy import occupancy_from_density
-from .utils import EPSILON, ensure_finite_triplet
+from .fields import deposition_index_from_density, normalize_field
+from ..domain import Domain
+from ..occupancy import occupancy_from_density
+from ..utils import EPSILON, ensure_finite_triplet
 
 InterpolationMode = Literal["nearest", "trilinear"]
 RepresentationMode = Literal["occupancy", "density", "sdf", "mesh"]
@@ -197,7 +197,7 @@ class AnalysisBundle:
     ) -> Any:
         key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size)
         if key not in self._surface_mesh_cache:
-            from .geometry import density_to_mesh
+            from ..geometry import density_to_mesh
 
             self._surface_mesh_cache[key] = density_to_mesh(
                 self.domain,
@@ -215,7 +215,7 @@ class AnalysisBundle:
     ) -> Any:
         key = (float(threshold), bool(normalize))
         if key not in self._surface_sdf_cache:
-            from .geometry import density_to_sdf
+            from ..geometry import density_to_sdf
 
             self._surface_sdf_cache[key] = density_to_sdf(
                 self.domain,
@@ -233,7 +233,7 @@ class AnalysisBundle:
     ) -> Any | None:
         key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size)
         if key not in self._mesh_sdf_cache:
-            from .geometry import MeshSDF3
+            from ..geometry import MeshSDF3
 
             mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
             if mesh.is_empty:
@@ -444,7 +444,7 @@ class AnalysisBundle:
         mesh_area = 0.0
         mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
         if not mesh.is_empty:
-            from .mesh_analysis import face_areas, face_centroids
+            from ..mesh_analysis import face_areas, face_centroids
 
             centroids = face_centroids(mesh)
             areas = face_areas(mesh)
@@ -479,7 +479,7 @@ class AnalysisBundle:
             float(critical_angle_deg),
         )
         if key not in self._mesh_analysis_cache:
-            from .mesh_analysis import (
+            from ..mesh_analysis import (
                 downfacing_mask,
                 face_areas,
                 face_centroids,

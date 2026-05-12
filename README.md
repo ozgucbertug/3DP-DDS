@@ -151,11 +151,11 @@ Mesh conversions assume triangle meshes. Signed-distance and containment queries
 
 ## Headless Analysis Queries
 
-`dds.queries` provides cached, headless analysis over dense fields and derived surfaces. `AnalysisBundle` is the main analysis object, and `Simulator.analysis_bundle()` reuses it until deposits change.
+`dds.analysis` provides cached, headless analysis over dense fields and derived surfaces. `AnalysisBundle` is the main analysis object, and `Simulator.analysis_bundle()` reuses it until deposits change.
 
 ```python
 from dds import Simulator
-from dds.queries import sample_points, signed_distance_at
+from dds.analysis import sample_points, signed_distance_at
 
 simulator = Simulator(domain, deposits)
 bundle = simulator.analysis_bundle()

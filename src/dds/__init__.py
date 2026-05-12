@@ -13,7 +13,7 @@ from .primitives import (
     Polyline3D,
     ToolpathDepositSequence,
 )
-from .queries import AnalysisBundle, analysis_bundle
+from .analysis import AnalysisBundle, analysis_bundle
 from .simulator import Simulator, sample_field, simulate_deposition_index, simulate_occupancy
 
 if TYPE_CHECKING:

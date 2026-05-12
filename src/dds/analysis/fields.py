@@ -8,7 +8,7 @@ from collections.abc import Iterable
 import numpy as np
 import numpy.typing as npt
 
-from .primitives import LineDeposit, PointDeposit, iter_deposits
+from ..primitives import LineDeposit, PointDeposit, iter_deposits
 
 
 def normalize_field(field: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:

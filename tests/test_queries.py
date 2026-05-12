@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from dds import AnalysisBundle, BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator, analysis_bundle
-from dds.queries import (
+from dds.analysis import (
     contains_point,
     sample_density_at,
     sample_deposition_index_at,
