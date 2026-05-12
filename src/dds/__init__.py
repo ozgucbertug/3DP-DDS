@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from . import formats, geometry, targets
 from .attributes import BeadProfile, DepositionMetadata
+from .cli import run_cli
 from .domain import Domain
 from .primitives import (
     LineDeposit,
@@ -37,6 +38,7 @@ __all__ = [
     "analysis_bundle",
     "formats",
     "geometry",
+    "run_cli",
     "simulate",
     "sample_field",
     "simulate_deposition_index",

@@ -1,18 +1,20 @@
 # 3DP-DDS
-`3DP-DDS` is a Python library for dense deposition simulation on a 3D voxel grid. The import package is `dds`. The current library includes the dense simulator, headless analysis queries, analytic SDF geometry, and mesh extraction and conversion helpers in the same install.
+`3DP-DDS` is a Python library for dense deposition simulation on a 3D voxel grid. The import package is `dds`. The current library includes the dense simulator, rich simulation result objects, headless analysis, target-driven workflows, analytic SDF geometry, mesh extraction and conversion helpers, and an optional PyVistaQt workbench.
 
 ## Current Scope
 
 - Explicit bead profiles plus per-deposit process metadata
 - Dense 3D simulation domains with world/index coordinate transforms
 - Smooth compact deposition kernels for point and line deposits
-- Dense scalar accumulation, occupancy extraction, and deposition index sampling
-- A small stateful `Simulator` API for repeated dense-field queries
-- Cached headless `AnalysisBundle` queries over dense fields, derived surfaces, and SDFs
+- Dense scalar accumulation with `max` and optional `sum` composition support
+- A small stateful `Simulator` API plus reusable `SimulationResult` objects
+- Cached headless `AnalysisBundle` queries over max-based dense fields, derived surfaces, and SDFs
+- Generic target workflows in `dds.targets` plus YAML adapters in `dds.formats.yaml`
 - Analytic SDF primitives, booleans, and spatial transforms in `dds.geometry`
 - Mesh extraction, mesh IO, and dense-field or mesh-to-SDF conversions
 - Headless triangle-mesh metrics, overhang analysis, and ROI summaries
 - Dense result export helpers for arrays and simulation bundles
+- Optional PyVistaQt workbench for interactive inspection
 - Tyro-backed typed CLI handling for repo scripts and examples
 
 ## Installation
@@ -29,6 +31,12 @@ python -m pip install -e ".[dev]"
 
 Repository CLI interfaces use `tyro` as the common parser and configuration layer. The included example scripts therefore expose typed `--help` output through dataclass-based configs rather than handwritten `argparse` parsers.
 
+For the interactive workbench:
+
+```bash
+python -m pip install -e ".[viz]"
+```
+
 ## Minimal Example
 
 ```python
@@ -38,8 +46,7 @@ from dds import (
     Domain,
     LineDeposit,
     PointDeposit,
-    simulate_deposition_index,
-    simulate_occupancy,
+    simulate,
 )
 
 domain = Domain.from_bounds(
@@ -59,8 +66,25 @@ deposits = [
     LineDeposit(start=(10.25, 10.25, 0.25), end=(50.25, 10.25, 0.25), profile=profile, metadata=metadata),
 ]
 
-occupancy = simulate_occupancy(domain, deposits, threshold=0.5)
-deposition_index = simulate_deposition_index(domain, deposits)
+result = simulate(domain, deposits, threshold=0.5)
+occupancy = result.occupancy()
+surface = result.surface_mesh()
+```
+
+## Target Workflows
+
+`dds.targets` and `dds.formats.yaml` support target-driven workflows where each target represents the nozzle-tip or top-of-bead target.
+
+```python
+from dds import BeadProfile, Domain, simulate
+from dds.formats.yaml import load_targets
+from dds.targets import point_deposits_from_targets
+
+targets = load_targets("lamine_curvedwall.yaml")
+profile = BeadProfile(width=18.0, height=12.0)
+deposits = point_deposits_from_targets(targets, profile=profile, origin_reference="top")
+domain = Domain.from_deposits(deposits, voxel_size=1.0, padding="auto")
+result = simulate(domain, deposits, compositions=("max", "sum"), threshold=0.5)
 ```
 
 ## Geometry and SDFs
@@ -151,7 +175,7 @@ Mesh conversions assume triangle meshes. Signed-distance and containment queries
 
 ## Headless Analysis Queries
 
-`dds.analysis` provides cached, headless analysis over dense fields and derived surfaces. `AnalysisBundle` is the main analysis object, and `Simulator.analysis_bundle()` reuses it until deposits change.
+`dds.analysis` provides cached, headless analysis over dense fields and derived surfaces. `AnalysisBundle` is the main analysis object, and `SimulationResult.analysis_bundle()` or `Simulator.analysis_bundle()` reuse it until inputs change.
 
 ```python
 from dds import Simulator
@@ -244,6 +268,7 @@ Bundle outputs:
 - `occupancy.npy` when an occupancy field is provided
 - `deposition_index.npy` when a deposition index field is provided
 - `density.npy` when a density-like field is provided
+- `density_sum.npy` when a result also carries accumulation density
 - `metadata.json` containing serialized domain metadata and caller metadata
 
 ## Design Assumptions
@@ -253,6 +278,8 @@ Bundle outputs:
 - `width` is the full bead width in the local transverse plane, and `height` is the full bead height along the local bead axis.
 - Point and line deposits are top-referenced: the target point represents the nozzle-tip or top-of-bead target, not the bead center.
 - Point deposits use a rounded-bead kernel, and line deposits sweep the same rounded profile along the target path.
+- `SimulationResult` always treats `density_max` as the canonical geometry field for occupancy, surface extraction, and signed-distance analysis.
+- `density_sum` is optional and is intended for accumulation or overlap inspection, not geometry reconstruction.
 - The v0 deposition index is the weighted sum of deposit contributions per voxel.
 - Occupancy is derived by thresholding the accumulated scalar field.
 
@@ -261,18 +288,25 @@ Bundle outputs:
 ```text
 src/dds/
   __init__.py
-  cli.py
+  analysis/
+    __init__.py
+    bundle.py
+    fields.py
+  formats/
+    __init__.py
+    yaml.py
   attributes.py
+  cli.py
   primitives.py
   domain.py
   kernels.py
   fields.py
+  results.py
   simulator.py
   occupancy.py
-  analysis.py
   io.py
   mesh_analysis.py
-  queries.py
+  targets.py
   utils.py
   geometry/
     __init__.py

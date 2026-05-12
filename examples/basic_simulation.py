@@ -1,14 +1,8 @@
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
-
-ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT / "src"
-if str(SRC) not in sys.path:
-    sys.path.insert(0, str(SRC))
 
 from dds import (  # noqa: E402
     BeadProfile,
@@ -17,11 +11,11 @@ from dds import (  # noqa: E402
     LineDeposit,
     PointDeposit,
     Simulator,
+    run_cli,
 )
 from dds.analysis import summarize_layers  # noqa: E402
-from dds.cli import run_cli  # noqa: E402
+from dds.analysis import occupancy_fraction  # noqa: E402
 from dds.io import save_simulation_bundle  # noqa: E402
-from dds.occupancy import occupancy_fraction  # noqa: E402
 
 
 def build_example_domain() -> Domain:
