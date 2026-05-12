@@ -15,21 +15,48 @@ from .occupancy import occupancy_from_density
 from .primitives import DepositInput, LineDeposit, PointDeposit, iter_deposits
 
 FieldName = Literal["density", "occupancy", "deposition_index"]
+DensityComposition = Literal["max", "sum"]
+
+
+def accumulate_density_fields(
+    domain: Domain,
+    deposits: Iterable[DepositInput] | DepositInput,
+    *,
+    compositions: tuple[DensityComposition, ...] = ("sum",),
+) -> dict[DensityComposition, npt.NDArray[np.float64]]:
+    """Accumulate one or more density compositions on a dense grid."""
+
+    requested = tuple(dict.fromkeys(compositions))
+    if not requested:
+        raise ValueError("compositions must contain at least one value.")
+    invalid = [composition for composition in requested if composition not in {"max", "sum"}]
+    if invalid:
+        raise ValueError("compositions must contain only 'max' and/or 'sum'.")
+
+    fields: dict[DensityComposition, npt.NDArray[np.float64]] = {
+        composition: np.zeros(domain.grid_shape, dtype=float)
+        for composition in requested
+    }
+    for deposit in iter_deposits(deposits):
+        sampled = sample_deposit_kernel(domain, deposit)
+        if sampled is None:
+            continue
+        if "max" in fields:
+            fields["max"][sampled.slices] = np.maximum(fields["max"][sampled.slices], sampled.values)
+        if "sum" in fields:
+            fields["sum"][sampled.slices] += sampled.values
+    return fields
 
 
 def accumulate_density(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
+    *,
+    composition: DensityComposition = "sum",
 ) -> npt.NDArray[np.float64]:
-    """Accumulate weighted deposit contributions on a dense grid."""
+    """Accumulate one density composition on a dense grid."""
 
-    field = np.zeros(domain.grid_shape, dtype=float)
-    for deposit in iter_deposits(deposits):
-        sampled = sample_deposit_kernel(domain, deposit)
-        if sampled is None:
-            continue
-        field[sampled.slices] += sampled.values
-    return field
+    return accumulate_density_fields(domain, deposits, compositions=(composition,))[composition]
 
 
 def sample_field(
@@ -42,7 +69,7 @@ def sample_field(
 ) -> npt.NDArray[np.float64] | npt.NDArray[np.bool_]:
     """Sample a dense field from deposition events."""
 
-    density = accumulate_density(domain, deposits)
+    density = accumulate_density(domain, deposits, composition="sum")
     if field == "density":
         return normalize_field(density) if normalize else density
     if field == "deposition_index":

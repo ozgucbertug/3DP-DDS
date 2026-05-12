@@ -11,8 +11,8 @@ import numpy as np
 import numpy.typing as npt
 
 from .analysis import AnalysisBundle
+from .fields import accumulate_density_fields
 from .io import save_array, save_simulation_bundle
-from .kernels import sample_deposit_kernel
 from .primitives import Deposit, DepositInput, iter_deposits
 from .domain import Domain
 
@@ -27,19 +27,6 @@ def _normalize_compositions(compositions: Sequence[DensityComposition]) -> tuple
     if invalid:
         raise ValueError("compositions must contain only 'max' and/or 'sum'.")
     return values
-
-
-def _accumulate_density_max(
-    domain: Domain,
-    deposits: tuple[Deposit, ...],
-) -> npt.NDArray[np.float64]:
-    field = np.zeros(domain.grid_shape, dtype=float)
-    for deposit in deposits:
-        sampled = sample_deposit_kernel(domain, deposit)
-        if sampled is None:
-            continue
-        field[sampled.slices] = np.maximum(field[sampled.slices], sampled.values)
-    return field
 
 
 @dataclass(slots=True)
@@ -141,6 +128,33 @@ class SimulationResult:
         return workbench
 
 
+def simulation_result(
+    source: SimulationResult | AnalysisBundle | object,
+    *,
+    threshold: float = 0.5,
+) -> SimulationResult:
+    """Resolve a supported source into a SimulationResult."""
+
+    if isinstance(source, SimulationResult):
+        return source
+    if isinstance(source, AnalysisBundle):
+        result = SimulationResult(
+            domain=source.domain,
+            deposits=(),
+            density_max=source.density_field(normalize=False),
+            density_sum=None,
+            default_threshold=threshold,
+        )
+        result._analysis_bundle_cache = source
+        return result
+    if hasattr(source, "result") and callable(source.result):
+        return source.result(threshold=threshold)
+    if hasattr(source, "analysis_bundle") and callable(source.analysis_bundle):
+        bundle = source.analysis_bundle()
+        return simulation_result(bundle, threshold=threshold)
+    raise TypeError("Expected a SimulationResult, AnalysisBundle, or an object exposing result()/analysis_bundle().")
+
+
 def simulate(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
@@ -151,15 +165,13 @@ def simulate(
     """Run a high-level simulation and return a reusable SimulationResult."""
 
     requested = _normalize_compositions(compositions)
-    if requested != ("max",):
-        raise ValueError("Only the 'max' density composition is supported until the max/sum simulation stage lands.")
-
     deposit_tuple = tuple(iter_deposits(deposits))
-    density_max = _accumulate_density_max(domain, deposit_tuple)
+    needed = ("max",) if "sum" not in requested else ("max", "sum")
+    fields = accumulate_density_fields(domain, deposit_tuple, compositions=needed)
     return SimulationResult(
         domain=domain,
         deposits=deposit_tuple,
-        density_max=density_max,
-        density_sum=None,
+        density_max=fields["max"],
+        density_sum=fields.get("sum"),
         default_threshold=threshold,
     )

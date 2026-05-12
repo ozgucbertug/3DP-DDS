@@ -185,3 +185,19 @@ def test_simulator_result_matches_stateless_simulate() -> None:
 
     np.testing.assert_allclose(cached.density("max"), direct.density("max"))
     assert cached.default_threshold == pytest.approx(0.5)
+
+
+def test_simulate_can_produce_max_and_sum_density_fields() -> None:
+    domain = make_domain()
+    profile = make_profile(width=2.0, height=2.0)
+    metadata = make_metadata()
+    deposits = [
+        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata),
+        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata),
+    ]
+
+    result = simulate(domain, deposits, compositions=("max", "sum"), threshold=0.5)
+
+    assert result.density_sum is not None
+    assert np.all(result.density_sum >= result.density_max)
+    assert float(result.density_sum.max()) > float(result.density_max.max())

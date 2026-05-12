@@ -19,7 +19,8 @@ except ImportError as exc:
 
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals, overhang_angles
-from .analysis import AnalysisBundle, analysis_bundle
+from .analysis import AnalysisBundle
+from .results import SimulationResult, simulation_result
 
 Representation = Literal["surface", "occupancy", "density"]
 ColorMode = Literal["plain", "normals", "overhang"]
@@ -83,18 +84,18 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def __init__(
         self,
-        simulator_or_bundle: AnalysisBundle | Any,
+        simulator_or_bundle: SimulationResult | AnalysisBundle | Any,
         *,
         threshold: float = 0.5,
         build_direction: str | tuple[float, float, float] = "+Z",
         off_screen: bool = False,
-        density_sum: npt.ArrayLike | None = None,
         parent: QtWidgets.QWidget | None = None,
     ) -> None:
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         super().__init__(parent)
 
-        self.bundle = analysis_bundle(simulator_or_bundle)
+        self.result = simulation_result(simulator_or_bundle, threshold=threshold)
+        self.bundle = self.result.analysis_bundle()
         self.threshold = float(threshold)
         self.representation: Representation = "surface"
         self.view_opacity: dict[Representation, float] = {
@@ -122,11 +123,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._last_roi_stats: dict[str, float] | None = None
         self._surface_polydata_cache: dict[float, Any] = {}
         self._occupied_bounds_cache: dict[float, tuple[float, float, float, float, float, float]] = {}
-        self._density_sum = None if density_sum is None else np.asarray(density_sum, dtype=float)
-        if self._density_sum is not None and self._density_sum.shape != self.bundle.domain.grid_shape:
-            raise ValueError(
-                f"density_sum shape {self._density_sum.shape} does not match domain grid shape {self.bundle.domain.grid_shape}."
-            )
+        self._density_sum = self.result.density_sum
 
         self._build_ui()
         self._apply_window_style()

@@ -152,8 +152,8 @@ def test_mode_specific_controls_and_pick_payload(qtbot: object) -> None:
 
 def test_density_composition_control_is_density_only(qtbot: object) -> None:
     simulator = make_simulator()
-    density_sum = simulator.analysis_bundle().density_field() * 2.0
-    workbench = SimulationWorkbench(simulator, off_screen=True, density_sum=density_sum)
+    result = simulator.result(compositions=("max", "sum"))
+    workbench = SimulationWorkbench(result, off_screen=True)
     qtbot.addWidget(workbench)
 
     workbench.set_representation("surface")
@@ -170,9 +170,11 @@ def test_density_composition_control_is_density_only(qtbot: object) -> None:
 
 def test_density_composition_switch_changes_active_density_field(qtbot: object) -> None:
     simulator = make_simulator()
-    density_max = simulator.analysis_bundle().density_field()
-    density_sum = density_max * 2.0
-    workbench = SimulationWorkbench(simulator, off_screen=True, density_sum=density_sum)
+    result = simulator.result(compositions=("max", "sum"))
+    density_max = result.density_max
+    density_sum = result.density_sum
+    assert density_sum is not None
+    workbench = SimulationWorkbench(result, off_screen=True)
     qtbot.addWidget(workbench)
 
     workbench.set_representation("density")
