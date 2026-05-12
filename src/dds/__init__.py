@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from . import geometry
+from . import formats, geometry, targets
 from .attributes import BeadProfile, DepositionMetadata
 from .domain import Domain
 from .primitives import (
@@ -35,11 +35,13 @@ __all__ = [
     "Simulator",
     "ToolpathDepositSequence",
     "analysis_bundle",
+    "formats",
     "geometry",
     "simulate",
     "sample_field",
     "simulate_deposition_index",
     "simulate_occupancy",
+    "targets",
 ]
 
 __version__ = "0.1.0"

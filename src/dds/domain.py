@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
 
-from .primitives import Point3D
+from .primitives import DepositInput, Point3D, iter_deposits
 from .utils import ensure_finite_triplet, ensure_positive_triplet
 
 IndexBounds = tuple[tuple[int, int], tuple[int, int], tuple[int, int]]
@@ -57,6 +57,52 @@ class Domain:
             max_corner=maximum,
             voxel_size=voxel_triplet,
             grid_shape=shape,
+        )
+
+    @classmethod
+    def from_deposits(
+        cls,
+        deposits: Iterable[DepositInput] | DepositInput,
+        *,
+        voxel_size: float | Sequence[float],
+        padding: float | str = "auto",
+    ) -> "Domain":
+        """Create a padded domain that encloses the support bounds of deposits."""
+
+        if isinstance(voxel_size, (int, float)):
+            voxel_triplet = ensure_positive_triplet((voxel_size, voxel_size, voxel_size), "voxel_size")
+        else:
+            voxel_triplet = ensure_positive_triplet(voxel_size, "voxel_size")
+
+        if padding == "auto":
+            resolved_padding = float(max(voxel_triplet))
+        elif isinstance(padding, (int, float)):
+            resolved_padding = float(padding)
+            if resolved_padding < 0.0:
+                raise ValueError("padding must be non-negative.")
+        else:
+            raise ValueError("padding must be a non-negative float or 'auto'.")
+
+        minima: list[tuple[float, float, float]] = []
+        maxima: list[tuple[float, float, float]] = []
+        for deposit in iter_deposits(deposits):
+            minimum, maximum = deposit.support_bounds(padding=resolved_padding)
+            minima.append(minimum.to_tuple())
+            maxima.append(maximum.to_tuple())
+
+        if not minima:
+            raise ValueError("from_deposits requires at least one deposit.")
+
+        lower = np.asarray(minima, dtype=float).min(axis=0)
+        upper = np.asarray(maxima, dtype=float).max(axis=0)
+        return cls.from_bounds(
+            xmin=float(lower[0]),
+            xmax=float(upper[0]),
+            ymin=float(lower[1]),
+            ymax=float(upper[1]),
+            zmin=float(lower[2]),
+            zmax=float(upper[2]),
+            voxel_size=voxel_triplet,
         )
 
     def to_dict(self) -> dict[str, object]:
