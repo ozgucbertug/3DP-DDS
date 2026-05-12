@@ -3,7 +3,7 @@
 
 ## Current Scope
 
-- Point and line deposition primitives with metadata-rich attributes
+- Explicit bead profiles plus per-deposit process metadata
 - Dense 3D simulation domains with world/index coordinate transforms
 - Smooth compact deposition kernels for point and line deposits
 - Dense scalar accumulation, occupancy extraction, and deposition index sampling
@@ -33,7 +33,8 @@ Repository CLI interfaces use `tyro` as the common parser and configuration laye
 
 ```python
 from dds import (
-    DepositionAttributes,
+    BeadProfile,
+    DepositionMetadata,
     Domain,
     LineDeposit,
     PointDeposit,
@@ -51,10 +52,11 @@ domain = Domain.from_bounds(
     voxel_size=0.5,
 )
 
-attrs = DepositionAttributes(width=1.2, height=0.4, layer_id=0)
+profile = BeadProfile(width=1.2, height=0.4)
+metadata = DepositionMetadata(layer_id=0)
 deposits = [
-    PointDeposit(x=10.25, y=10.25, z=0.25, attributes=attrs),
-    LineDeposit(start=(10.25, 10.25, 0.25), end=(50.25, 10.25, 0.25), attributes=attrs),
+    PointDeposit(x=10.25, y=10.25, z=0.25, profile=profile, metadata=metadata),
+    LineDeposit(start=(10.25, 10.25, 0.25), end=(50.25, 10.25, 0.25), profile=profile, metadata=metadata),
 ]
 
 occupancy = simulate_occupancy(domain, deposits, threshold=0.5)
@@ -248,9 +250,9 @@ Bundle outputs:
 
 - The import package is `dds`; the repository and distribution branding are `3DP-DDS` and `3dp-dds`.
 - Dense array indexing follows `(x, y, z)` ordering via NumPy `indexing="ij"`.
-- `width` is the full bead width in the XY plane, and `height` is the full bead height in Z.
-- Point deposits use an ellipsoidal compact kernel.
-- Line deposits use a capsule-like closest-distance model with Z scaling to support anisotropic bead height.
+- `width` is the full bead width in the local transverse plane, and `height` is the full bead height along the local bead axis.
+- Point and line deposits are top-referenced: the target point represents the nozzle-tip or top-of-bead target, not the bead center.
+- Point deposits use a rounded-bead kernel, and line deposits sweep the same rounded profile along the target path.
 - The v0 deposition index is the weighted sum of deposit contributions per voxel.
 - Occupancy is derived by thresholding the accumulated scalar field.
 

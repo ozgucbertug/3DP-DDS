@@ -1,4 +1,4 @@
-"""Metadata containers for deposition primitives."""
+"""Profile and metadata containers for deposition primitives."""
 
 from __future__ import annotations
 
@@ -7,11 +7,28 @@ from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
-class DepositionAttributes:
-    """Metadata describing nominal bead and process parameters."""
+class BeadProfile:
+    """Nominal bead geometry used by deposition kernels."""
 
-    width: float | None = None
-    height: float | None = None
+    width: float
+    height: float
+
+    def __post_init__(self) -> None:
+        if self.width <= 0.0:
+            raise ValueError("BeadProfile.width must be positive.")
+        if self.height <= 0.0:
+            raise ValueError("BeadProfile.height must be positive.")
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return an export-friendly dictionary representation."""
+
+        return asdict(self)
+
+
+@dataclass(frozen=True, slots=True)
+class DepositionMetadata:
+    """Process or provenance metadata describing a deposition event."""
+
     layer_id: int | None = None
     material_id: str | None = None
     tool_id: str | None = None
@@ -21,13 +38,9 @@ class DepositionAttributes:
     user_data: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.width is not None and self.width <= 0.0:
-            raise ValueError("DepositionAttributes.width must be positive when provided.")
-        if self.height is not None and self.height <= 0.0:
-            raise ValueError("DepositionAttributes.height must be positive when provided.")
         object.__setattr__(self, "user_data", dict(self.user_data))
 
     def to_dict(self) -> dict[str, Any]:
-        """Return a dictionary representation that is easy to export."""
+        """Return an export-friendly dictionary representation."""
 
         return asdict(self)

@@ -47,7 +47,7 @@ def summarize_layers(
         }
     )
     for deposit in iter_deposits(deposits):
-        layer_id = deposit.attributes.layer_id
+        layer_id = deposit.metadata.layer_id
         summary[layer_id]["deposit_count"] += 1
         if isinstance(deposit, PointDeposit):
             summary[layer_id]["point_deposits"] += 1

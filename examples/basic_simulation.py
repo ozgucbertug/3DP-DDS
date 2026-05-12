@@ -11,7 +11,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from dds import (  # noqa: E402
-    DepositionAttributes,
+    BeadProfile,
+    DepositionMetadata,
     Domain,
     LineDeposit,
     PointDeposit,
@@ -36,11 +37,12 @@ def build_example_domain() -> Domain:
 
 
 def build_example_deposits() -> list[PointDeposit | LineDeposit]:
-    attrs = DepositionAttributes(width=1.2, height=0.6, layer_id=0, material_id="mat0", tool_id="tool0")
+    profile = BeadProfile(width=1.2, height=0.6)
+    metadata = DepositionMetadata(layer_id=0, material_id="mat0", tool_id="tool0")
     return [
-        PointDeposit(x=2.25, y=2.25, z=0.25, attributes=attrs),
-        LineDeposit(start=(2.25, 2.25, 0.25), end=(10.25, 2.25, 0.25), attributes=attrs),
-        LineDeposit(start=(10.25, 2.25, 0.25), end=(10.25, 8.25, 0.25), attributes=attrs),
+        PointDeposit(x=2.25, y=2.25, z=0.55, profile=profile, metadata=metadata),
+        LineDeposit(start=(2.25, 2.25, 0.55), end=(10.25, 2.25, 0.55), profile=profile, metadata=metadata),
+        LineDeposit(start=(10.25, 2.25, 0.55), end=(10.25, 8.25, 0.55), profile=profile, metadata=metadata),
     ]
 
 

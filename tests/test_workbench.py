@@ -10,7 +10,7 @@ if os.environ.get("DDS_RUN_VIZ_TESTS") != "1":
 pyvistaqt = pytest.importorskip("pyvistaqt")
 pytest.importorskip("PySide6")
 
-from dds import DepositionAttributes, Domain, LineDeposit, PointDeposit, Simulator  # noqa: E402
+from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator  # noqa: E402
 from dds.workbench import SimulationWorkbench  # noqa: E402
 
 
@@ -27,11 +27,12 @@ def make_domain() -> Domain:
 
 
 def make_simulator() -> Simulator:
-    attrs = DepositionAttributes(width=1.2, height=0.8, layer_id=0)
+    profile = BeadProfile(width=1.2, height=0.8)
+    metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(x=2.25, y=2.25, z=0.25, attributes=attrs),
-        LineDeposit(start=(2.25, 2.25, 0.25), end=(6.25, 2.25, 0.25), attributes=attrs),
-        LineDeposit(start=(6.25, 2.25, 0.25), end=(6.25, 6.25, 0.25), attributes=attrs),
+        PointDeposit(x=2.25, y=2.25, z=0.65, profile=profile, metadata=metadata),
+        LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile, metadata=metadata),
+        LineDeposit(start=(6.25, 2.25, 0.65), end=(6.25, 6.25, 0.65), profile=profile, metadata=metadata),
     ]
     return Simulator(make_domain(), deposits)
 
@@ -145,5 +146,42 @@ def test_mode_specific_controls_and_pick_payload(qtbot: object) -> None:
     workbench.clear_pick()
     assert workbench._last_pick_payload is None
     assert workbench.pick_status.toPlainText() == ""
+
+    workbench.close()
+
+
+def test_density_composition_control_is_density_only(qtbot: object) -> None:
+    simulator = make_simulator()
+    density_sum = simulator.analysis_bundle().density_field() * 2.0
+    workbench = SimulationWorkbench(simulator, off_screen=True, density_sum=density_sum)
+    qtbot.addWidget(workbench)
+
+    workbench.set_representation("surface")
+    assert not workbench.density_composition_row.isVisible()
+
+    workbench.set_representation("occupancy")
+    assert not workbench.density_composition_row.isVisible()
+
+    workbench.set_representation("density")
+    assert workbench.density_composition_row.isVisible()
+
+    workbench.close()
+
+
+def test_density_composition_switch_changes_active_density_field(qtbot: object) -> None:
+    simulator = make_simulator()
+    density_max = simulator.analysis_bundle().density_field()
+    density_sum = density_max * 2.0
+    workbench = SimulationWorkbench(simulator, off_screen=True, density_sum=density_sum)
+    qtbot.addWidget(workbench)
+
+    workbench.set_representation("density")
+    workbench.set_density_composition("max")
+    max_clim = workbench._density_clim()
+    workbench.set_density_composition("sum")
+    sum_clim = workbench._density_clim()
+
+    np.testing.assert_allclose(workbench._active_density_field(), density_sum)
+    assert sum_clim[1] > max_clim[1]
 
     workbench.close()

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dds import AnalysisBundle, DepositionAttributes, Domain, LineDeposit, PointDeposit, Simulator, analysis_bundle
+from dds import AnalysisBundle, BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator, analysis_bundle
 from dds.queries import (
     contains_point,
     sample_density_at,
@@ -27,10 +27,11 @@ def make_domain() -> Domain:
 
 
 def make_simulator() -> Simulator:
-    attrs = DepositionAttributes(width=1.2, height=0.8, layer_id=0)
+    profile = BeadProfile(width=1.2, height=0.8)
+    metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(x=2.25, y=2.25, z=0.25, attributes=attrs),
-        LineDeposit(start=(2.25, 2.25, 0.25), end=(6.25, 2.25, 0.25), attributes=attrs),
+        PointDeposit(x=2.25, y=2.25, z=0.65, profile=profile, metadata=metadata),
+        LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile, metadata=metadata),
     ]
     return Simulator(make_domain(), deposits)
 
@@ -85,8 +86,9 @@ def test_analysis_bundle_cache_invalidates_after_deposit_changes() -> None:
         PointDeposit(
             x=4.25,
             y=4.25,
-            z=0.25,
-            attributes=DepositionAttributes(width=1.2, height=0.8, layer_id=1),
+            z=0.65,
+            profile=BeadProfile(width=1.2, height=0.8),
+            metadata=DepositionMetadata(layer_id=1),
         )
     )
 

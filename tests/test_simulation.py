@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 from dds import (
-    DepositionAttributes,
+    BeadProfile,
+    DepositionMetadata,
     Domain,
     LineDeposit,
     PointDeposit,
@@ -27,8 +28,12 @@ def make_domain() -> Domain:
     )
 
 
-def make_attributes(width: float = 1.2, height: float = 1.2) -> DepositionAttributes:
-    return DepositionAttributes(width=width, height=height, layer_id=0)
+def make_profile(width: float = 1.2, height: float = 1.2) -> BeadProfile:
+    return BeadProfile(width=width, height=height)
+
+
+def make_metadata() -> DepositionMetadata:
+    return DepositionMetadata(layer_id=0)
 
 
 def test_domain_shape_matches_bounds() -> None:
@@ -44,19 +49,39 @@ def test_coordinate_conversion_round_trip_for_voxel_centers() -> None:
 
 def test_point_deposit_contributes_locally() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=2.5, attributes=make_attributes(width=2.0, height=2.0))
+    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     density = sample_field(domain, [deposit], field="density")
 
     assert density[2, 2, 2] > 0.0
     assert density[0, 0, 0] == pytest.approx(0.0)
 
 
+def test_point_deposit_target_marks_the_top_of_the_bead() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
+    density = sample_field(domain, [deposit], field="density")
+
+    assert density[2, 2, 2] > density[2, 2, 3]
+    assert density[2, 2, 3] == pytest.approx(0.5)
+
+
+def test_point_deposit_uses_rounded_bead_geometry_not_ellipsoidal_falloff() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=4.0, height=2.0), metadata=make_metadata())
+    occupancy = simulate_occupancy(domain, [deposit], threshold=0.5)
+
+    assert occupancy[2, 2, 2]
+    assert occupancy[3, 2, 3]
+    assert not occupancy[4, 2, 3]
+
+
 def test_line_deposit_produces_continuous_occupied_region() -> None:
     domain = make_domain()
     deposit = LineDeposit(
-        start=(1.5, 2.5, 2.5),
-        end=(6.5, 2.5, 2.5),
-        attributes=make_attributes(),
+        start=(1.5, 2.5, 3.5),
+        end=(6.5, 2.5, 3.5),
+        profile=make_profile(),
+        metadata=make_metadata(),
     )
     occupancy = simulate_occupancy(domain, [deposit], threshold=0.25)
 
@@ -65,7 +90,7 @@ def test_line_deposit_produces_continuous_occupied_region() -> None:
 
 def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=2.5, attributes=make_attributes(width=2.0, height=2.0))
+    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     single = simulate_deposition_index(domain, [deposit])
     overlap = simulate_deposition_index(domain, [deposit, deposit])
 
@@ -74,7 +99,7 @@ def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
 
 def test_thresholding_changes_occupied_voxel_count() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=2.5, attributes=make_attributes(width=3.0, height=3.0))
+    deposit = PointDeposit(x=2.5, y=2.5, z=4.0, profile=make_profile(width=3.0, height=3.0), metadata=make_metadata())
 
     low_threshold = simulate_occupancy(domain, [deposit], threshold=0.1)
     high_threshold = simulate_occupancy(domain, [deposit], threshold=0.8)
@@ -84,11 +109,12 @@ def test_thresholding_changes_occupied_voxel_count() -> None:
 
 def test_deposits_outside_bounds_are_skipped_and_partial_overlap_is_kept() -> None:
     domain = make_domain()
-    outside = PointDeposit(x=-5.0, y=-5.0, z=-5.0, attributes=make_attributes())
+    outside = PointDeposit(x=-5.0, y=-5.0, z=-5.0, profile=make_profile(), metadata=make_metadata())
     partial = LineDeposit(
-        start=(-0.5, 2.5, 2.5),
-        end=(2.5, 2.5, 2.5),
-        attributes=make_attributes(),
+        start=(-0.5, 2.5, 3.5),
+        end=(2.5, 2.5, 3.5),
+        profile=make_profile(),
+        metadata=make_metadata(),
     )
 
     outside_density = simulate_deposition_index(domain, [outside])
@@ -101,9 +127,10 @@ def test_deposits_outside_bounds_are_skipped_and_partial_overlap_is_kept() -> No
 
 def test_zero_length_line_matches_point_deposit() -> None:
     domain = make_domain()
-    attrs = make_attributes(width=2.0, height=2.0)
-    point = PointDeposit(x=2.5, y=2.5, z=2.5, attributes=attrs)
-    zero_length_line = LineDeposit(start=(2.5, 2.5, 2.5), end=(2.5, 2.5, 2.5), attributes=attrs)
+    profile = make_profile(width=2.0, height=2.0)
+    metadata = make_metadata()
+    point = PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata)
+    zero_length_line = LineDeposit(start=(2.5, 2.5, 3.5), end=(2.5, 2.5, 3.5), profile=profile, metadata=metadata)
 
     point_field = simulate_deposition_index(domain, [point])
     line_field = simulate_deposition_index(domain, [zero_length_line])
@@ -113,7 +140,7 @@ def test_zero_length_line_matches_point_deposit() -> None:
 
 def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=2.5, attributes=make_attributes(width=2.0, height=2.0))
+    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     simulator = Simulator(domain, [deposit])
 
     assert simulator.is_occupied((2.5, 2.5, 2.5), threshold=0.5)

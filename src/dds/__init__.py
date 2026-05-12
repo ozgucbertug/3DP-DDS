@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Any
 
 from . import geometry
-from .attributes import DepositionAttributes
+from .attributes import BeadProfile, DepositionMetadata
 from .domain import Domain
 from .primitives import (
     LineDeposit,
@@ -21,7 +21,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AnalysisBundle",
-    "DepositionAttributes",
+    "BeadProfile",
+    "DepositionMetadata",
     "Domain",
     "LineDeposit",
     "LineSegment3D",

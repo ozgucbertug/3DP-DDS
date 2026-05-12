@@ -7,10 +7,15 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from .attributes import DepositionAttributes
+from .attributes import BeadProfile
 from .domain import Domain
-from .primitives import LineDeposit, Point3D, PointDeposit
-from .utils import expand_aabb, point_to_segment_distances
+from .primitives import (
+    LineDeposit,
+    PointDeposit,
+    _bead_half_extents,
+    _point_target_support_bounds,
+)
+from .utils import closest_point_parameters
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,42 +26,109 @@ class SampledKernel:
     values: npt.NDArray[np.float64]
 
 
-def resolve_bead_radii(
-    attributes: DepositionAttributes,
+@dataclass(frozen=True, slots=True)
+class ResolvedBeadProfile:
+    """Resolved bead geometry and density transition settings."""
+
+    width: float
+    height: float
+    radius: float
+    half_height: float
+    rounding_radius: float
+    transition_width: float
+    support_padding: float
+
+
+def resolve_bead_profile(
+    profile: BeadProfile | None,
     domain: Domain,
-) -> tuple[float, float, float]:
-    """Resolve cross-section radii from deposit metadata and domain defaults."""
+) -> ResolvedBeadProfile:
+    """Resolve bead geometry and transition width from metadata and domain defaults."""
 
     default_width = min(domain.voxel_size)
-    width = attributes.width if attributes.width is not None else default_width
-    height = attributes.height if attributes.height is not None else width
+    width = profile.width if profile is not None else default_width
+    height = profile.height if profile is not None else width
     if width <= 0.0 or height <= 0.0:
         raise ValueError("Resolved bead width and height must both be positive.")
-    radius_xy = width / 2.0
-    radius_z = height / 2.0
-    return radius_xy, radius_xy, radius_z
+    rounding_radius = min(width, height) / 2.0
+    transition_width = max(min(domain.voxel_size), rounding_radius)
+    return ResolvedBeadProfile(
+        width=float(width),
+        height=float(height),
+        radius=float(width / 2.0),
+        half_height=float(height / 2.0),
+        rounding_radius=float(rounding_radius),
+        transition_width=float(transition_width),
+        support_padding=float(transition_width / 2.0),
+    )
 
 
-def compact_quadratic_profile(r_squared: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Evaluate the smooth compact profile `max(0, 1 - r^2)`."""
+def density_from_signed_distance(
+    signed_distance: npt.NDArray[np.float64],
+    transition_width: float,
+) -> npt.NDArray[np.float64]:
+    """Map signed distance to a dense accumulation value with a 0.5 isosurface."""
 
-    return np.clip(1.0 - r_squared, 0.0, None)
+    if transition_width <= 0.0:
+        raise ValueError("transition_width must be positive.")
+    return np.clip(0.5 - signed_distance / transition_width, 0.0, 1.0)
+
+
+def rounded_cylinder_signed_distance(
+    points: npt.NDArray[np.float64],
+    *,
+    target: npt.NDArray[np.float64],
+    axis: npt.NDArray[np.float64],
+    profile: ResolvedBeadProfile,
+) -> npt.NDArray[np.float64]:
+    """Evaluate the signed distance to a top-referenced rounded cylinder."""
+
+    center = target - axis * profile.half_height
+    relative = points - center
+    axial = np.sum(relative * axis, axis=-1)
+    radial_vectors = relative - axial[..., np.newaxis] * axis
+    radial = np.linalg.norm(radial_vectors, axis=-1)
+    bounds = np.stack(
+        (
+            radial - profile.radius + profile.rounding_radius,
+            np.abs(axial) - profile.half_height + profile.rounding_radius,
+        ),
+        axis=-1,
+    )
+    return (
+        np.minimum(np.maximum(bounds[..., 0], bounds[..., 1]), 0.0)
+        + np.linalg.norm(np.maximum(bounds, 0.0), axis=-1)
+        - profile.rounding_radius
+    )
 
 
 def sample_point_kernel(domain: Domain, deposit: PointDeposit) -> SampledKernel | None:
-    """Sample an anisotropic ellipsoidal point kernel on the local grid window."""
+    """Sample a rounded-cylinder point kernel on the local grid window."""
 
-    rx, ry, rz = resolve_bead_radii(deposit.attributes, domain)
-    center = deposit.point.to_array()
-    support_min, support_max = expand_aabb(center, center, (rx, ry, rz))
+    profile = resolve_bead_profile(deposit.profile, domain)
+    target = deposit.target.to_array()
+    axis = deposit.axis.to_array()
+    support_min, support_max = _point_target_support_bounds(
+        target,
+        axis,
+        width=profile.width,
+        height=profile.height,
+        padding=profile.support_padding,
+    )
     index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
     if index_bounds is None:
         return None
 
     x_bounds, y_bounds, z_bounds = index_bounds
     xs, ys, zs = domain.grid_centers(index_bounds)
-    r_squared = ((xs - center[0]) / rx) ** 2 + ((ys - center[1]) / ry) ** 2 + ((zs - center[2]) / rz) ** 2
-    values = compact_quadratic_profile(r_squared)
+    points = np.stack((xs, ys, zs), axis=-1)
+    signed_distance = rounded_cylinder_signed_distance(
+        points,
+        target=target,
+        axis=axis,
+        profile=profile,
+    )
+    values = density_from_signed_distance(signed_distance, profile.transition_width)
     return SampledKernel(
         slices=(
             slice(*x_bounds),
@@ -68,9 +140,9 @@ def sample_point_kernel(domain: Domain, deposit: PointDeposit) -> SampledKernel 
 
 
 def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | None:
-    """Sample a swept-sphere line kernel using a z-scaled closest-distance model."""
+    """Sample a swept rounded-bead line kernel."""
 
-    rx, _, rz = resolve_bead_radii(deposit.attributes, domain)
+    profile = resolve_bead_profile(deposit.profile, domain)
     start = deposit.start.to_array()
     end = deposit.end.to_array()
     if np.allclose(start, end):
@@ -78,26 +150,52 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
             x=float(start[0]),
             y=float(start[1]),
             z=float(start[2]),
-            attributes=deposit.attributes,
+            profile=deposit.profile,
+            metadata=deposit.metadata,
+            z_axis=deposit.start_axis,
         )
         return sample_point_kernel(domain, point_deposit)
 
-    support_min, support_max = expand_aabb(np.minimum(start, end), np.maximum(start, end), (rx, rx, rz))
+    start_axis = deposit.start_axis.to_array()
+    end_axis = deposit.end_axis.to_array()
+    start_center = start - start_axis * profile.half_height
+    end_center = end - end_axis * profile.half_height
+    extent = np.maximum(
+        _bead_half_extents(
+            start_axis,
+            width=profile.width,
+            height=profile.height,
+            padding=profile.support_padding,
+        ),
+        _bead_half_extents(
+            end_axis,
+            width=profile.width,
+            height=profile.height,
+            padding=profile.support_padding,
+        ),
+    )
+    support_min = np.minimum(start_center, end_center) - extent
+    support_max = np.maximum(start_center, end_center) + extent
     index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
     if index_bounds is None:
         return None
 
     x_bounds, y_bounds, z_bounds = index_bounds
     xs, ys, zs = domain.grid_centers(index_bounds)
-    z_scale = rx / rz
-    sample_points = np.stack((xs, ys, zs * z_scale), axis=-1)
-    start_scaled = start.copy()
-    end_scaled = end.copy()
-    start_scaled[2] *= z_scale
-    end_scaled[2] *= z_scale
-    distances = point_to_segment_distances(sample_points, start_scaled, end_scaled)
-    r_squared = (distances / rx) ** 2
-    values = compact_quadratic_profile(r_squared)
+    points = np.stack((xs, ys, zs), axis=-1)
+    flat_points = points.reshape(-1, 3)
+    parameters = closest_point_parameters(flat_points, start, end)
+    closest_targets = start + parameters[:, np.newaxis] * (end - start)
+    axis_raw = (1.0 - parameters)[:, np.newaxis] * start_axis + parameters[:, np.newaxis] * end_axis
+    axis_norms = np.linalg.norm(axis_raw, axis=1, keepdims=True)
+    axes = axis_raw / np.clip(axis_norms, 1e-12, None)
+    signed_distance = rounded_cylinder_signed_distance(
+        flat_points,
+        target=closest_targets,
+        axis=axes,
+        profile=profile,
+    ).reshape(xs.shape)
+    values = density_from_signed_distance(signed_distance, profile.transition_width)
     return SampledKernel(
         slices=(
             slice(*x_bounds),
