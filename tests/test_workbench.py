@@ -10,7 +10,7 @@ if os.environ.get("DDS_RUN_VIZ_TESTS") != "1":
 pyvistaqt = pytest.importorskip("pyvistaqt")
 pytest.importorskip("PySide6")
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator  # noqa: E402
+from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator, WorkbenchViewConfig  # noqa: E402
 from dds.workbench import SimulationWorkbench  # noqa: E402
 
 
@@ -150,40 +150,61 @@ def test_mode_specific_controls_and_pick_payload(qtbot: object) -> None:
     workbench.close()
 
 
-def test_density_composition_control_is_density_only(qtbot: object) -> None:
+def test_scalar_field_options_match_representation(qtbot: object) -> None:
     simulator = make_simulator()
     result = simulator.result(compositions=("max", "sum"))
     workbench = SimulationWorkbench(result, off_screen=True)
     qtbot.addWidget(workbench)
 
-    workbench.set_representation("surface")
-    assert not workbench.density_composition_row.isVisible()
-
     workbench.set_representation("occupancy")
-    assert not workbench.density_composition_row.isVisible()
+    occupancy_labels = [workbench.scalar_field_combo.itemText(i) for i in range(workbench.scalar_field_combo.count())]
+    assert occupancy_labels == ["Occupancy", "Deposition Order"]
 
     workbench.set_representation("density")
-    assert workbench.density_composition_row.isVisible()
+    density_labels = [workbench.scalar_field_combo.itemText(i) for i in range(workbench.scalar_field_combo.count())]
+    assert density_labels == ["Density", "Accumulation", "Deposition Order"]
 
     workbench.close()
 
 
-def test_density_composition_switch_changes_active_density_field(qtbot: object) -> None:
+def test_density_field_switch_changes_active_density_field(qtbot: object) -> None:
     simulator = make_simulator()
     result = simulator.result(compositions=("max", "sum"))
-    density_max = result.density_max
     density_sum = result.density_sum
     assert density_sum is not None
     workbench = SimulationWorkbench(result, off_screen=True)
     qtbot.addWidget(workbench)
 
     workbench.set_representation("density")
-    workbench.set_density_composition("max")
+    workbench.set_scalar_field("density")
     max_clim = workbench._density_clim()
-    workbench.set_density_composition("sum")
+    workbench.set_scalar_field("accumulation")
     sum_clim = workbench._density_clim()
-
     np.testing.assert_allclose(workbench._active_density_field(), density_sum)
     assert sum_clim[1] > max_clim[1]
+
+    workbench.close()
+
+
+def test_initial_view_config_applies_without_example_side_mutation(qtbot: object) -> None:
+    simulator = make_simulator()
+    result = simulator.result(compositions=("max", "sum"))
+    workbench = SimulationWorkbench(
+        result,
+        initial_view=WorkbenchViewConfig(
+            view_mode="density",
+            scalar_field="accumulation",
+            build_direction="+Y",
+        ),
+        off_screen=True,
+    )
+    qtbot.addWidget(workbench)
+
+    assert workbench.representation == "density"
+    assert workbench.density_field_name == "accumulation"
+    assert workbench.view_mode_combo.currentData() == "density"
+    assert workbench.scalar_field_combo.currentData() == "accumulation"
+    assert workbench.build_direction_combo.currentData() == "+Y"
+    assert workbench.view_opacity["density"] == pytest.approx(1.0)
 
     workbench.close()

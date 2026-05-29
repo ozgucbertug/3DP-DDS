@@ -13,6 +13,7 @@ from dds import (  # noqa: E402
     Simulator,
     run_cli,
 )
+import dds.viz  # noqa: E402
 from dds.analysis import summarize_layers  # noqa: E402
 from dds.analysis import occupancy_fraction  # noqa: E402
 from dds.io import save_simulation_bundle  # noqa: E402
@@ -54,9 +55,10 @@ def main(args: Args) -> None:
     domain = build_example_domain()
     deposits = build_example_deposits()
     simulator = Simulator(domain, deposits)
+    result = simulator.result(compositions=("max", "sum"), threshold=args.threshold)
 
-    occupancy = simulator.simulate_occupancy(threshold=args.threshold)
-    deposition_index = simulator.simulate_deposition_index()
+    occupancy = result.occupancy(threshold=args.threshold)
+    deposition_index = result.analysis_bundle().deposition_index_field()
 
     print(f"Grid shape: {occupancy.shape}")
     print(f"Occupied voxels: {int(occupancy.sum())}")
@@ -76,12 +78,11 @@ def main(args: Args) -> None:
             print(f"Saved {label}: {path}")
 
     if args.view:
-        from dds import SimulationWorkbench
-
-        workbench = SimulationWorkbench(simulator, threshold=args.threshold, off_screen=False)
-        workbench.set_representation(args.view_mode)
-        workbench.show()
-        workbench.app.exec()
+        dds.viz.show(
+            result,
+            view_mode=args.view_mode,
+            off_screen=False,
+        ).app.exec()
 
 
 if __name__ == "__main__":

@@ -11,10 +11,7 @@ from dds import (
     PointDeposit,
     SimulationResult,
     Simulator,
-    sample_field,
     simulate,
-    simulate_deposition_index,
-    simulate_occupancy,
 )
 
 
@@ -52,7 +49,7 @@ def test_coordinate_conversion_round_trip_for_voxel_centers() -> None:
 def test_point_deposit_contributes_locally() -> None:
     domain = make_domain()
     deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
-    density = sample_field(domain, [deposit], field="density")
+    density = Simulator(domain, [deposit]).sample_field(field="density")
 
     assert density[2, 2, 2] > 0.0
     assert density[0, 0, 0] == pytest.approx(0.0)
@@ -61,7 +58,7 @@ def test_point_deposit_contributes_locally() -> None:
 def test_point_deposit_target_marks_the_top_of_the_bead() -> None:
     domain = make_domain()
     deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
-    density = sample_field(domain, [deposit], field="density")
+    density = Simulator(domain, [deposit]).sample_field(field="density")
 
     assert density[2, 2, 2] > density[2, 2, 3]
     assert density[2, 2, 3] == pytest.approx(0.5)
@@ -70,7 +67,7 @@ def test_point_deposit_target_marks_the_top_of_the_bead() -> None:
 def test_point_deposit_uses_rounded_bead_geometry_not_ellipsoidal_falloff() -> None:
     domain = make_domain()
     deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=4.0, height=2.0), metadata=make_metadata())
-    occupancy = simulate_occupancy(domain, [deposit], threshold=0.5)
+    occupancy = Simulator(domain, [deposit]).simulate_occupancy(threshold=0.5)
 
     assert occupancy[2, 2, 2]
     assert occupancy[3, 2, 3]
@@ -85,7 +82,7 @@ def test_line_deposit_produces_continuous_occupied_region() -> None:
         profile=make_profile(),
         metadata=make_metadata(),
     )
-    occupancy = simulate_occupancy(domain, [deposit], threshold=0.25)
+    occupancy = Simulator(domain, [deposit]).simulate_occupancy(threshold=0.25)
 
     assert all(bool(occupancy[x, 2, 2]) for x in range(1, 7))
 
@@ -93,18 +90,21 @@ def test_line_deposit_produces_continuous_occupied_region() -> None:
 def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
     domain = make_domain()
     deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
-    single = simulate_deposition_index(domain, [deposit])
-    overlap = simulate_deposition_index(domain, [deposit, deposit])
+    single = Simulator(domain, [deposit]).simulate_deposition_index()
+    overlap = Simulator(domain, [deposit, deposit]).simulate_deposition_index()
 
-    assert overlap.max() == pytest.approx(single.max() * 2.0)
+    # single deposit → index 0 for touched voxels, -1 for untouched
+    assert int(single.max()) == 0
+    # two deposits (same position) → last index is 1 for touched voxels
+    assert int(overlap.max()) == 1
 
 
 def test_thresholding_changes_occupied_voxel_count() -> None:
     domain = make_domain()
     deposit = PointDeposit(x=2.5, y=2.5, z=4.0, profile=make_profile(width=3.0, height=3.0), metadata=make_metadata())
 
-    low_threshold = simulate_occupancy(domain, [deposit], threshold=0.1)
-    high_threshold = simulate_occupancy(domain, [deposit], threshold=0.8)
+    low_threshold = Simulator(domain, [deposit]).simulate_occupancy(threshold=0.1)
+    high_threshold = Simulator(domain, [deposit]).simulate_occupancy(threshold=0.8)
 
     assert int(low_threshold.sum()) >= int(high_threshold.sum())
 
@@ -119,10 +119,10 @@ def test_deposits_outside_bounds_are_skipped_and_partial_overlap_is_kept() -> No
         metadata=make_metadata(),
     )
 
-    outside_density = simulate_deposition_index(domain, [outside])
-    partial_occupancy = simulate_occupancy(domain, [partial], threshold=0.25)
+    outside_density = Simulator(domain, [outside]).simulate_deposition_index()
+    partial_occupancy = Simulator(domain, [partial]).simulate_occupancy(threshold=0.25)
 
-    assert np.count_nonzero(outside_density) == 0
+    assert np.all(outside_density == -1), "deposit outside bounds should leave all voxels untouched (-1)"
     assert partial_occupancy[0, 2, 2]
     assert partial_occupancy[2, 2, 2]
 
@@ -134,8 +134,8 @@ def test_zero_length_line_matches_point_deposit() -> None:
     point = PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata)
     zero_length_line = LineDeposit(start=(2.5, 2.5, 3.5), end=(2.5, 2.5, 3.5), profile=profile, metadata=metadata)
 
-    point_field = simulate_deposition_index(domain, [point])
-    line_field = simulate_deposition_index(domain, [zero_length_line])
+    point_field = Simulator(domain, [point]).simulate_deposition_index()
+    line_field = Simulator(domain, [zero_length_line]).simulate_deposition_index()
 
     np.testing.assert_allclose(point_field, line_field)
 
@@ -146,9 +146,9 @@ def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
     simulator = Simulator(domain, [deposit])
 
     assert simulator.is_occupied((2.5, 2.5, 2.5), threshold=0.5)
-    assert simulator.query_deposition_index((2.5, 2.5, 2.5)) > 0.0
+    assert simulator.query_deposition_index((2.5, 2.5, 2.5)) == pytest.approx(0.0)  # first deposit → index 0
     assert simulator.is_occupied((-1.0, -1.0, -1.0)) is False
-    assert simulator.query_deposition_index((-1.0, -1.0, -1.0)) == pytest.approx(0.0)
+    assert simulator.query_deposition_index((-1.0, -1.0, -1.0)) == pytest.approx(-1.0)  # outside domain → -1
 
 
 def test_simulate_returns_rich_result_with_max_based_geometry() -> None:

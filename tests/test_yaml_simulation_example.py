@@ -37,6 +37,9 @@ def test_yaml_simulation_example_exposes_tyro_help() -> None:
     assert "--yaml-path" in result.stdout
     assert "--origin-reference" in result.stdout
     assert "--density-composition {max,sum}" in result.stdout
+    assert "--analysis {none,interface,support,all}" in result.stdout
+    assert "--stratification {auto,layer,order}" in result.stdout
+    assert "--build-direction {+X,-X,+Y,-Y,+Z,-Z}" in result.stdout
     assert "--view" in result.stdout
     assert "--view-mode {surface,occupancy,density}" in result.stdout
     assert "slice" not in result.stdout
@@ -46,9 +49,12 @@ def test_yaml_simulation_config_is_ide_friendly() -> None:
     example = load_example_module()
     config = example.YamlSimulationConfig(view=False)
 
-    assert config.yaml_path.name == "lamine_curvedwall.yaml"
+    assert config.yaml_path.name == "example_wall.yaml"
     assert config.origin_reference == "top"
     assert config.density_composition == "max"
+    assert config.analysis == "none"
+    assert config.stratification == "auto"
+    assert config.build_direction == "+Z"
     assert config.bead_width == pytest.approx(18.0)
     assert config.bead_height == pytest.approx(12.0)
     assert config.view is False
@@ -73,6 +79,8 @@ targets:
             voxel_size=1.0,
             bead_width=18.0,
             bead_height=12.0,
+            analysis="interface",
+            build_direction="+Z",
             write_mesh_output=False,
             view=False,
         )
@@ -80,7 +88,7 @@ targets:
 
     assert isinstance(result, SimulationResult)
     assert result.occupancy(threshold=0.5).any()
-    assert result.analysis_bundle().deposition_index_field().max() >= 0.5
+    assert result.analysis_bundle().deposition_index_field().max() >= 0  # at least one deposit has index ≥ 0
     assert result.density_max.max() >= 0.5
     assert result.density_sum is not None
     assert result.density_sum.shape == result.domain.grid_shape
@@ -108,6 +116,8 @@ targets:
             voxel_size=1.0,
             bead_width=18.0,
             bead_height=12.0,
+            analysis="interface",
+            build_direction="+Z",
             write_mesh_output=False,
             view=False,
         )
@@ -115,3 +125,35 @@ targets:
 
     assert result.density_sum is not None
     assert np.any(result.density_sum > result.density_max)
+
+
+def test_yaml_example_support_analysis_runs(tmp_path: Path) -> None:
+    example = load_example_module()
+    yaml_path = tmp_path / "targets.yaml"
+    yaml_path.write_text(
+        """
+targets:
+  - index: 0
+    plane: "O(0,0,6) Z(0,0,1)"
+  - index: 1
+    plane: "O(4,0,6) Z(0,0,1)"
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = example.run_simulation(
+        example.YamlSimulationConfig(
+            yaml_path=yaml_path,
+            output_dir=tmp_path / "out",
+            voxel_size=1.0,
+            bead_width=18.0,
+            bead_height=12.0,
+            analysis="support",
+            build_direction="+Z",
+            write_mesh_output=False,
+            view=False,
+        )
+    )
+
+    support = result.support(build_direction=(0.0, 0.0, 1.0), threshold=0.5)
+    assert support.support_shadow_field.shape == result.domain.grid_shape

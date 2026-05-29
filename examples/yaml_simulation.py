@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from dds import BeadProfile, DepositionMetadata, Domain, SimulationResult, run_cli, simulate
+from dds import BeadProfile, DepositionMetadata, Domain, SimulationResult, Simulator, run_cli
+import dds.viz
 from dds.analysis import occupancy_fraction
 from dds.formats.yaml import load_targets
 from dds.targets import point_deposits_from_targets
@@ -16,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 class YamlSimulationConfig:
     """Configuration for running a target-driven YAML deposition simulation."""
 
-    yaml_path: Path = ROOT / "lamine_curvedwall.yaml"
-    output_dir: Path = ROOT / "outputs" / "yaml_lamine_curvedwall"
+    yaml_path: Path = ROOT / "example_wall.yaml"
+    output_dir: Path = ROOT / "outputs" / "yaml_example_wall"
     voxel_size: float = 1.0
     bead_width: float = 18.0
     bead_height: float = 12.0
@@ -25,6 +26,9 @@ class YamlSimulationConfig:
     padding: float | None = None
     origin_reference: Literal["top", "center"] = "top"
     density_composition: Literal["max", "sum"] = "max"
+    analysis: Literal["none", "interface", "support", "all"] = "none"
+    stratification: Literal["auto", "layer", "order"] = "auto"
+    build_direction: Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"] = "+Z"
     write_mesh_output: bool = True
     mesh_step_size: int = 1
     view: bool = False
@@ -49,12 +53,8 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         voxel_size=config.voxel_size,
         padding="auto" if config.padding is None else config.padding,
     )
-    result = simulate(
-        domain,
-        deposits,
-        compositions=("max", "sum"),
-        threshold=config.threshold,
-    )
+    simulator = Simulator(domain, deposits)
+    result = simulator.result(compositions=("max", "sum"), threshold=config.threshold)
 
     occupancy = result.occupancy(threshold=config.threshold)
     deposition_index = result.analysis_bundle().deposition_index_field()
@@ -71,6 +71,33 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
     print(f"Max envelope density: {float(result.density_max.max()):.4f}")
     if result.density_sum is not None:
         print(f"Max accumulation density: {float(result.density_sum.max()):.4f}")
+
+    if config.analysis in {"interface", "all"}:
+        interface_analysis = result.interface(mode=config.stratification, threshold=config.threshold)
+        print(f"Interface stratification: {interface_analysis.stratification_mode}")
+        print(f"Interface strata: {interface_analysis.stratum_ids}")
+        print(f"Contact area: {interface_analysis.contact_area:.4f}")
+        print(f"Contact face count: {interface_analysis.contact_face_count}")
+        print(f"Overlap voxels: {interface_analysis.overlap_voxel_count}")
+        print(f"Overlap fraction: {interface_analysis.overlap_fraction:.4f}")
+        print(f"Unsupported next voxels: {int(interface_analysis.unsupported_next_mask.sum())}")
+
+    if config.analysis in {"support", "all"}:
+        build_direction = {
+            "+X": (1.0, 0.0, 0.0),
+            "-X": (-1.0, 0.0, 0.0),
+            "+Y": (0.0, 1.0, 0.0),
+            "-Y": (0.0, -1.0, 0.0),
+            "+Z": (0.0, 0.0, 1.0),
+            "-Z": (0.0, 0.0, -1.0),
+        }[config.build_direction]
+        support_analysis = result.support(build_direction=build_direction, threshold=config.threshold)
+        print(f"Support build direction: {config.build_direction}")
+        print(f"Downfacing area: {support_analysis.downfacing_area:.4f}")
+        print(f"Risk area: {support_analysis.risk_area:.4f}")
+        print(f"Shadow voxels: {support_analysis.shadow_voxel_count}")
+        print(f"Shadow volume: {support_analysis.shadow_volume:.4f}")
+        print(f"Max unsupported span: {support_analysis.max_unsupported_span:.4f}")
 
     # written = result.save(
     #     config.output_dir,
@@ -91,9 +118,23 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
     #     write_mesh(config.output_dir / "surface_mesh.ply", mesh)
 
     if config.view:
-        workbench = result.show(view_mode=config.view_mode, off_screen=False)
+        initial_scalar_field = None
+        initial_color_mode = None
         if config.view_mode == "density":
-            workbench.set_density_composition(config.density_composition)
+            if config.analysis in {"interface", "all"} or config.density_composition == "sum":
+                initial_scalar_field = "accumulation"
+            else:
+                initial_scalar_field = "density"
+        elif config.view_mode == "occupancy":
+            initial_scalar_field = "occupancy"
+        elif config.view_mode == "surface" and config.analysis in {"support", "all"}:
+            initial_color_mode = "overhang"
+
+        workbench = dds.viz.show(
+            result,
+            view_mode=config.view_mode,
+            off_screen=False,
+        )
         workbench.app.exec()
 
     return result
