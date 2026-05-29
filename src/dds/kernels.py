@@ -12,6 +12,7 @@ from .domain import Domain
 from .primitives import (
     LineDeposit,
     PointDeposit,
+    SDFDeposit,
     _bead_half_extents,
     _point_target_support_bounds,
 )
@@ -45,7 +46,15 @@ def resolve_bead_profile(
 ) -> ResolvedBeadProfile:
     """Resolve bead geometry and transition width from metadata and domain defaults."""
 
+    import warnings
     default_width = min(domain.voxel_size)
+    if profile is None:
+        warnings.warn(
+            "No BeadProfile supplied; falling back to a default profile derived from the domain voxel size. "
+            "This may produce unexpected geometry. Use BeadProfile.default(voxel_size) to create an explicit profile.",
+            UserWarning,
+            stacklevel=3,
+        )
     width = profile.width if profile is not None else default_width
     height = profile.height if profile is not None else width
     if width <= 0.0 or height <= 0.0:
@@ -206,9 +215,36 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
     )
 
 
+def sample_sdf_kernel(domain: Domain, deposit: SDFDeposit) -> SampledKernel | None:
+    """Sample an SDF-defined deposit kernel on the local grid window."""
+
+    support_min = deposit.bounds_min.to_array()
+    support_max = deposit.bounds_max.to_array()
+    index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
+    if index_bounds is None:
+        return None
+
+    x_bounds, y_bounds, z_bounds = index_bounds
+    xs, ys, zs = domain.grid_centers(index_bounds)
+    points = np.stack((xs, ys, zs), axis=-1)
+    flat_points = points.reshape(-1, 3)
+
+    sdf_values = np.asarray(deposit.sdf(flat_points), dtype=float).reshape(xs.shape)
+    transition_width = deposit.transition_width if deposit.transition_width is not None else min(domain.voxel_size)
+    values = density_from_signed_distance(sdf_values, transition_width)
+    return SampledKernel(
+        slices=(
+            slice(*x_bounds),
+            slice(*y_bounds),
+            slice(*z_bounds),
+        ),
+        values=values.astype(float, copy=False),
+    )
+
+
 def sample_deposit_kernel(
     domain: Domain,
-    deposit: PointDeposit | LineDeposit,
+    deposit: PointDeposit | LineDeposit | SDFDeposit,
 ) -> SampledKernel | None:
     """Dispatch kernel sampling based on deposit type."""
 
@@ -216,4 +252,6 @@ def sample_deposit_kernel(
         return sample_point_kernel(domain, deposit)
     if isinstance(deposit, LineDeposit):
         return sample_line_kernel(domain, deposit)
+    if isinstance(deposit, SDFDeposit):
+        return sample_sdf_kernel(domain, deposit)
     raise TypeError("Unsupported deposit type.")

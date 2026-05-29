@@ -3,19 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import deposition_index_from_density, normalize_field
+from .analysis import normalize_field
 from .domain import Domain
 from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
 from .primitives import DepositInput, LineDeposit, PointDeposit, iter_deposits
-
-FieldName = Literal["density", "occupancy", "deposition_index"]
-DensityComposition = Literal["max", "sum"]
+from .types import DensityComposition, FieldName
 
 
 def accumulate_density_fields(
@@ -59,6 +56,26 @@ def accumulate_density(
     return accumulate_density_fields(domain, deposits, compositions=(composition,))[composition]
 
 
+def accumulate_deposition_index(
+    domain: Domain,
+    deposits: Iterable[DepositInput] | DepositInput,
+) -> npt.NDArray[np.intp]:
+    """Return a grid recording the 0-based index of the last deposit touching each voxel.
+
+    Voxels untouched by any deposit are set to -1.
+    Last-writer wins: where multiple deposits overlap, the later one's index is stored.
+    """
+
+    index_field = np.full(domain.grid_shape, -1, dtype=np.intp)
+    for deposit_index, deposit in enumerate(iter_deposits(deposits)):
+        sampled = sample_deposit_kernel(domain, deposit)
+        if sampled is None:
+            continue
+        touched = sampled.values > 0.0
+        index_field[sampled.slices][touched] = deposit_index
+    return index_field
+
+
 def sample_field(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
@@ -73,7 +90,7 @@ def sample_field(
     if field == "density":
         return normalize_field(density) if normalize else density
     if field == "deposition_index":
-        return deposition_index_from_density(density, normalize=normalize)
+        return accumulate_deposition_index(domain, deposits).astype(float, copy=False)
     if field == "occupancy":
         base = normalize_field(density) if normalize else density
         return occupancy_from_density(base, threshold=threshold)

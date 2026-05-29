@@ -19,6 +19,26 @@ class BeadProfile:
         if self.height <= 0.0:
             raise ValueError("BeadProfile.height must be positive.")
 
+    @classmethod
+    def default(cls, voxel_size: float = 1.0) -> "BeadProfile":
+        """Return a sensible default bead profile sized to the given voxel resolution.
+
+        The default bead is a 2-voxel wide, 1-voxel tall rounded cylinder.
+        This is a convenience for quick experimentation — production toolpaths
+        should always supply explicit profiles.
+
+        Parameters
+        ----------
+        voxel_size:
+            Edge length of a single voxel in world units (default 1.0).
+            Width and height are set to ``2 * voxel_size`` and ``voxel_size``.
+        """
+
+        voxel = float(voxel_size)
+        if voxel <= 0.0:
+            raise ValueError("voxel_size must be positive.")
+        return cls(width=2.0 * voxel, height=voxel)
+
     def to_dict(self) -> dict[str, Any]:
         """Return an export-friendly dictionary representation."""
 
