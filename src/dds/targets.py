@@ -10,21 +10,9 @@ import numpy as np
 
 from .attributes import BeadProfile, DepositionMetadata
 from .primitives import DEFAULT_Z_AXIS, LineDeposit, PointDeposit, ToolpathDepositSequence
-from .utils import ensure_finite_triplet
+from .utils import ensure_finite_triplet, normalize_axis
 
 OriginReference = Literal["top", "center"]
-
-
-def _normalize_axis(
-    value: Sequence[float] | tuple[float, float, float],
-    *,
-    name: str,
-) -> tuple[float, float, float]:
-    axis = np.asarray(ensure_finite_triplet(value, name), dtype=float)
-    norm = float(np.linalg.norm(axis))
-    if norm == 0.0:
-        raise ValueError(f"{name} must not be the zero vector.")
-    return tuple(float(component) for component in axis / norm)
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,7 +25,7 @@ class TargetPoint:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "origin", ensure_finite_triplet(self.origin, "TargetPoint.origin"))
-        object.__setattr__(self, "z_axis", _normalize_axis(self.z_axis, name="TargetPoint.z_axis"))
+        object.__setattr__(self, "z_axis", normalize_axis(self.z_axis, name="TargetPoint.z_axis"))
 
 
 def target_point_from_origin(
@@ -69,17 +57,20 @@ def point_deposits_from_targets(
     """Convert ordered targets into top-referenced point deposits."""
 
     metadata_value = metadata or DepositionMetadata()
-    return tuple(
-        PointDeposit(
-            x=target_point_from_origin(target, profile=profile, origin_reference=origin_reference)[0],
-            y=target_point_from_origin(target, profile=profile, origin_reference=origin_reference)[1],
-            z=target_point_from_origin(target, profile=profile, origin_reference=origin_reference)[2],
-            profile=profile,
-            metadata=metadata_value,
-            z_axis=target.z_axis,
+    deposits = []
+    for target in targets:
+        pt = target_point_from_origin(target, profile=profile, origin_reference=origin_reference)
+        deposits.append(
+            PointDeposit(
+                x=pt[0],
+                y=pt[1],
+                z=pt[2],
+                profile=profile,
+                metadata=metadata_value,
+                z_axis=target.z_axis,
+            )
         )
-        for target in targets
-    )
+    return tuple(deposits)
 
 
 def line_deposits_from_targets(

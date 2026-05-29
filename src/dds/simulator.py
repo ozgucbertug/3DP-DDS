@@ -8,67 +8,13 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import AnalysisBundle, deposition_index_from_density, normalize_field
+from .analysis import AnalysisBundle, normalize_field
 from .domain import Domain
-from .fields import accumulate_density, sample_field as sample_dense_field
+from .fields import accumulate_density, accumulate_deposition_index, sample_field as sample_dense_field
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
-from .results import DensityComposition, SimulationResult, simulate
-
-
-def sample_field(
-    domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
-    *,
-    field: str = "density",
-    threshold: float = 0.5,
-    normalize: bool = False,
-) -> npt.NDArray[np.float64] | npt.NDArray[np.bool_]:
-    """Public convenience wrapper for dense field sampling."""
-
-    return sample_dense_field(
-        domain,
-        deposits,
-        field=field,
-        threshold=threshold,
-        normalize=normalize,
-    )
-
-
-def simulate_occupancy(
-    domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
-    *,
-    threshold: float = 0.5,
-    normalize: bool = False,
-) -> npt.NDArray[np.bool_]:
-    """Return a dense occupancy grid."""
-
-    result = sample_dense_field(
-        domain,
-        deposits,
-        field="occupancy",
-        threshold=threshold,
-        normalize=normalize,
-    )
-    return result.astype(bool, copy=False)
-
-
-def simulate_deposition_index(
-    domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
-    *,
-    normalize: bool = False,
-) -> npt.NDArray[np.float64]:
-    """Return the v0 deposition index field."""
-
-    result = sample_dense_field(
-        domain,
-        deposits,
-        field="deposition_index",
-        normalize=normalize,
-    )
-    return result.astype(float, copy=False)
+from .results import SimulationResult
+from .types import DensityComposition
 
 
 class Simulator:
@@ -82,7 +28,9 @@ class Simulator:
         self.domain = domain
         self._deposits: list[Deposit] = []
         self._density_cache: npt.NDArray[np.float64] | None = None
+        self._density_max_cache: npt.NDArray[np.float64] | None = None
         self._normalized_density_cache: npt.NDArray[np.float64] | None = None
+        self._deposition_index_cache: npt.NDArray[np.intp] | None = None
         self._analysis_bundle_cache: AnalysisBundle | None = None
         # TODO: replace full-field invalidation with partial updates for streamed toolpaths.
         if deposits is not None:
@@ -96,17 +44,29 @@ class Simulator:
 
     def _invalidate_cache(self) -> None:
         self._density_cache = None
+        self._density_max_cache = None
         self._normalized_density_cache = None
+        self._deposition_index_cache = None
         self._analysis_bundle_cache = None
 
     def _density_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
         if self._density_cache is None:
-            self._density_cache = accumulate_density(self.domain, self._deposits)
+            self._density_cache = accumulate_density(self.domain, self._deposits, composition="sum")
         if not normalize:
             return self._density_cache
         if self._normalized_density_cache is None:
             self._normalized_density_cache = normalize_field(self._density_cache)
         return self._normalized_density_cache
+
+    def _density_max_field(self) -> npt.NDArray[np.float64]:
+        if self._density_max_cache is None:
+            self._density_max_cache = accumulate_density(self.domain, self._deposits, composition="max")
+        return self._density_max_cache
+
+    def _deposition_index_field(self) -> npt.NDArray[np.intp]:
+        if self._deposition_index_cache is None:
+            self._deposition_index_cache = accumulate_deposition_index(self.domain, self._deposits)
+        return self._deposition_index_cache
 
     def add_deposit(self, deposit: DepositInput) -> None:
         """Add one deposit or toolpath sequence."""
@@ -130,7 +90,11 @@ class Simulator:
         """Return a cached AnalysisBundle for the current density field."""
 
         if self._analysis_bundle_cache is None:
-            self._analysis_bundle_cache = AnalysisBundle(self.domain, self._density_field(normalize=False))
+            self._analysis_bundle_cache = AnalysisBundle(
+                self.domain,
+                self._density_field(normalize=False),
+                deposition_index=self._deposition_index_field(),
+            )
         return self._analysis_bundle_cache
 
     def result(
@@ -139,13 +103,16 @@ class Simulator:
         compositions: tuple[DensityComposition, ...] = ("max",),
         threshold: float = 0.5,
     ) -> SimulationResult:
-        """Return a reusable SimulationResult for the current deposits."""
+        """Return a reusable SimulationResult built from cached density fields."""
 
-        return simulate(
-            self.domain,
-            self.deposits,
-            compositions=compositions,
-            threshold=threshold,
+        requested = tuple(dict.fromkeys(compositions))
+        density_sum = self._density_field() if "sum" in requested else None
+        return SimulationResult(
+            domain=self.domain,
+            deposits=tuple(self._deposits),
+            density_max=self._density_max_field(),
+            density_sum=density_sum,
+            default_threshold=threshold,
         )
 
     def sample_field(
@@ -161,7 +128,7 @@ class Simulator:
         if field == "density":
             return density.copy()
         if field == "deposition_index":
-            return deposition_index_from_density(density, normalize=False)
+            return self._deposition_index_field().astype(float, copy=False)
         if field == "occupancy":
             return occupancy_from_density(density, threshold=threshold)
         raise ValueError("field must be 'density', 'occupancy', or 'deposition_index'.")
@@ -178,12 +145,10 @@ class Simulator:
 
     def simulate_deposition_index(
         self,
-        *,
-        normalize: bool = False,
-    ) -> npt.NDArray[np.float64]:
-        """Return a dense deposition index grid for current deposits."""
+    ) -> npt.NDArray[np.intp]:
+        """Return the per-voxel last-deposit-index grid (0-based; -1 = untouched)."""
 
-        return self.sample_field(field="deposition_index", normalize=normalize)
+        return self._deposition_index_field()
 
     def is_occupied(
         self,
@@ -199,12 +164,10 @@ class Simulator:
     def query_deposition_index(
         self,
         point: tuple[float, float, float],
-        *,
-        normalize: bool = False,
     ) -> float:
-        """Query the deposition index at a point using nearest-grid lookup."""
+        """Query the per-voxel last-deposit index at a point (0-based; -1 = untouched)."""
 
-        return self.sample_deposition_index_at(point, normalize=normalize)
+        return self.sample_deposition_index_at(point)
 
     def contains_point(
         self,
@@ -247,14 +210,12 @@ class Simulator:
         point: tuple[float, float, float],
         *,
         interpolation: str = "nearest",
-        normalize: bool = False,
     ) -> float:
-        """Sample deposition index at a world-space point."""
+        """Sample deposition index at a world-space point (0-based; -1 = untouched)."""
 
         return self.analysis_bundle().sample_deposition_index_at(
             point,
             interpolation=interpolation,
-            normalize=normalize,
         )
 
     def signed_distance_at(

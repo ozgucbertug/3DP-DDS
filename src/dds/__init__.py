@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING, Any
 
-from . import formats, geometry, targets
+from . import formats, geometry, targets, viz
 from .attributes import BeadProfile, DepositionMetadata
 from .cli import run_cli
 from .domain import Domain
@@ -12,11 +12,12 @@ from .primitives import (
     Point3D,
     PointDeposit,
     Polyline3D,
+    SDFDeposit,
     ToolpathDepositSequence,
 )
-from .results import SimulationResult, simulate
+from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
-from .simulator import Simulator, sample_field, simulate_deposition_index, simulate_occupancy
+from .simulator import Simulator
 
 if TYPE_CHECKING:
     from .workbench import SimulationWorkbench
@@ -31,19 +32,19 @@ __all__ = [
     "Point3D",
     "PointDeposit",
     "Polyline3D",
+    "SDFDeposit",
     "SimulationWorkbench",
     "SimulationResult",
     "Simulator",
     "ToolpathDepositSequence",
+    "WorkbenchViewConfig",
     "analysis_bundle",
     "formats",
     "geometry",
     "run_cli",
     "simulate",
-    "sample_field",
-    "simulate_deposition_index",
-    "simulate_occupancy",
     "targets",
+    "viz",
 ]
 
 __version__ = "0.1.0"
