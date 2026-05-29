@@ -310,56 +310,6 @@ _LeafDeposit: TypeAlias = PointDeposit | LineDeposit
 
 
 @dataclass(frozen=True, slots=True)
-class SDFDeposit:
-    """A material deposition volume defined by an arbitrary signed-distance function.
-
-    The SDF follows the sign convention ``negative inside, positive outside``.
-    The isosurface at ``sdf == 0`` is the nominal material boundary; density is
-    mapped from the SDF using the same ``density_from_signed_distance`` kernel
-    used for bead deposits, so the ``transition_width`` controls the blend width
-    around the boundary.
-
-    Parameters
-    ----------
-    sdf:
-        An :class:`~dds.geometry.sdf.SDF3` instance or any callable that accepts
-        an ``(n, 3)`` float array of world-space points and returns ``n`` signed
-        distances.
-    bounds_min:
-        Lower corner of the axis-aligned bounding box in world coordinates.
-        The kernel only evaluates the SDF inside this box.
-    bounds_max:
-        Upper corner of the axis-aligned bounding box.
-    transition_width:
-        Width of the density blend band around the SDF zero isosurface, in the
-        same world units as the domain. Defaults to the domain's minimum voxel
-        size when ``None``.
-    metadata:
-        Optional deposition metadata.
-    """
-
-    sdf: object  # SDF3 | SDFCallable — typed as object to avoid circular import
-    bounds_min: Point3D
-    bounds_max: Point3D
-    transition_width: float | None = None
-    metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
-    profile: BeadProfile | None = None  # unused, kept for protocol compatibility
-
-    def __post_init__(self) -> None:
-        if not callable(self.sdf):
-            raise TypeError("SDFDeposit.sdf must be callable.")
-        object.__setattr__(self, "bounds_min", Point3D.from_value(self.bounds_min))
-        object.__setattr__(self, "bounds_max", Point3D.from_value(self.bounds_max))
-        if self.transition_width is not None and self.transition_width <= 0.0:
-            raise ValueError("SDFDeposit.transition_width must be positive when specified.")
-
-    def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return the deposit bounding box."""
-
-        return self.bounds_min, self.bounds_max
-
-
-@dataclass(frozen=True, slots=True)
 class ToolpathDepositSequence:
     """An ordered sequence of deposition events from a toolpath."""
 
@@ -415,7 +365,7 @@ class ToolpathDepositSequence:
         return iter(self.deposits)
 
 
-Deposit: TypeAlias = PointDeposit | LineDeposit | SDFDeposit
+Deposit: TypeAlias = PointDeposit | LineDeposit
 
 DepositInput: TypeAlias = Deposit | ToolpathDepositSequence
 
@@ -426,16 +376,16 @@ def iter_deposits(deposits: Iterable[DepositInput] | DepositInput) -> Iterator[D
     if isinstance(deposits, ToolpathDepositSequence):
         yield from deposits.deposits
         return
-    if isinstance(deposits, (PointDeposit, LineDeposit, SDFDeposit)):
+    if isinstance(deposits, (PointDeposit, LineDeposit)):
         yield deposits
         return
 
     for item in deposits:
         if isinstance(item, ToolpathDepositSequence):
             yield from item.deposits
-        elif isinstance(item, (PointDeposit, LineDeposit, SDFDeposit)):
+        elif isinstance(item, (PointDeposit, LineDeposit)):
             yield item
         else:
             raise TypeError(
-                "Deposits must be PointDeposit, LineDeposit, SDFDeposit, or ToolpathDepositSequence instances."
+                "Deposits must be PointDeposit, LineDeposit, or ToolpathDepositSequence instances."
             )

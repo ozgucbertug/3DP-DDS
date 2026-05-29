@@ -12,7 +12,6 @@ from .primitives import (
     Point3D,
     PointDeposit,
     Polyline3D,
-    SDFDeposit,
     ToolpathDepositSequence,
 )
 from .results import SimulationResult, WorkbenchViewConfig, simulate
@@ -32,7 +31,6 @@ __all__ = [
     "Point3D",
     "PointDeposit",
     "Polyline3D",
-    "SDFDeposit",
     "SimulationWorkbench",
     "SimulationResult",
     "Simulator",
