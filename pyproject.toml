@@ -9,9 +9,8 @@ description = "Dense Deposition Simulator"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "meshio>=5.3",
     "numpy>=1.26",
-    "scikit-image>=0.23",
+    "pyyaml>=6.0",
     "scipy>=1.10",
     "trimesh>=4.0",
     "tyro>=0.8",
@@ -19,6 +18,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "pytest-qt>=4.4"]
+mesh = [
+    "meshio>=5.3",
+    "scikit-image>=0.23",
+]
 viz = [
     "PySide6>=6.7",
     "pyvista>=0.43",
