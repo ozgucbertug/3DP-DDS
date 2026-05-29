@@ -10,13 +10,34 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import AnalysisBundle
+from .analysis import (
+    AnalysisBundle,
+    InterfaceAnalysis,
+    StratumFieldSet,
+    SupportAnalysis,
+    interface as build_interface,
+    strata as build_strata,
+    support as build_support,
+)
 from .fields import accumulate_density_fields
 from .io import save_array, save_simulation_bundle
 from .primitives import Deposit, DepositInput, iter_deposits
 from .domain import Domain
+from .types import DensityComposition
 
-DensityComposition = Literal["max", "sum"]
+ViewMode = Literal["surface", "occupancy", "density"]
+ViewColorMode = Literal["plain", "normals", "overhang"]
+ViewScalarField = Literal["occupancy", "density", "accumulation", "deposition_order"]
+
+
+@dataclass(slots=True, frozen=True)
+class WorkbenchViewConfig:
+    """Initial viewer state for SimulationWorkbench / SimulationResult.show()."""
+
+    view_mode: ViewMode = "surface"
+    scalar_field: ViewScalarField | None = None
+    color_mode: ViewColorMode | None = None
+    build_direction: str | tuple[float, float, float] = "+Z"
 
 
 def _normalize_compositions(compositions: Sequence[DensityComposition]) -> tuple[DensityComposition, ...]:
@@ -39,6 +60,14 @@ class SimulationResult:
     density_sum: npt.NDArray[np.float64] | None = None
     default_threshold: float = 0.5
     _analysis_bundle_cache: AnalysisBundle | None = field(default=None, init=False, repr=False)
+    _deposition_index_cache: npt.NDArray[np.intp] | None = field(default=None, init=False, repr=False)
+    _strata_cache: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict, init=False, repr=False)
+    _interface_cache: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict, init=False, repr=False)
+    _support_cache: dict[tuple[tuple[float, float, float], float, float], SupportAnalysis] = field(
+        default_factory=dict,
+        init=False,
+        repr=False,
+    )
 
     def __post_init__(self) -> None:
         self.deposits = tuple(self.deposits)
@@ -55,12 +84,95 @@ class SimulationResult:
                 )
         self.default_threshold = float(self.default_threshold)
 
+    def _deposition_index_field(self) -> npt.NDArray[np.intp]:
+        if self._deposition_index_cache is None:
+            from .fields import accumulate_deposition_index
+            self._deposition_index_cache = accumulate_deposition_index(self.domain, self.deposits)
+        return self._deposition_index_cache
+
     def analysis_bundle(self) -> AnalysisBundle:
         """Return the canonical analysis bundle derived from density_max."""
 
         if self._analysis_bundle_cache is None:
-            self._analysis_bundle_cache = AnalysisBundle(self.domain, self.density_max)
+            self._analysis_bundle_cache = AnalysisBundle(
+                self.domain,
+                self.density_max,
+                deposition_index=self._deposition_index_field(),
+            )
         return self._analysis_bundle_cache
+
+    def layer_ids(self) -> tuple[int, ...]:
+        """Return sorted explicit layer IDs when deposits provide them."""
+
+        values = sorted({deposit.metadata.layer_id for deposit in self.deposits if deposit.metadata.layer_id is not None})
+        return tuple(int(value) for value in values)
+
+    def strata(
+        self,
+        *,
+        mode: Literal["auto", "layer", "order"] = "auto",
+        threshold: float | None = None,
+    ) -> StratumFieldSet:
+        """Return max-density and occupancy fields partitioned by layer or deposit order."""
+
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = (str(mode), threshold_value)
+        cached = self._strata_cache.get(key)
+        if cached is None:
+            cached = build_strata(self, mode=mode, threshold=threshold_value)
+            self._strata_cache[key] = cached
+        return cached
+
+    def layer_density(self, layer_id: int, *, threshold: float | None = None) -> npt.NDArray[np.float64]:
+        """Return the max-density field for one explicit layer."""
+
+        field_set = self.strata(mode="layer", threshold=threshold)
+        return field_set.density(layer_id)
+
+    def layer_occupancy(self, layer_id: int, *, threshold: float | None = None) -> npt.NDArray[np.bool_]:
+        """Return the occupancy field for one explicit layer."""
+
+        field_set = self.strata(mode="layer", threshold=threshold)
+        return field_set.occupancy(layer_id)
+
+    def interface(
+        self,
+        *,
+        mode: Literal["auto", "layer", "order"] = "auto",
+        threshold: float | None = None,
+    ) -> InterfaceAnalysis:
+        """Return aggregate contact and overlap metrics across consecutive strata."""
+
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = (str(mode), threshold_value)
+        cached = self._interface_cache.get(key)
+        if cached is None:
+            cached = build_interface(self, mode=mode, threshold=threshold_value)
+            self._interface_cache[key] = cached
+        return cached
+
+    def support(
+        self,
+        *,
+        build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+        critical_angle_deg: float = 45.0,
+        threshold: float | None = None,
+    ) -> SupportAnalysis:
+        """Return mesh-first support and overhang metrics for the max-based geometry."""
+
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        build_dir = tuple(float(value) for value in np.asarray(build_direction, dtype=float).reshape(3))
+        key = (build_dir, float(critical_angle_deg), threshold_value)
+        cached = self._support_cache.get(key)
+        if cached is None:
+            cached = build_support(
+                self,
+                build_direction=build_dir,
+                critical_angle_deg=critical_angle_deg,
+                threshold=threshold_value,
+            )
+            self._support_cache[key] = cached
+        return cached
 
     def density(self, composition: DensityComposition = "max") -> npt.NDArray[np.float64]:
         """Return the requested density composition field."""
@@ -112,21 +224,6 @@ class SimulationResult:
             written["density_sum"] = save_array(Path(directory) / "density_sum.npy", self.density_sum)
         return written
 
-    def show(
-        self,
-        *,
-        view_mode: Literal["surface", "occupancy", "density"] = "surface",
-        off_screen: bool = False,
-    ) -> object:
-        """Open the interactive workbench for this result."""
-
-        from .workbench import SimulationWorkbench
-
-        workbench = SimulationWorkbench(self, threshold=self.default_threshold, off_screen=off_screen)
-        workbench.set_representation(view_mode)
-        workbench.show()
-        return workbench
-
 
 def simulation_result(
     source: SimulationResult | AnalysisBundle | object,
@@ -148,7 +245,10 @@ def simulation_result(
         result._analysis_bundle_cache = source
         return result
     if hasattr(source, "result") and callable(source.result):
-        return source.result(threshold=threshold)
+        try:
+            return source.result(threshold=threshold, compositions=("max", "sum"))
+        except TypeError:
+            return source.result(threshold=threshold)
     if hasattr(source, "analysis_bundle") and callable(source.analysis_bundle):
         bundle = source.analysis_bundle()
         return simulation_result(bundle, threshold=threshold)

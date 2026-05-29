@@ -8,7 +8,7 @@ from typing import Any, Literal
 import numpy as np
 import numpy.typing as npt
 
-from .fields import deposition_index_from_density, normalize_field
+from .fields import normalize_field
 from ..domain import Domain
 from ..occupancy import occupancy_from_density
 from ..utils import EPSILON, ensure_finite_triplet
@@ -74,49 +74,26 @@ def _sample_trilinear(
     *,
     fill_value: float,
 ) -> npt.NDArray[np.float64]:
-    result = np.full(points.shape[0], fill_value, dtype=float)
-    shape = np.asarray(domain.grid_shape, dtype=int)
+    from scipy.ndimage import map_coordinates
+
     min_corner = np.asarray(domain.min_corner, dtype=float)
     spacing = np.asarray(domain.voxel_size, dtype=float)
     first_center = min_corner + 0.5 * spacing
 
-    for index, point in enumerate(points):
-        if not domain.contains_point(point):
-            continue
-        fractional = (point - first_center) / spacing
-        lower = np.floor(fractional).astype(int)
-        weights = fractional - lower
-        upper = lower + 1
+    # Compute fractional voxel coordinates for all points at once.
+    fractional = (points - first_center) / spacing  # (n, 3)
 
-        for axis in range(3):
-            if shape[axis] == 1:
-                lower[axis] = 0
-                upper[axis] = 0
-                weights[axis] = 0.0
-                continue
-            if lower[axis] < 0:
-                lower[axis] = 0
-                upper[axis] = 0
-                weights[axis] = 0.0
-            elif upper[axis] >= shape[axis]:
-                lower[axis] = shape[axis] - 1
-                upper[axis] = shape[axis] - 1
-                weights[axis] = 0.0
+    # Points outside the domain get fill_value via mode='constant'.
+    # map_coordinates expects coordinates as (ndim, n).
+    coords = fractional.T  # (3, n)
+    sampled = map_coordinates(values, coords, order=1, mode="constant", cval=fill_value)
 
-        accum = 0.0
-        for x_bit in (0, 1):
-            x_index = upper[0] if x_bit else lower[0]
-            x_weight = weights[0] if x_bit else 1.0 - weights[0]
-            for y_bit in (0, 1):
-                y_index = upper[1] if y_bit else lower[1]
-                y_weight = weights[1] if y_bit else 1.0 - weights[1]
-                for z_bit in (0, 1):
-                    z_index = upper[2] if z_bit else lower[2]
-                    z_weight = weights[2] if z_bit else 1.0 - weights[2]
-                    accum += float(values[x_index, y_index, z_index]) * x_weight * y_weight * z_weight
-        result[index] = accum
-
-    return result
+    # Re-apply fill_value to points strictly outside the domain bounds (map_coordinates
+    # clamps by default with mode='constant', so this is already handled, but we also
+    # zero-out points that domain.contains_point rejects for consistency with _sample_nearest).
+    outside = np.array([not domain.contains_point(pt) for pt in points])
+    sampled[outside] = fill_value
+    return sampled.astype(float)
 
 
 def _sample_scalar_field(
@@ -148,6 +125,7 @@ class AnalysisBundle:
 
     domain: Domain
     density: npt.NDArray[np.float64]
+    deposition_index: npt.NDArray[np.intp] | None = None
     _normalized_density: npt.NDArray[np.float64] | None = None
     _occupancy_cache: dict[tuple[float, bool], npt.NDArray[np.bool_]] = field(default_factory=dict)
     _surface_mesh_cache: dict[tuple[float, bool, int], Any] = field(default_factory=dict)
@@ -171,8 +149,19 @@ class AnalysisBundle:
             self._normalized_density = normalize_field(self.density)
         return self._normalized_density
 
-    def deposition_index_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
-        return deposition_index_from_density(self.density_field(normalize=normalize), normalize=False)
+    def deposition_index_field(self) -> npt.NDArray[np.intp]:
+        """Return the per-voxel last-deposit-index grid (0-based; -1 = untouched).
+
+        Requires the bundle to have been created with a ``deposition_index`` array.
+        Raises ``ValueError`` when no index is available.
+        """
+        if self.deposition_index is None:
+            raise ValueError(
+                "No deposition index available on this AnalysisBundle. "
+                "Create the bundle via Simulator.analysis_bundle() or "
+                "SimulationResult.analysis_bundle() to populate it."
+            )
+        return self.deposition_index
 
     def occupancy_field(
         self,
@@ -267,15 +256,15 @@ class AnalysisBundle:
         point: tuple[float, float, float] | npt.ArrayLike,
         *,
         interpolation: InterpolationMode = "nearest",
-        normalize: bool = False,
     ) -> float:
         points, _single = _coerce_points(point)
+        index_grid = self.deposition_index_field().astype(float, copy=False)
         values = _sample_scalar_field(
             self.domain,
-            self.deposition_index_field(normalize=normalize),
+            index_grid,
             points,
             interpolation=interpolation,
-            fill_value=0.0,
+            fill_value=-1.0,
         )
         return float(values[0])
 
@@ -387,12 +376,13 @@ class AnalysisBundle:
                     fill_value=0.0,
                 )
             elif field_name == "deposition_index":
+                index_grid = self.deposition_index_field().astype(float, copy=False)
                 result[field_name] = _sample_scalar_field(
                     self.domain,
-                    self.deposition_index_field(normalize=normalize),
+                    index_grid,
                     samples,
                     interpolation=interpolation,
-                    fill_value=0.0,
+                    fill_value=-1.0,
                 )
             elif field_name == "occupancy":
                 density_samples = _sample_scalar_field(
@@ -436,7 +426,10 @@ class AnalysisBundle:
 
         slices = tuple(slice(start, stop) for start, stop in index_bounds)
         density = self.density_field(normalize=normalize)[slices]
-        deposition_index = self.deposition_index_field(normalize=normalize)[slices]
+        try:
+            deposition_index = self.deposition_index_field().astype(float, copy=False)[slices]
+        except ValueError:
+            deposition_index = np.zeros_like(density)
         occupancy = self.occupancy_field(threshold=threshold, normalize=normalize)[slices]
         voxel_count = float(np.prod(density.shape))
         occupied_voxel_count = float(np.count_nonzero(occupancy))

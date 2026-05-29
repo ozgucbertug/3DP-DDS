@@ -1,0 +1,49 @@
+from __future__ import annotations
+
+import numpy as np
+import pytest
+
+from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate
+
+
+def _cantilever_result():
+    profile = BeadProfile(width=1.2, height=0.8)
+    deposits = [
+        PointDeposit(x=2.0, y=2.0, z=1.0, profile=profile, metadata=DepositionMetadata(layer_id=0)),
+        LineDeposit(
+            start=(2.0, 2.0, 1.0),
+            end=(6.0, 2.0, 1.0),
+            profile=profile,
+            metadata=DepositionMetadata(layer_id=0),
+        ),
+    ]
+    domain = Domain.from_bounds(
+        xmin=0.0,
+        xmax=8.0,
+        ymin=0.0,
+        ymax=4.0,
+        zmin=-1.0,
+        zmax=3.0,
+        voxel_size=0.25,
+    )
+    return simulate(domain, deposits, threshold=0.5)
+
+
+def test_support_analysis_builds_shadow_for_axis_aligned_direction() -> None:
+    result = _cantilever_result()
+    analysis = result.support(build_direction=(0.0, 0.0, 1.0), threshold=0.5)
+
+    assert analysis.overhang_angles.shape == analysis.face_areas.shape
+    assert analysis.downfacing_mask.shape == analysis.face_areas.shape
+    assert analysis.support_risk_mask.shape == analysis.face_areas.shape
+    assert analysis.shadow_voxel_count > 0
+    assert analysis.shadow_volume > 0.0
+    assert analysis.max_unsupported_span > 0.0
+    assert np.count_nonzero(analysis.support_shadow_field) == analysis.shadow_voxel_count
+
+
+def test_support_analysis_rejects_non_axis_aligned_direction() -> None:
+    result = _cantilever_result()
+
+    with pytest.raises(ValueError, match="axis-aligned"):
+        result.support(build_direction=(1.0, 1.0, 0.0), threshold=0.5)

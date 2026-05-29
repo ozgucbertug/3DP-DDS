@@ -23,16 +23,6 @@ def normalize_field(field: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     return result
 
 
-def deposition_index_from_density(
-    density: npt.NDArray[np.float64],
-    *,
-    normalize: bool = False,
-) -> npt.NDArray[np.float64]:
-    """Return the v0 deposition index field from a density-like field."""
-
-    return normalize_field(density) if normalize else density.astype(float, copy=True)
-
-
 def summarize_layers(
     deposits: Iterable[PointDeposit | LineDeposit],
 ) -> dict[int | None, dict[str, float | int]]:

@@ -20,11 +20,11 @@ except ImportError as exc:
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals, overhang_angles
 from .analysis import AnalysisBundle
-from .results import SimulationResult, simulation_result
+from .results import SimulationResult, WorkbenchViewConfig, simulation_result
 
 Representation = Literal["surface", "occupancy", "density"]
 ColorMode = Literal["plain", "normals", "overhang"]
-DensityComposition = Literal["max", "sum"]
+ScalarFieldName = Literal["occupancy", "density", "accumulation", "deposition_order"]
 
 
 def _field_to_image_data(
@@ -88,6 +88,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         *,
         threshold: float = 0.5,
         build_direction: str | tuple[float, float, float] = "+Z",
+        initial_view: WorkbenchViewConfig | None = None,
         off_screen: bool = False,
         parent: QtWidgets.QWidget | None = None,
     ) -> None:
@@ -103,8 +104,9 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "occupancy": 1.0,
             "density": 1.0,
         }
+        self.occupancy_field_name = "occupancy"
+        self.density_field_name = "density"
         self.color_mode: ColorMode = "plain"
-        self.density_composition: DensityComposition = "max"
         self.build_direction = self._coerce_build_direction(build_direction)
         self.off_screen = bool(off_screen)
         self.clip_enabled = False
@@ -124,16 +126,98 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._surface_polydata_cache: dict[float, Any] = {}
         self._occupied_bounds_cache: dict[float, tuple[float, float, float, float, float, float]] = {}
         self._density_sum = self.result.density_sum
+        self._surface_coloring_registry: dict[str, Any] = {
+            "plain": self._apply_plain_surface_coloring,
+            "normals": self._apply_normal_surface_coloring,
+            "overhang": self._apply_overhang_surface_coloring,
+        }
+        self._scalar_field_registry: dict[str, dict[str, Any]] = {
+            "occupancy": {
+                "occupancy": self._occupancy_scalar_field,
+                "deposition_order": self._deposition_order_scalar_field,
+            },
+            "density": {
+                "density": self._density_scalar_field,
+                "accumulation": self._accumulation_scalar_field,
+                "deposition_order": self._deposition_order_scalar_field,
+            },
+        }
+        self._scalar_field_labels: dict[str, dict[str, str]] = {
+            "occupancy": {
+                "occupancy": "Occupancy",
+                "deposition_order": "Deposition Order",
+            },
+            "density": {
+                "density": "Density",
+                "accumulation": "Accumulation",
+                "deposition_order": "Deposition Order",
+            },
+        }
+        self._overlay_registry: dict[str, dict[str, Any]] = {
+            "clip": {"activate": self._activate_clip_widget, "clear": self._clear_clip_state},
+            "point_picking": {"activate": self._install_point_picking, "clear": self.clear_pick},
+            "roi": {"refresh": self._refresh_roi_stats},
+        }
+        self._initial_view = self._resolve_initial_view_config(initial_view, build_direction)
 
         self._build_ui()
         self._apply_window_style()
         self._rebuild_scene()
+        self._apply_initial_view_config()
         self._initialize_camera()
         self.set_point_picking_enabled(False)
         self._sync_threshold_controls()
         self._sync_opacity_controls()
+        self._sync_scalar_field_options()
         self._sync_surface_controls()
         self._sync_status_controls()
+
+    def _resolve_initial_view_config(
+        self,
+        initial_view: WorkbenchViewConfig | None,
+        build_direction: str | tuple[float, float, float],
+    ) -> WorkbenchViewConfig:
+        config = initial_view or WorkbenchViewConfig(build_direction=build_direction)
+        view_mode = config.view_mode
+
+        if view_mode == "surface":
+            color_mode = config.color_mode or "plain"
+            scalar_field = None
+        elif view_mode == "occupancy":
+            labels = self._available_scalar_field_labels("occupancy")
+            scalar_field = config.scalar_field if config.scalar_field in labels else next(iter(labels))
+            color_mode = config.color_mode or "plain"
+        else:
+            labels = self._available_scalar_field_labels("density")
+            scalar_field = config.scalar_field if config.scalar_field in labels else next(iter(labels))
+            color_mode = config.color_mode or "plain"
+
+        return WorkbenchViewConfig(
+            view_mode=view_mode,
+            scalar_field=scalar_field,
+            color_mode=color_mode,
+            build_direction=config.build_direction,
+        )
+
+    def _apply_initial_view_config(self) -> None:
+        config = self._initial_view
+        self.representation = config.view_mode
+        self.color_mode = config.color_mode or "plain"
+        self.build_direction = self._coerce_build_direction(config.build_direction)
+        if self.representation == "occupancy" and config.scalar_field is not None:
+            self.occupancy_field_name = config.scalar_field
+        if self.representation == "density":
+            if config.scalar_field is not None:
+                self.density_field_name = config.scalar_field
+
+        self._set_combo_current_data(self.view_mode_combo, self.representation)
+        self._set_combo_current_data(self.color_mode_combo, self.color_mode)
+        self.build_direction_combo.setCurrentText(self._build_direction_label())
+        self._sync_scalar_field_options()
+        self._sync_surface_controls()
+        self._sync_status_controls()
+        self._sync_opacity_controls()
+        self._rebuild_scene()
 
     def _build_ui(self) -> None:
         self.setWindowTitle("3DP-DDS Workbench")
@@ -253,21 +337,19 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         opacity_row_layout.addWidget(opacity_widget)
         display_layout.addRow(opacity_row)
 
-        self.density_composition_row = QtWidgets.QWidget(display_box)
-        density_composition_row_layout = QtWidgets.QVBoxLayout(self.density_composition_row)
-        density_composition_row_layout.setContentsMargins(0, 0, 0, 0)
-        density_composition_row_layout.setSpacing(6)
-        self._density_composition_label = QtWidgets.QLabel("Composition", self.density_composition_row)
-        density_composition_row_layout.addWidget(self._density_composition_label)
-        self.density_composition_combo = QtWidgets.QComboBox(self.density_composition_row)
-        self._configure_combo_box(self.density_composition_combo, min_width=170)
-        self.density_composition_combo.addItem("Envelope (max)", "max")
-        self.density_composition_combo.addItem("Accumulation (sum)", "sum")
-        self.density_composition_combo.currentIndexChanged.connect(
-            lambda _index: self.set_density_composition(self.density_composition_combo.currentData())
+        self.scalar_field_row = QtWidgets.QWidget(display_box)
+        scalar_field_row_layout = QtWidgets.QVBoxLayout(self.scalar_field_row)
+        scalar_field_row_layout.setContentsMargins(0, 0, 0, 0)
+        scalar_field_row_layout.setSpacing(6)
+        self.scalar_field_label = QtWidgets.QLabel("Field", self.scalar_field_row)
+        scalar_field_row_layout.addWidget(self.scalar_field_label)
+        self.scalar_field_combo = QtWidgets.QComboBox(self.scalar_field_row)
+        self._configure_combo_box(self.scalar_field_combo, min_width=170)
+        self.scalar_field_combo.currentIndexChanged.connect(
+            lambda _index: self.set_scalar_field(self.scalar_field_combo.currentData())
         )
-        density_composition_row_layout.addWidget(self.density_composition_combo)
-        display_layout.addRow(self.density_composition_row)
+        scalar_field_row_layout.addWidget(self.scalar_field_combo)
+        display_layout.addRow(self.scalar_field_row)
 
         self.color_mode_row = QtWidgets.QWidget(display_box)
         color_mode_row_layout = QtWidgets.QVBoxLayout(self.color_mode_row)
@@ -346,6 +428,14 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         status_layout.addRow("ROI", self.roi_status)
         self._roi_status_label_widget = status_layout.labelForField(self.roi_status)
 
+        self.support_status = QtWidgets.QPlainTextEdit(status_box)
+        self.support_status.setReadOnly(True)
+        self.support_status.setPlaceholderText("Activate overhang or support-shadow analysis to inspect support metrics.")
+        self.support_status.setMaximumBlockCount(8)
+        self.support_status.setMinimumHeight(118)
+        status_layout.addRow("Support", self.support_status)
+        self._support_status_label_widget = status_layout.labelForField(self.support_status)
+
         sidebar_layout.addStretch(1)
 
         self.plotter.set_background("#f5f6f8")
@@ -402,6 +492,14 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if view is not None:
             view.setTextElideMode(QtCore.Qt.TextElideMode.ElideNone)
             view.setMinimumWidth(max(min_width, 150))
+
+    def _set_combo_current_data(self, combo: QtWidgets.QComboBox, value: Any) -> None:
+        index = combo.findData(value)
+        if index < 0:
+            return
+        combo.blockSignals(True)
+        combo.setCurrentIndex(index)
+        combo.blockSignals(False)
 
     def _add_section(
         self,
@@ -477,36 +575,42 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._surface_polydata_cache[key] = dataset
         return dataset
 
+    def _apply_plain_surface_coloring(self, mesh: Any, dataset: Any) -> Any:
+        return dataset
+
+    def _apply_normal_surface_coloring(self, mesh: Any, dataset: Any) -> Any:
+        normal_dataset = dataset.compute_normals(
+            cell_normals=False,
+            point_normals=True,
+            split_vertices=False,
+            consistent_normals=True,
+            auto_orient_normals=True,
+            inplace=False,
+        )
+        mesh_normals = np.asarray(normal_dataset.point_data["Normals"], dtype=float)
+        sdf_normals = self._sdf_vertex_normals(mesh)
+        if mesh_normals.shape == sdf_normals.shape and mesh_normals.size > 0:
+            dots = np.sum(mesh_normals * sdf_normals, axis=1)
+            if float(np.mean(dots)) < 0.0:
+                mesh_normals = -mesh_normals
+        normal_dataset.point_data["normal_rgb"] = normal_rgb_from_normals(mesh_normals)
+        normal_dataset.set_active_scalars("normal_rgb")
+        return normal_dataset
+
+    def _apply_overhang_surface_coloring(self, mesh: Any, dataset: Any) -> Any:
+        dataset.cell_data["overhang_angle_deg"] = np.asarray(
+            self.result.support(build_direction=self.build_direction, threshold=self.threshold).overhang_angles,
+            dtype=float,
+        )
+        dataset.set_active_scalars("overhang_angle_deg")
+        return dataset
+
     def _surface_dataset(self) -> Any:
         mesh = self.bundle.surface_mesh(threshold=self.threshold)
         dataset = self._base_surface_dataset().copy(deep=True)
         if dataset.n_cells == 0:
             return dataset
-        if self.color_mode == "normals":
-            normal_dataset = dataset.compute_normals(
-                cell_normals=False,
-                point_normals=True,
-                split_vertices=False,
-                consistent_normals=True,
-                auto_orient_normals=True,
-                inplace=False,
-            )
-            mesh_normals = np.asarray(normal_dataset.point_data["Normals"], dtype=float)
-            sdf_normals = self._sdf_vertex_normals(mesh)
-            if mesh_normals.shape == sdf_normals.shape and mesh_normals.size > 0:
-                dots = np.sum(mesh_normals * sdf_normals, axis=1)
-                if float(np.mean(dots)) < 0.0:
-                    mesh_normals = -mesh_normals
-            normal_dataset.point_data["normal_rgb"] = normal_rgb_from_normals(mesh_normals)
-            normal_dataset.set_active_scalars("normal_rgb")
-            return normal_dataset
-        elif self.color_mode == "overhang":
-            dataset.cell_data["overhang_angle_deg"] = np.asarray(
-                overhang_angles(mesh, build_direction=self.build_direction),
-                dtype=float,
-            )
-            dataset.set_active_scalars("overhang_angle_deg")
-        return dataset
+        return self._surface_coloring_registry[self.color_mode](mesh, dataset)
 
     def _surface_color_kwargs(self, dataset: Any) -> dict[str, Any]:
         kwargs: dict[str, Any] = {
@@ -540,40 +644,149 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         kwargs["color"] = "#93aec7"
         return kwargs
 
-    def _occupancy_dataset(self) -> Any:
-        occupancy = self.bundle.occupancy_field(threshold=self.threshold).astype(np.uint8, copy=False)
-        grid = _field_to_image_data(
-            self.bundle.domain,
-            occupancy,
-            field_name="occupancy",
-            association="cell",
-        )
-        return grid.threshold(value=0.5, scalars="occupancy", preference="cell")
+    def _occupancy_scalar_field(self) -> npt.NDArray[np.uint8]:
+        return self.bundle.occupancy_field(threshold=self.threshold).astype(np.uint8, copy=False)
 
-    def _active_density_field(self) -> npt.NDArray[np.float64]:
-        if self.density_composition == "sum" and self._density_sum is not None:
-            return self._density_sum
-        return self.bundle.density_field()
-
-    def _density_grid(self) -> Any:
+    def _density_scalar_field(self) -> npt.NDArray[np.float64]:
         density = np.asarray(self._active_density_field(), dtype=float)
         view_values = density.copy()
         maximum = float(np.max(view_values)) if view_values.size else 0.0
         if maximum > 0.0:
             floor = max(0.05 * maximum, 0.05 * self.threshold)
             view_values[view_values < floor] = 0.0
+        return view_values
+
+    def _accumulation_scalar_field(self) -> npt.NDArray[np.float64]:
+        if self._density_sum is None:
+            return self._density_scalar_field()
+        density = np.asarray(self._density_sum, dtype=float)
+        view_values = density.copy()
+        maximum = float(np.max(view_values)) if view_values.size else 0.0
+        if maximum > 0.0:
+            floor = max(0.05 * maximum, 0.05 * self.threshold)
+            view_values[view_values < floor] = 0.0
+        return view_values
+
+    def _deposition_order_scalar_field(self) -> npt.NDArray[np.float64]:
+        return np.asarray(self.result.strata(mode="order", threshold=self.threshold).label_field, dtype=float)
+
+    def _scalar_field(self, representation: Literal["occupancy", "density"], field_name: str) -> npt.NDArray[Any]:
+        try:
+            producer = self._scalar_field_registry[representation][field_name]
+        except KeyError as exc:
+            raise ValueError(f"Unknown {representation} scalar field {field_name!r}.") from exc
+        return producer()
+
+    def _active_scalar_field_name(self, representation: Literal["occupancy", "density"]) -> ScalarFieldName:
+        return self.occupancy_field_name if representation == "occupancy" else self.density_field_name
+
+    def _set_active_scalar_field_name(self, representation: Literal["occupancy", "density"], field_name: ScalarFieldName) -> None:
+        if representation == "occupancy":
+            self.occupancy_field_name = field_name
+        else:
+            self.density_field_name = field_name
+
+    def _available_scalar_field_labels(self, representation: Literal["occupancy", "density"]) -> dict[str, str]:
+        labels = dict(self._scalar_field_labels[representation])
+        if representation == "density" and self._density_sum is None:
+            labels.pop("accumulation", None)
+        return labels
+
+    def _sync_scalar_field_options(self) -> None:
+        is_scalar_representation = self.representation in {"occupancy", "density"}
+        self.scalar_field_row.setVisible(is_scalar_representation)
+        if not is_scalar_representation:
+            return
+
+        representation = self.representation
+        labels = self._available_scalar_field_labels(representation)
+        current = self._active_scalar_field_name(representation)
+        if current not in labels:
+            current = next(iter(labels))
+            self._set_active_scalar_field_name(representation, current)
+
+        self.scalar_field_combo.blockSignals(True)
+        self.scalar_field_combo.clear()
+        for field_name, label in labels.items():
+            self.scalar_field_combo.addItem(label, field_name)
+        index = self.scalar_field_combo.findData(current)
+        if index >= 0:
+            self.scalar_field_combo.setCurrentIndex(index)
+        self.scalar_field_combo.blockSignals(False)
+
+    def _occupancy_dataset(self) -> Any:
+        occupancy = self._scalar_field("occupancy", self.occupancy_field_name)
+        grid = _field_to_image_data(
+            self.bundle.domain,
+            occupancy,
+            field_name=self.occupancy_field_name,
+            association="cell",
+        )
+        return grid.threshold(value=0.5, scalars=self.occupancy_field_name, preference="cell")
+
+    def _active_density_field(self) -> npt.NDArray[np.float64]:
+        if self.density_field_name == "accumulation" and self._density_sum is not None:
+            return self._density_sum
+        return self.bundle.density_field()
+
+    def _density_grid(self) -> Any:
+        view_values = self._scalar_field("density", self.density_field_name)
         return _field_to_image_data(
             self.bundle.domain,
             view_values,
-            field_name="density",
+            field_name=self.density_field_name,
             association="point",
         )
 
     def _density_clim(self) -> tuple[float, float]:
+        if self.density_field_name == "deposition_order":
+            maximum = float(np.max(self._deposition_order_scalar_field()))
+            return (0.0, maximum if maximum > 0.0 else 1.0)
         maximum = float(np.max(self._active_density_field()))
         upper = maximum if maximum > 0.0 else 1.0
         lower = max(self.threshold * 0.2, upper * 0.05 if upper > 0.0 else 0.0)
         return (lower, upper)
+
+    def _density_cmap(self) -> str:
+        if self.density_field_name == "deposition_order":
+            return "turbo"
+        return "viridis"
+
+    def _density_scalar_bar_title(self) -> str:
+        return self._available_scalar_field_labels("density")[self.density_field_name]
+
+    def _volume_opacity(self) -> list[float]:
+        alpha = float(np.clip(self.view_opacity["density"], 0.0, 1.0))
+        if self.density_field_name == "deposition_order":
+            return [0.0] + [alpha] * 255
+        base = np.asarray([0.0, 0.0, 0.05, 0.12, 0.28, 0.55, 1.0], dtype=float)
+        return np.clip(base * alpha, 0.0, 1.0).tolist()
+
+    def _occupancy_color_kwargs(self, dataset: Any) -> dict[str, Any]:
+        kwargs: dict[str, Any] = {
+            "opacity": self.view_opacity["occupancy"],
+            "show_edges": False,
+            "show_scalar_bar": False,
+            "render": False,
+            "name": "occupancy_actor",
+            "reset_camera": False,
+        }
+        if self.occupancy_field_name == "deposition_order":
+            maximum = float(np.max(self._deposition_order_scalar_field()))
+            kwargs.update(
+                {
+                    "scalars": self.occupancy_field_name,
+                    "cmap": "turbo",
+                    "clim": (0.0, maximum if maximum > 0.0 else 1.0),
+                    "preference": "cell",
+                }
+            )
+        else:
+            kwargs["color"] = "#de6b48"
+        return kwargs
+
+    def _occupancy_scalar_bar_title(self) -> str:
+        return self._available_scalar_field_labels("occupancy")[self.occupancy_field_name]
 
     def _threshold_slider_upper(self) -> float:
         density_max = float(np.max(self._active_density_field()))
@@ -613,10 +826,6 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             self.opacity_spin.blockSignals(True)
             self.opacity_spin.setValue(value)
             self.opacity_spin.blockSignals(False)
-
-    def _volume_opacity(self) -> list[float]:
-        base = np.asarray([0.0, 0.0, 0.05, 0.12, 0.28, 0.55, 1.0], dtype=float)
-        return np.clip(base * self._current_opacity(), 0.0, 1.0).tolist()
 
     def _remove_actor(self, actor: Any | None) -> None:
         if actor is not None:
@@ -689,7 +898,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return self._occupied_bounds_for_camera()
 
     def _clear_managed_scalar_bars(self) -> None:
-        for title in self._SCALAR_BAR_TITLES:
+        scalar_bars = getattr(self.plotter, "scalar_bars", None)
+        if scalar_bars is None:
+            return
+        titles = list(scalar_bars.keys()) if hasattr(scalar_bars, "keys") else list(scalar_bars)
+        for title in titles:
             try:
                 self.plotter.remove_scalar_bar(title=title, render=False)
             except (AttributeError, KeyError, ValueError):
@@ -707,11 +920,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _sync_scalar_bars(self) -> None:
         self._clear_managed_scalar_bars()
-        if self.representation == "density":
+        if self.representation == "density" and self.density_field_name != "deposition_order":
             mapper = self._mapper_from_actor(self._density_actor)
             if mapper is not None:
                 self.plotter.add_scalar_bar(
-                    title="Density",
+                    title=self._density_scalar_bar_title(),
                     mapper=mapper,
                     title_font_size=12,
                     label_font_size=10,
@@ -754,30 +967,43 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if dataset.n_cells == 0:
             self._occupancy_actor = None
             return
-        self._occupancy_actor = self.plotter.add_mesh(
-            dataset,
-            color="#de6b48",
-            opacity=self.view_opacity["occupancy"],
-            show_edges=False,
-            show_scalar_bar=False,
-            render=False,
-            name="occupancy_actor",
-            reset_camera=False,
-        )
+        self._occupancy_actor = self.plotter.add_mesh(dataset, **self._occupancy_color_kwargs(dataset))
 
     def _rebuild_density_actor(self) -> None:
         self._remove_actor(self._density_actor)
+        volume_kwargs: dict[str, Any] = {
+            "scalars": self.density_field_name,
+            "cmap": self._density_cmap(),
+            "clim": self._density_clim(),
+            "show_scalar_bar": False,
+            "render": False,
+            "name": "density_actor",
+            "reset_camera": False,
+            "shade": False,
+        }
+        if self.density_field_name == "deposition_order":
+            volume_kwargs.update(
+                {
+                    "opacity": "foreground",
+                    "categories": True,
+                }
+            )
+        else:
+            volume_kwargs["opacity"] = self._volume_opacity()
         self._density_actor = self.plotter.add_volume(
             self._density_grid(),
-            scalars="density",
-            cmap="viridis",
-            opacity=self._volume_opacity(),
-            clim=self._density_clim(),
-            show_scalar_bar=False,
-            render=False,
-            name="density_actor",
-            reset_camera=False,
+            **volume_kwargs,
         )
+
+    def _activate_overlay(self, name: str) -> None:
+        handler = self._overlay_registry.get(name, {}).get("activate")
+        if callable(handler):
+            handler()
+
+    def _clear_overlay(self, name: str) -> None:
+        handler = self._overlay_registry.get(name, {}).get("clear")
+        if callable(handler):
+            handler()
 
     def _clear_clip_state(self) -> None:
         self.plotter.clear_plane_widgets()
@@ -868,20 +1094,20 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         else:
             self._apply_visibility()
             self._sync_scalar_bars()
+        self._sync_status_controls()
         self._restore_camera_state(camera_state)
         self.plotter.render()
 
     def _sync_surface_controls(self) -> None:
         surface_mode = self.representation == "surface"
         overhang_mode = surface_mode and self.color_mode == "overhang"
-        density_mode = self.representation == "density" and self._density_sum is not None
+        scalar_mode = self.representation in {"occupancy", "density"}
         self.color_mode_row.setVisible(surface_mode)
         self.surface_box.setVisible(overhang_mode)
         self.build_direction_row.setVisible(overhang_mode)
         self.color_mode_combo.setEnabled(surface_mode)
         self.build_direction_combo.setEnabled(overhang_mode)
-        self.density_composition_row.setVisible(density_mode)
-        self.density_composition_combo.setEnabled(density_mode)
+        self.scalar_field_row.setVisible(scalar_mode)
 
     def _set_row_visible(self, label_widget: QtWidgets.QWidget | None, field_widget: QtWidgets.QWidget, visible: bool) -> None:
         if label_widget is not None:
@@ -923,10 +1149,16 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _sync_status_controls(self) -> None:
         pick_visible = self.point_picking_enabled
         roi_visible = self.roi_enabled
+        support_visible = self._support_is_active()
         self.clear_pick_button.setVisible(pick_visible)
         self._set_row_visible(self._pick_status_label_widget, self.pick_status, pick_visible)
         self.reset_roi_button.setVisible(roi_visible)
         self._set_row_visible(self._roi_status_label_widget, self.roi_status, roi_visible)
+        self._set_row_visible(self._support_status_label_widget, self.support_status, support_visible)
+        if support_visible:
+            self._refresh_support_status()
+        else:
+            self.support_status.clear()
 
     def _initialize_camera(self) -> None:
         self.apply_camera_preset("perspective")
@@ -993,6 +1225,23 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             f"Voxel Count: {int(stats['voxel_count'])}"
         )
 
+    def _support_is_active(self) -> bool:
+        return self.representation == "surface" and self.color_mode == "overhang"
+
+    def _format_support_text(self, stats: Any) -> str:
+        return (
+            f"Build Dir.: {self._build_direction_label()}\n"
+            f"Downfacing Area: {stats.downfacing_area:.3f}\n"
+            f"Risk Area: {stats.risk_area:.3f}\n"
+            f"Shadow Volume: {stats.shadow_volume:.3f}\n"
+            f"Shadow Voxels: {stats.shadow_voxel_count}\n"
+            f"Max Unsupported Span: {stats.max_unsupported_span:.3f}"
+        )
+
+    def _refresh_support_status(self) -> None:
+        stats = self.result.support(build_direction=self.build_direction, threshold=self.threshold)
+        self.support_status.setPlainText(self._format_support_text(stats))
+
     def _marker_radius(self) -> float:
         return 0.5 * min(self.bundle.domain.voxel_size)
 
@@ -1043,8 +1292,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             raise ValueError("representation must be 'surface', 'occupancy', or 'density'.")
         camera_state = self._capture_camera_state()
         self.representation = representation
-        if representation != "density":
-            self.set_density_composition("max", rebuild=False)
+        self._set_combo_current_data(self.view_mode_combo, representation)
+        self._sync_scalar_field_options()
         self._sync_opacity_controls()
         self._sync_surface_controls()
         self._sync_status_controls()
@@ -1080,35 +1329,31 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._rebuild_scene()
         self._sync_opacity_controls()
 
-    def set_density_composition(self, composition: DensityComposition, *, rebuild: bool = True) -> None:
-        if composition not in {"max", "sum"}:
-            raise ValueError("density_composition must be 'max' or 'sum'.")
-        if composition == "sum" and self._density_sum is None:
-            composition = "max"
-        if self.density_composition == composition:
-            index = self.density_composition_combo.findData(composition)
-            if index >= 0 and self.density_composition_combo.currentIndex() != index:
-                self.density_composition_combo.blockSignals(True)
-                self.density_composition_combo.setCurrentIndex(index)
-                self.density_composition_combo.blockSignals(False)
+    def set_scalar_field(self, field_name: ScalarFieldName | None) -> None:
+        if self.representation not in {"occupancy", "density"} or field_name is None:
             return
-        self.density_composition = composition
-        index = self.density_composition_combo.findData(composition)
-        if index >= 0 and self.density_composition_combo.currentIndex() != index:
-            self.density_composition_combo.blockSignals(True)
-            self.density_composition_combo.setCurrentIndex(index)
-            self.density_composition_combo.blockSignals(False)
+        if field_name not in self._available_scalar_field_labels(self.representation):
+            raise ValueError(f"Unknown {self.representation} scalar field {field_name!r}.")
+        current = self._active_scalar_field_name(self.representation)
+        if current == field_name:
+            self._sync_scalar_field_options()
+            self._sync_surface_controls()
+            self._sync_status_controls()
+            return
+        self._set_active_scalar_field_name(self.representation, field_name)
+        self._sync_scalar_field_options()
         self._sync_surface_controls()
-        self._sync_threshold_controls()
-        if rebuild and self.representation == "density":
-            self._rebuild_scene()
+        self._sync_status_controls()
+        self._rebuild_scene()
 
     def set_color_mode(self, value: ColorMode) -> None:
         if value not in {"plain", "normals", "overhang"}:
             raise ValueError("color_mode must be 'plain', 'normals', or 'overhang'.")
         camera_state = self._capture_camera_state()
         self.color_mode = value
+        self._set_combo_current_data(self.color_mode_combo, value)
         self._sync_surface_controls()
+        self._sync_status_controls()
         self._rebuild_surface_actor()
         if self.clip_enabled and self.representation == "surface":
             self._activate_clip_widget()
@@ -1122,12 +1367,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         camera_state = self._capture_camera_state()
         self.build_direction = self._coerce_build_direction(axis_or_vector)
         self.build_direction_combo.setCurrentText(self._build_direction_label())
-        self._rebuild_surface_actor()
-        if self.clip_enabled and self.representation == "surface":
-            self._activate_clip_widget()
-        else:
-            self._apply_visibility()
-            self._sync_scalar_bars()
+        self._sync_status_controls()
+        self._rebuild_scene()
         self._restore_camera_state(camera_state)
         self.plotter.render()
 
@@ -1178,12 +1419,12 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def set_point_picking_enabled(self, value: bool) -> None:
         self.point_picking_enabled = bool(value)
         if self.point_picking_enabled:
-            self._install_point_picking()
+            self._activate_overlay("point_picking")
         else:
             disable_picking = getattr(self.plotter, "disable_picking", None)
             if callable(disable_picking):
                 disable_picking()
-            self.clear_pick()
+            self._clear_overlay("point_picking")
         self._sync_status_controls()
         self.plotter.render()
 
@@ -1192,7 +1433,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if not self.clip_enabled:
             self._rebuild_scene()
             return
-        self._activate_clip_widget()
+        self._activate_overlay("clip")
         self.plotter.render()
 
     def set_roi_enabled(self, value: bool) -> None:

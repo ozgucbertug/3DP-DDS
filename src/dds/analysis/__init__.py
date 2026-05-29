@@ -11,21 +11,31 @@ from .bundle import (
     subvolume_stats,
     surface_normal_at,
 )
-from .fields import deposition_index_from_density, normalize_field, summarize_layers
+from .fields import normalize_field, summarize_layers
+from .interface import interface
+from .models import InterfaceAnalysis, InterfacePairSummary, StratumFieldSet, SupportAnalysis
+from .strata import strata
+from .support import support
 from ..occupancy import occupancy_fraction
 
 __all__ = [
     "AnalysisBundle",
+    "InterfaceAnalysis",
+    "InterfacePairSummary",
+    "StratumFieldSet",
+    "SupportAnalysis",
     "analysis_bundle",
     "contains_point",
-    "deposition_index_from_density",
+    "interface",
     "normalize_field",
     "occupancy_fraction",
     "sample_density_at",
     "sample_deposition_index_at",
     "sample_points",
     "signed_distance_at",
+    "strata",
     "subvolume_stats",
+    "support",
     "summarize_layers",
     "surface_normal_at",
 ]
