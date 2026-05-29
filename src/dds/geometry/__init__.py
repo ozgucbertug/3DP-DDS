@@ -13,7 +13,7 @@ from .adapters import (
 )
 from .mesh import TriangleMesh, density_to_mesh, extract_mesh_from_field, occupancy_to_mesh, sdf_to_mesh
 from .ops import difference, dilate, erode, intersection, shell, union
-from .primitives import (
+from .shapes import (
     ORIGIN,
     X,
     Y,

@@ -81,6 +81,16 @@ def closest_point_parameters(
     return np.clip(projection, 0.0, 1.0)
 
 
+def normalize_axis(value: Any, name: str) -> tuple[float, float, float]:
+    """Normalize a 3-vector to unit length and return it as a float 3-tuple."""
+
+    array = np.asarray(ensure_finite_triplet(value, name), dtype=float)
+    norm = float(np.linalg.norm(array))
+    if norm <= EPSILON:
+        raise ValueError(f"{name} must not be the zero vector.")
+    return tuple(float(component) for component in array / norm)  # type: ignore[return-value]
+
+
 def point_to_segment_distances(
     points: npt.NDArray[np.float64],
     start: npt.NDArray[np.float64],

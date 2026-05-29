@@ -19,7 +19,7 @@ def _load_meshio() -> Any:
     try:
         return import_module("meshio")
     except ImportError as exc:
-        raise ImportError("meshio is required for mesh file IO. Install `3dp-dds`.") from exc
+        raise ImportError('meshio is required for mesh file IO. Install it with `pip install -e ".[mesh]"`.') from exc
 
 
 def _load_trimesh() -> Any:

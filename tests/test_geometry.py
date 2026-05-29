@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate_occupancy
+from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator
 from dds.geometry import (
     GridSDF3,
     MeshSDF3,
@@ -291,7 +291,7 @@ def test_deposition_occupancy_to_sdf_and_mesh_is_nonempty() -> None:
         LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile, metadata=metadata),
     ]
 
-    occupancy = simulate_occupancy(domain, deposits, threshold=0.5)
+    occupancy = Simulator(domain, deposits).simulate_occupancy(threshold=0.5)
     sdf_values = occupancy_to_sdf_field(domain, occupancy)
     mesh = sdf_to_mesh(domain, sdf_values)
 
