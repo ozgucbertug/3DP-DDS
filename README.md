@@ -80,7 +80,7 @@ from dds import BeadProfile, Domain, simulate
 from dds.formats.yaml import load_targets
 from dds.targets import point_deposits_from_targets
 
-targets = load_targets("lamine_curvedwall.yaml")
+targets = load_targets("example_wall.yaml")
 profile = BeadProfile(width=18.0, height=12.0)
 deposits = point_deposits_from_targets(targets, profile=profile, origin_reference="top")
 domain = Domain.from_deposits(deposits, voxel_size=1.0, padding="auto")
@@ -280,42 +280,49 @@ Bundle outputs:
 - Point deposits use a rounded-bead kernel, and line deposits sweep the same rounded profile along the target path.
 - `SimulationResult` always treats `density_max` as the canonical geometry field for occupancy, surface extraction, and signed-distance analysis.
 - `density_sum` is optional and is intended for accumulation or overlap inspection, not geometry reconstruction.
-- The v0 deposition index is the weighted sum of deposit contributions per voxel.
+- The deposition index is the per-voxel last-deposit index (0-based; −1 for untouched voxels).
 - Occupancy is derived by thresholding the accumulated scalar field.
 
 ## Package Layout
 
 ```text
 src/dds/
-  __init__.py
-  analysis/
-    __init__.py
-    bundle.py
-    fields.py
-  formats/
-    __init__.py
-    yaml.py
-  attributes.py
-  cli.py
-  primitives.py
-  domain.py
-  kernels.py
-  fields.py
-  results.py
-  simulator.py
-  occupancy.py
-  io.py
-  mesh_analysis.py
-  targets.py
-  utils.py
-  geometry/
-    __init__.py
-    sdf.py
-    ops.py
-    primitives.py
-    transforms.py
-    mesh.py
-    adapters.py
+├── analysis/
+│   ├── __init__.py
+│   ├── bundle.py
+│   ├── fields.py
+│   ├── interface.py
+│   ├── models.py
+│   ├── strata.py
+│   └── support.py
+├── formats/
+│   ├── __init__.py
+│   └── yaml.py
+├── geometry/
+│   ├── __init__.py
+│   ├── adapters.py
+│   ├── mesh.py
+│   ├── ops.py
+│   ├── shapes.py
+│   ├── sdf.py
+│   └── transforms.py
+├── __init__.py
+├── attributes.py
+├── cli.py
+├── domain.py
+├── fields.py
+├── io.py
+├── kernels.py
+├── mesh_analysis.py
+├── occupancy.py
+├── primitives.py
+├── results.py
+├── simulator.py
+├── targets.py
+├── types.py
+├── utils.py
+├── viz.py
+└── workbench.py
 ```
 
 ## Example Script
