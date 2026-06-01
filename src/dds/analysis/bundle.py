@@ -10,37 +10,14 @@ import numpy.typing as npt
 
 from .fields import normalize_field
 from ..domain import Domain
+from ..geometry.sdf import _coerce_points
 from ..occupancy import occupancy_from_density
-from ..utils import EPSILON, ensure_finite_triplet
+from ..utils import EPSILON, ensure_finite_triplet, normalize_axis
 
 InterpolationMode = Literal["nearest", "trilinear"]
 RepresentationMode = Literal["occupancy", "density", "sdf", "mesh"]
 SampleFieldName = Literal["density", "occupancy", "deposition_index", "signed_distance"]
 
-
-def _coerce_points(points: npt.ArrayLike) -> tuple[npt.NDArray[np.float64], bool]:
-    """Normalize points to an `(n, 3)` float array."""
-
-    array = np.asarray(points, dtype=float)
-    if array.ndim == 1:
-        if array.shape != (3,):
-            raise ValueError("Single-point queries expect exactly three coordinates.")
-        if not np.all(np.isfinite(array)):
-            raise ValueError("Point coordinates must be finite.")
-        return array.reshape(1, 3), True
-    if array.ndim != 2 or array.shape[1] != 3:
-        raise ValueError("Point queries expect shape `(3,)` or `(n, 3)`.")
-    if not np.all(np.isfinite(array)):
-        raise ValueError("Point coordinates must be finite.")
-    return array, False
-
-
-def _normalize_vector(vector: tuple[float, float, float] | npt.ArrayLike, *, name: str) -> npt.NDArray[np.float64]:
-    array = np.asarray(ensure_finite_triplet(vector, name), dtype=float)
-    norm = float(np.linalg.norm(array))
-    if norm <= EPSILON:
-        raise ValueError(f"{name} must not be the zero vector.")
-    return array / norm
 
 
 def _surface_cache_key(
@@ -60,10 +37,14 @@ def _sample_nearest(
     fill_value: float,
 ) -> npt.NDArray[np.float64]:
     result = np.full(points.shape[0], fill_value, dtype=float)
-    for index, point in enumerate(points):
-        if not domain.contains_point(point):
-            continue
-        result[index] = float(values[domain.world_to_index(point, clip=True)])
+    origin = np.asarray(domain.min_corner, dtype=float)
+    spacing = np.asarray(domain.voxel_size, dtype=float)
+    shape_array = np.asarray(domain.grid_shape, dtype=np.intp)
+    raw = np.floor((points - origin) / spacing).astype(np.intp)
+    inside = np.all((raw >= 0) & (raw < shape_array), axis=1)
+    if inside.any():
+        clipped = np.clip(raw[inside], 0, shape_array - 1)
+        result[inside] = values[clipped[:, 0], clipped[:, 1], clipped[:, 2]]
     return result
 
 
@@ -87,12 +68,6 @@ def _sample_trilinear(
     # map_coordinates expects coordinates as (ndim, n).
     coords = fractional.T  # (3, n)
     sampled = map_coordinates(values, coords, order=1, mode="constant", cval=fill_value)
-
-    # Re-apply fill_value to points strictly outside the domain bounds (map_coordinates
-    # clamps by default with mode='constant', so this is already handled, but we also
-    # zero-out points that domain.contains_point rejects for consistency with _sample_nearest).
-    outside = np.array([not domain.contains_point(pt) for pt in points])
-    sampled[outside] = fill_value
     return sampled.astype(float)
 
 
@@ -466,7 +441,7 @@ class AnalysisBundle:
         normalize: bool = False,
         step_size: int = 1,
     ) -> dict[str, Any]:
-        build_dir = tuple(float(value) for value in _normalize_vector(build_direction, name="build_direction"))
+        build_dir = normalize_axis(build_direction, "build_direction")
         key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size) + (
             build_dir,
             float(critical_angle_deg),

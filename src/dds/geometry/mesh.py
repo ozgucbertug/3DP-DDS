@@ -26,10 +26,7 @@ def _load_trimesh() -> Any:
     try:
         return import_module("trimesh")
     except ImportError as exc:
-        raise ImportError(
-            "trimesh is required for mesh adapters. "
-            'Install it with `pip install trimesh`.',
-        ) from exc
+        raise ImportError("trimesh is required. Install it with `pip install trimesh`.") from exc
 
 
 def _validate_field_shape(

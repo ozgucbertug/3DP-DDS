@@ -6,16 +6,8 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from ..utils import ensure_finite_triplet, ensure_positive_triplet
+from ..utils import ensure_finite_triplet, ensure_positive_triplet, normalize_axis
 from .sdf import SDF3, SDFCallable, as_sdf3
-
-
-def _normalize(vector: Sequence[float] | np.ndarray, *, name: str) -> np.ndarray:
-    result = np.asarray(ensure_finite_triplet(vector, name), dtype=float)
-    length = float(np.linalg.norm(result))
-    if length == 0.0:
-        raise ValueError(f"{name} must be non-zero.")
-    return result / length
 
 
 def _positive_scale(factor: float | Sequence[float]) -> np.ndarray:
@@ -47,7 +39,7 @@ def scale(other: SDF3 | SDFCallable, factor: float | Sequence[float]) -> SDF3:
 def rotation_matrix(angle: float, axis: Sequence[float] | np.ndarray = (0.0, 0.0, 1.0)) -> np.ndarray:
     """Return a Rodrigues rotation matrix for a column-vector rotation."""
 
-    x, y, z = _normalize(axis, name="axis")
+    x, y, z = normalize_axis(axis, name="axis")
     angle = float(angle)
     cosine = np.cos(angle)
     sine = np.sin(angle)
@@ -88,8 +80,8 @@ def orient(
     """Rotate an SDF so that `source_axis` aligns with `axis`."""
 
     sdf = as_sdf3(other)
-    source = _normalize(source_axis, name="source_axis")
-    target = _normalize(axis, name="axis")
+    source = normalize_axis(source_axis, name="source_axis")
+    target = normalize_axis(axis, name="axis")
     dot = float(np.clip(np.dot(source, target), -1.0, 1.0))
     if np.isclose(dot, 1.0):
         return sdf

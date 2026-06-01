@@ -2,31 +2,13 @@
 
 from __future__ import annotations
 
-from importlib import import_module
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
-from .geometry.mesh import TriangleMesh
-from .utils import EPSILON, ensure_finite_triplet
-
-
-def _load_trimesh() -> Any:
-    try:
-        return import_module("trimesh")
-    except ImportError as exc:
-        raise ImportError("trimesh is required for mesh analysis. Install `3dp-dds`.") from exc
-
-
-def _normalized_build_direction(
-    build_direction: tuple[float, float, float] | npt.ArrayLike,
-) -> npt.NDArray[np.float64]:
-    vector = np.asarray(ensure_finite_triplet(build_direction, "build_direction"), dtype=float)
-    norm = float(np.linalg.norm(vector))
-    if norm <= EPSILON:
-        raise ValueError("build_direction must not be the zero vector.")
-    return vector / norm
+from .geometry.mesh import TriangleMesh, _load_trimesh
+from .utils import EPSILON, normalize_axis
 
 
 def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
@@ -68,8 +50,10 @@ def vertex_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
     normals = np.zeros_like(oriented.vertices, dtype=float)
     face_normal_values = face_normals(oriented)
     face_area_values = face_areas(oriented)
-    for face_index, face in enumerate(oriented.faces):
-        normals[face] += face_normal_values[face_index] * face_area_values[face_index]
+    weighted = face_normal_values * face_area_values[:, np.newaxis]
+    np.add.at(normals, oriented.faces[:, 0], weighted)
+    np.add.at(normals, oriented.faces[:, 1], weighted)
+    np.add.at(normals, oriented.faces[:, 2], weighted)
     lengths = np.linalg.norm(normals, axis=1)
     valid = lengths > EPSILON
     normals[valid] /= lengths[valid, np.newaxis]
@@ -106,7 +90,7 @@ def overhang_angles(
     normals = face_normals(mesh)
     if normals.size == 0:
         return np.empty((0,), dtype=float)
-    downward = -_normalized_build_direction(build_direction)
+    downward = -np.asarray(normalize_axis(build_direction, "build_direction"), dtype=float)
     cosine = np.clip(normals @ downward, -1.0, 1.0)
     return np.degrees(np.arccos(cosine))
 

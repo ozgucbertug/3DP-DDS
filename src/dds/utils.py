@@ -47,9 +47,15 @@ def bounding_box_from_points(
 ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Return min/max bounds for a sequence of 3D points."""
 
-    array = np.asarray([ensure_finite_triplet(point, "point") for point in points], dtype=float)
+    array = np.asarray(list(points), dtype=float)
     if array.size == 0:
         raise ValueError("At least one point is required to build a bounding box.")
+    if array.ndim == 1:
+        array = array.reshape(1, -1)
+    if array.ndim != 2 or array.shape[1] != 3:
+        raise ValueError("Each point must have exactly three coordinates.")
+    if not np.all(np.isfinite(array)):
+        raise ValueError("All point coordinates must be finite.")
     return array.min(axis=0), array.max(axis=0)
 
 

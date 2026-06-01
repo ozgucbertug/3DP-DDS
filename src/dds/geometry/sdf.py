@@ -21,6 +21,8 @@ def _coerce_points(points: npt.ArrayLike) -> tuple[npt.NDArray[np.float64], bool
     if array.ndim == 1:
         if array.shape != (3,):
             raise ValueError("Single-point evaluation expects exactly three coordinates.")
+        if not np.all(np.isfinite(array)):
+            raise ValueError("Point coordinates must be finite.")
         return array.reshape(1, 3), True
     if array.ndim != 2 or array.shape[1] != 3:
         raise ValueError("Point evaluation expects shape `(3,)` or `(n, 3)`.")

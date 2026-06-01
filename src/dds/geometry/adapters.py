@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ..domain import Domain
-from .mesh import TriangleMesh
+from .mesh import TriangleMesh, _load_trimesh, _validate_field_shape
 from .sdf import GridSDF3, SDF3
 
 
@@ -22,36 +22,12 @@ def _load_meshio() -> Any:
         raise ImportError('meshio is required for mesh file IO. Install it with `pip install -e ".[mesh]"`.') from exc
 
 
-def _load_trimesh() -> Any:
-    try:
-        return import_module("trimesh")
-    except ImportError as exc:
-        raise ImportError("trimesh is required for mesh/SDF conversion. Install `3dp-dds`.") from exc
-
-
 def _load_scipy_ndimage() -> Any:
     try:
         from scipy import ndimage
     except ImportError as exc:
         raise ImportError("SciPy is required for occupancy-to-SDF conversion. Install `3dp-dds`.") from exc
     return ndimage
-
-
-def _validate_field_shape(
-    domain: Domain,
-    values: npt.ArrayLike,
-    *,
-    field_name: str,
-) -> npt.NDArray[np.float64]:
-    array = np.asarray(values)
-    if array.shape != domain.grid_shape:
-        raise ValueError(f"{field_name} shape {array.shape} does not match domain grid shape {domain.grid_shape}.")
-    return array
-
-
-def _sample_points(domain: Domain) -> npt.NDArray[np.float64]:
-    xs, ys, zs = domain.grid_centers()
-    return np.stack((xs, ys, zs), axis=-1).reshape(-1, 3)
 
 
 def _ensure_watertight(mesh: Any, *, require_watertight: bool, context: str) -> None:
@@ -136,7 +112,8 @@ def mesh_to_occupancy(
 
     tri_mesh = mesh.to_trimesh()
     _ensure_watertight(tri_mesh, require_watertight=require_watertight, context="occupancy queries")
-    points = _sample_points(domain)
+    xs, ys, zs = domain.grid_centers()
+    points = np.stack((xs, ys, zs), axis=-1).reshape(-1, 3)
     contained = np.asarray(tri_mesh.contains(points), dtype=bool)
     return contained.reshape(domain.grid_shape)
 

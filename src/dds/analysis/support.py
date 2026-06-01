@@ -35,29 +35,52 @@ def _support_shadow_field(
     build_direction: tuple[float, float, float],
 ) -> tuple[npt.NDArray[np.float64], float]:
     shadow = np.zeros(occupancy.shape, dtype=float)
-    max_span = 0.0
-    axis, direction_sign = _axis_aligned_projection_axis(build_direction)
-    support_step = -direction_sign
-    voxel_step = float(domain.voxel_size[axis])
-    shape_axis = occupancy.shape[axis]
+    if centroids.size == 0:
+        return shadow, 0.0
 
-    for centroid in centroids:
-        try:
-            base_index = list(domain.world_to_index(tuple(float(value) for value in centroid), clip=True))
-        except ValueError:
-            continue
-        probe = base_index.copy()
-        probe[axis] += support_step
-        span = 0
-        while 0 <= probe[axis] < shape_axis:
-            index_tuple = tuple(int(value) for value in probe)
-            if occupancy[index_tuple]:
-                break
-            shadow[index_tuple] = 1.0
-            span += 1
-            probe[axis] += support_step
-        if span > 0:
-            max_span = max(max_span, span * voxel_step)
+    axis, direction_sign = _axis_aligned_projection_axis(build_direction)
+    voxel_step = float(domain.voxel_size[axis])
+
+    # Vectorised centroid → voxel-index conversion.
+    origin = np.asarray(domain.min_corner, dtype=float)
+    spacing = np.asarray(domain.voxel_size, dtype=float)
+    shape_array = np.asarray(occupancy.shape, dtype=np.intp)
+    raw = np.floor((centroids - origin) / spacing).astype(np.intp)
+    in_bounds = np.all((raw >= 0) & (raw < shape_array), axis=1)
+    valid_indices = np.clip(raw[in_bounds], 0, shape_array - 1)
+    if valid_indices.size == 0:
+        return shadow, 0.0
+
+    # Mark voxels that contain a risky face centroid.
+    centroid_grid = np.zeros(occupancy.shape, dtype=bool)
+    centroid_grid[valid_indices[:, 0], valid_indices[:, 1], valid_indices[:, 2]] = True
+
+    # Bring the build axis to the last position for a uniform scan loop.
+    occ = np.moveaxis(occupancy, axis, -1)   # (..., depth)
+    cen = np.moveaxis(centroid_grid, axis, -1)
+    shd = np.zeros(occ.shape, dtype=bool)
+
+    # Propagate shadow one step at a time opposite to the build direction.
+    # Shadow starts immediately below (in shadow direction) a risky centroid
+    # and continues through empty voxels until blocked by occupied material.
+    depth = occ.shape[-1]
+    if direction_sign == 1:
+        # Build goes +axis → shadow goes toward lower indices.
+        for k in range(depth - 2, -1, -1):
+            above = cen[..., k + 1] | shd[..., k + 1]
+            shd[..., k] = above & ~occ[..., k]
+    else:
+        # Build goes -axis → shadow goes toward higher indices.
+        for k in range(1, depth):
+            below = cen[..., k - 1] | shd[..., k - 1]
+            shd[..., k] = below & ~occ[..., k]
+
+    shadow = np.moveaxis(shd, -1, axis).astype(float)
+
+    # max_span: maximum per-column shadow depth.
+    shadow_bool = shadow.astype(bool)
+    column_counts = shadow_bool.sum(axis=axis)
+    max_span = float(column_counts.max()) * voxel_step if shadow_bool.any() else 0.0
 
     return shadow, max_span
 
