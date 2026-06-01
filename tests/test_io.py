@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from dds import Domain
 from dds.io import save_array, save_simulation_bundle
@@ -50,3 +51,28 @@ def test_save_simulation_bundle_writes_expected_outputs(tmp_path: Path) -> None:
     payload = json.loads(written["metadata"].read_text(encoding="utf-8"))
     assert payload["metadata"] == {"example": "io_test"}
     assert payload["domain"]["grid_shape"] == [2, 2, 2]
+
+
+def test_write_read_mesh_round_trip(tmp_path: Path) -> None:
+    pytest.importorskip("meshio")
+    pytest.importorskip("skimage")
+
+    from dds import BeadProfile, PointDeposit, simulate
+    from dds.geometry import read_mesh, write_mesh
+
+    domain = Domain.from_bounds(
+        xmin=0.0, xmax=4.0, ymin=0.0, ymax=4.0, zmin=0.0, zmax=4.0, voxel_size=0.25
+    )
+    result = simulate(
+        domain,
+        [PointDeposit(x=2.0, y=2.0, z=2.0, profile=BeadProfile(width=1.5, height=1.5))],
+        threshold=0.5,
+    )
+    mesh = result.surface_mesh()
+    assert not mesh.is_empty
+
+    path = write_mesh(tmp_path / "mesh.stl", mesh)
+    loaded = read_mesh(path)
+    # STL doesn't preserve vertex ordering, so only check structural properties.
+    assert loaded.n_faces == mesh.n_faces
+    assert loaded.n_vertices > 0

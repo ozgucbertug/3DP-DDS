@@ -305,3 +305,48 @@ def test_density_to_sdf_field_uses_threshold() -> None:
     sdf_values = density_to_sdf_field(domain, density, threshold=0.5)
     center = domain.world_to_index((0.0, 0.0, 0.0), clip=True)
     assert sdf_values[center] <= 0.0
+
+
+def test_grid_sdf3_sample_different_domain_falls_back_to_interpolation() -> None:
+    domain_a = Domain.from_bounds(xmin=-2.0, xmax=2.0, ymin=-2.0, ymax=2.0, zmin=-2.0, zmax=2.0, voxel_size=0.5)
+    domain_b = Domain.from_bounds(xmin=-1.0, xmax=1.0, ymin=-1.0, ymax=1.0, zmin=-1.0, zmax=1.0, voxel_size=1.0)
+    sdf_values = sphere(radius=1.0).sample(domain_a)
+    grid_sdf = GridSDF3(domain_a, sdf_values)
+
+    # Sampling on the same domain should return the stored values.
+    same = grid_sdf.sample(domain_a)
+    np.testing.assert_array_equal(same, sdf_values)
+
+    # Sampling on a different domain should interpolate and return a finite result.
+    different = grid_sdf.sample(domain_b)
+    assert different.shape == domain_b.grid_shape
+    assert np.all(np.isfinite(different))
+
+
+def test_occupancy_to_sdf_field_is_negative_inside_positive_outside() -> None:
+    domain = Domain.from_bounds(xmin=-5.0, xmax=5.0, ymin=-5.0, ymax=5.0, zmin=-5.0, zmax=5.0, voxel_size=0.5)
+    occupancy = np.zeros(domain.grid_shape, dtype=bool)
+    cx, cy, cz = (s // 2 for s in domain.grid_shape)
+    r = 3
+    occupancy[cx - r : cx + r, cy - r : cy + r, cz - r : cz + r] = True
+    sdf = occupancy_to_sdf_field(domain, occupancy)
+
+    assert sdf.shape == domain.grid_shape
+    # Inside the occupied region: SDF must be negative.
+    assert sdf[cx, cy, cz] < 0.0
+    # Outside, well away from the surface: SDF must be positive.
+    assert sdf[0, 0, 0] > 0.0
+
+
+def test_density_to_sdf_field_matches_occupancy_to_sdf_field_at_threshold() -> None:
+    from dds import PointDeposit, simulate
+
+    domain = Domain.from_bounds(xmin=0.0, xmax=10.0, ymin=0.0, ymax=10.0, zmin=0.0, zmax=10.0, voxel_size=0.5)
+    profile = BeadProfile(width=2.0, height=2.0)
+    result = simulate(domain, [PointDeposit(x=5.0, y=5.0, z=5.0, profile=profile)], threshold=0.5)
+    density = result.density("max")
+    threshold = 0.5
+    sdf_from_density = density_to_sdf_field(domain, density, threshold=threshold)
+    occupancy = density >= threshold
+    sdf_from_occupancy = occupancy_to_sdf_field(domain, occupancy)
+    np.testing.assert_allclose(sdf_from_density, sdf_from_occupancy, atol=1e-10)

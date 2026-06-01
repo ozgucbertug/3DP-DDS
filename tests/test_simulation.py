@@ -11,6 +11,7 @@ from dds import (
     PointDeposit,
     SimulationResult,
     Simulator,
+    WorkbenchViewConfig,
     simulate,
 )
 
@@ -201,3 +202,40 @@ def test_simulate_can_produce_max_and_sum_density_fields() -> None:
     assert result.density_sum is not None
     assert np.all(result.density_sum >= result.density_max)
     assert float(result.density_sum.max()) > float(result.density_max.max())
+
+
+def test_domain_from_deposits_anisotropic_voxel_size() -> None:
+    profile = make_profile(width=2.0, height=1.0)
+    deposits = [
+        PointDeposit(x=2.0, y=3.0, z=1.0, profile=profile),
+        PointDeposit(x=6.0, y=7.0, z=3.0, profile=profile),
+    ]
+    domain = Domain.from_deposits(deposits, voxel_size=(0.5, 0.25, 1.0))
+
+    assert domain.voxel_size == (0.5, 0.25, 1.0)
+    assert domain.grid_shape[0] > 0
+    assert domain.grid_shape[1] > 0
+    assert domain.grid_shape[2] > 0
+    # Domain must enclose all deposit support-bound centres.
+    for deposit in deposits:
+        minimum, maximum = deposit.support_bounds()
+        assert domain.contains_point((
+            (minimum.x + maximum.x) / 2,
+            (minimum.y + maximum.y) / 2,
+            (minimum.z + maximum.z) / 2,
+        ))
+
+
+def test_workbench_view_config_rejects_non_canonical_build_direction_string() -> None:
+    import pytest
+    with pytest.raises(ValueError, match="build_direction"):
+        WorkbenchViewConfig(build_direction="Z+")  # canonical form is "+Z"
+
+    # Valid canonical strings must not raise.
+    for direction in ("+X", "-X", "+Y", "-Y", "+Z", "-Z"):
+        cfg = WorkbenchViewConfig(build_direction=direction)
+        assert cfg.build_direction == direction
+
+    # Tuple form must also be accepted without error.
+    cfg = WorkbenchViewConfig(build_direction=(0.0, 0.0, 1.0))
+    assert cfg.build_direction == (0.0, 0.0, 1.0)
