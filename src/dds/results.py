@@ -225,6 +225,46 @@ class SimulationResult:
             written["density_sum"] = save_array(Path(directory) / "density_sum.npy", self.density_sum)
         return written
 
+    def checkpoint(self, path: str | Path) -> Path:
+        """Save this result as a typed round-trip checkpoint.
+
+        Stores density arrays and the full deposit list in a single compressed
+        ``npz`` file.  The result can be restored with :meth:`load`.
+
+        Parameters
+        ----------
+        path:
+            Destination file path.  A ``.npz`` extension is appended if absent.
+
+        Returns
+        -------
+        Path
+            Absolute path of the written checkpoint file.
+        """
+
+        from .io import save_checkpoint
+
+        return save_checkpoint(path, self)
+
+    @classmethod
+    def load(cls, path: str | Path) -> "SimulationResult":
+        """Restore a result from a checkpoint written by :meth:`checkpoint`.
+
+        Parameters
+        ----------
+        path:
+            Path to the ``.npz`` checkpoint file.
+
+        Returns
+        -------
+        SimulationResult
+            A fully reconstructed result with density arrays and deposits.
+        """
+
+        from .io import load_checkpoint
+
+        return load_checkpoint(path)
+
 
 def simulation_result(
     source: SimulationResult | AnalysisBundle | object,

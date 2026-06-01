@@ -20,6 +20,7 @@ from .types import DensityComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
 from .fields import apply_deposit_to_field, apply_deposit_to_index_field, accumulate_density_sparse
+from .io import load_checkpoint, save_checkpoint
 from .simulator import Simulator
 from .sparse import SparseDensityField
 
@@ -52,7 +53,9 @@ __all__ = [
     "apply_deposit_to_index_field",
     "formats",
     "geometry",
+    "load_checkpoint",
     "run_cli",
+    "save_checkpoint",
     "simulate",
     "targets",
     "viz",
