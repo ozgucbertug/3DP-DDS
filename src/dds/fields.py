@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -13,6 +14,9 @@ from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, LineDeposit, PointDeposit, iter_deposits
 from .types import DensityComposition, FieldName
+
+if TYPE_CHECKING:
+    from .sparse import SparseDensityField
 
 
 def accumulate_density_fields(
@@ -160,3 +164,32 @@ def sample_field(
         base = normalize_field(density) if normalize else density
         return occupancy_from_density(base, threshold=threshold)
     raise ValueError("field must be 'density', 'occupancy', or 'deposition_index'.")
+
+
+def accumulate_density_sparse(
+    domain: Domain,
+    deposits: Iterable[DepositInput] | DepositInput,
+) -> "SparseDensityField":
+    """Build a :class:`~dds.sparse.SparseDensityField` without allocating the full dense grid.
+
+    Each deposit kernel is stored as a compact sub-array.  Call
+    :meth:`~dds.sparse.SparseDensityField.to_dense` or
+    :meth:`~dds.sparse.SparseDensityField.to_dense_all` to materialise a
+    dense grid when needed.
+
+    Parameters
+    ----------
+    domain:
+        Simulation domain.
+    deposits:
+        One or more deposit primitives or sequences thereof.
+    """
+
+    from .sparse import SparseDensityField
+
+    sparse = SparseDensityField(domain)
+    for deposit in iter_deposits(deposits):
+        sampled = sample_deposit_kernel(domain, deposit)
+        if sampled is not None:
+            sparse.add_contribution(sampled)
+    return sparse

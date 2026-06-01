@@ -19,8 +19,9 @@ from .primitives import (
 from .types import DensityComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
-from .fields import apply_deposit_to_field, apply_deposit_to_index_field
+from .fields import apply_deposit_to_field, apply_deposit_to_index_field, accumulate_density_sparse
 from .simulator import Simulator
+from .sparse import SparseDensityField
 
 if TYPE_CHECKING:
     from .workbench import SimulationWorkbench
@@ -42,8 +43,10 @@ __all__ = [
     "SimulationWorkbench",
     "SimulationResult",
     "Simulator",
+    "SparseDensityField",
     "ToolpathDepositSequence",
     "WorkbenchViewConfig",
+    "accumulate_density_sparse",
     "analysis_bundle",
     "apply_deposit_to_field",
     "apply_deposit_to_index_field",

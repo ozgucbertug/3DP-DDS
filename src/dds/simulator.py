@@ -10,12 +10,16 @@ import numpy.typing as npt
 
 from .analysis import AnalysisBundle, normalize_field
 from .domain import Domain
-from .fields import accumulate_density, accumulate_deposition_index, sample_field as sample_dense_field
+from .fields import accumulate_density, accumulate_deposition_index, accumulate_density_sparse, sample_field as sample_dense_field
 from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
 from .results import SimulationResult
 from .types import DensityComposition
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .sparse import SparseDensityField
 
 
 class Simulator:
@@ -33,6 +37,7 @@ class Simulator:
         self._normalized_density_cache: npt.NDArray[np.float64] | None = None
         self._deposition_index_cache: npt.NDArray[np.intp] | None = None
         self._analysis_bundle_cache: AnalysisBundle | None = None
+        self._sparse_cache: SparseDensityField | None = None
         if deposits is not None:
             self.add_deposits(deposits)
 
@@ -48,6 +53,7 @@ class Simulator:
         self._normalized_density_cache = None
         self._deposition_index_cache = None
         self._analysis_bundle_cache = None
+        self._sparse_cache = None
 
     def _apply_incremental(self, deposit: Deposit, index: int) -> None:
         """Apply one deposit kernel to every live dense cache in a single sample pass."""
@@ -56,6 +62,7 @@ class Simulator:
             self._density_cache is not None
             or self._density_max_cache is not None
             or self._deposition_index_cache is not None
+            or self._sparse_cache is not None
         ):
             # No base caches are warm yet; skip sampling.
             self._normalized_density_cache = None
@@ -75,6 +82,8 @@ class Simulator:
             if self._deposition_index_cache is not None:
                 touched = sampled.values > 0.0
                 self._deposition_index_cache[sampled.slices][touched] = index
+            if self._sparse_cache is not None:
+                self._sparse_cache.add_contribution(sampled)
         self._normalized_density_cache = None
         self._analysis_bundle_cache = None
 
@@ -123,6 +132,8 @@ class Simulator:
             self._density_max_cache.fill(0.0)
         if self._deposition_index_cache is not None:
             self._deposition_index_cache.fill(-1)
+        if self._sparse_cache is not None:
+            self._sparse_cache.clear()
         self._normalized_density_cache = None
         self._analysis_bundle_cache = None
 
@@ -136,6 +147,18 @@ class Simulator:
                 deposition_index=self._deposition_index_field().copy(),
             )
         return self._analysis_bundle_cache
+
+    def sparse_field(self) -> SparseDensityField:
+        """Return a :class:`~dds.sparse.SparseDensityField` kept in sync with deposits.
+
+        The sparse field is built lazily on first access and updated
+        incrementally as new deposits are added, sharing the same kernel
+        sample that updates the dense caches (no extra SDF evaluation).
+        """
+
+        if self._sparse_cache is None:
+            self._sparse_cache = accumulate_density_sparse(self.domain, self._deposits)
+        return self._sparse_cache
 
     def result(
         self,
