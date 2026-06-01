@@ -7,6 +7,8 @@ from .attributes import BeadProfile, DepositionMetadata
 from .cli import run_cli
 from .domain import Domain
 from .primitives import (
+    Deposit,
+    DepositInput,
     LineDeposit,
     LineSegment3D,
     Point3D,
@@ -14,6 +16,7 @@ from .primitives import (
     Polyline3D,
     ToolpathDepositSequence,
 )
+from .types import DensityComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
 from .simulator import Simulator
@@ -24,8 +27,12 @@ if TYPE_CHECKING:
 __all__ = [
     "AnalysisBundle",
     "BeadProfile",
+    "DensityComposition",
+    "Deposit",
+    "DepositInput",
     "DepositionMetadata",
     "Domain",
+    "FieldName",
     "LineDeposit",
     "LineSegment3D",
     "Point3D",

@@ -10,14 +10,14 @@ import warnings
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .results import SimulationResult
+    from .results import SimulationResult, ViewMode
     from .workbench import SimulationWorkbench
 
 
 def show(
     result: "SimulationResult",
     *,
-    view_mode: str = "surface",
+    view_mode: "ViewMode" = "surface",
     off_screen: bool = False,
 ) -> "SimulationWorkbench":
     """Open the interactive workbench for a SimulationResult.
@@ -32,7 +32,7 @@ def show(
         result,
         threshold=result.default_threshold,
         off_screen=off_screen,
-        initial_view=WorkbenchViewConfig(view_mode=view_mode),  # type: ignore[arg-type]
+        initial_view=WorkbenchViewConfig(view_mode=view_mode),
     )
     workbench.show()
     return workbench

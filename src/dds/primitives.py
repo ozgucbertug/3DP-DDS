@@ -272,7 +272,12 @@ class LineDeposit:
 
     @property
     def end_axis(self) -> Point3D:
-        """Return the normalized local bead axis at the segment end."""
+        """Return the normalized local bead axis at the segment end.
+
+        Always a normalized :class:`Point3D` after construction.
+        Passing ``end_z_axis=None`` at construction time is shorthand for
+        inheriting ``start_z_axis`` at the end of the segment.
+        """
 
         return Point3D.from_value(self.end_z_axis)
 

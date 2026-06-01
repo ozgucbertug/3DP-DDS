@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 
 import numpy as np
@@ -45,7 +46,6 @@ def resolve_bead_profile(
 ) -> ResolvedBeadProfile:
     """Resolve bead geometry and transition width from metadata and domain defaults."""
 
-    import warnings
     default_width = min(domain.voxel_size)
     if profile is None:
         warnings.warn(
