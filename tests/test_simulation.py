@@ -12,6 +12,8 @@ from dds import (
     SimulationResult,
     Simulator,
     WorkbenchViewConfig,
+    apply_deposit_to_field,
+    apply_deposit_to_index_field,
     simulate,
 )
 
@@ -239,3 +241,112 @@ def test_workbench_view_config_rejects_non_canonical_build_direction_string() ->
     # Tuple form must also be accepted without error.
     cfg = WorkbenchViewConfig(build_direction=(0.0, 0.0, 1.0))
     assert cfg.build_direction == (0.0, 0.0, 1.0)
+
+
+# ---------------------------------------------------------------------------
+# Incremental accumulation tests
+# ---------------------------------------------------------------------------
+
+
+def _two_deposits() -> list[PointDeposit]:
+    profile = make_profile(width=2.0, height=2.0)
+    return [
+        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=make_metadata()),
+        PointDeposit(x=5.5, y=5.5, z=3.5, profile=profile, metadata=DepositionMetadata(layer_id=1)),
+    ]
+
+
+def test_incremental_add_deposit_matches_batch_simulate() -> None:
+    """Density from sequential add_deposit must equal simulate() over the same list."""
+    domain = make_domain()
+    deposits = _two_deposits()
+
+    expected = simulate(domain, deposits)
+
+    sim = Simulator(domain)
+    for dep in deposits:
+        sim.add_deposit(dep)
+
+    np.testing.assert_allclose(sim.sample_field(field="density"), expected.density("max"))
+
+
+def test_incremental_add_deposits_matches_batch_simulate() -> None:
+    """add_deposits in one call produces the same result as add_deposit one at a time."""
+    domain = make_domain()
+    deposits = _two_deposits()
+
+    sim_single = Simulator(domain)
+    for dep in deposits:
+        sim_single.add_deposit(dep)
+
+    sim_bulk = Simulator(domain)
+    sim_bulk.add_deposits(deposits)
+
+    np.testing.assert_allclose(
+        sim_single.sample_field(field="density"),
+        sim_bulk.sample_field(field="density"),
+    )
+
+
+def test_clear_and_readd_reproduces_original_density() -> None:
+    """clear_deposits() followed by re-adding the same deposits gives identical fields."""
+    domain = make_domain()
+    deposits = _two_deposits()
+
+    sim = Simulator(domain, deposits)
+    before = sim.sample_field(field="density").copy()
+
+    sim.clear_deposits()
+    assert sim.sample_field(field="density").sum() == pytest.approx(0.0)
+
+    sim.add_deposits(deposits)
+    np.testing.assert_allclose(sim.sample_field(field="density"), before)
+
+
+def test_incremental_deposition_index_matches_batch() -> None:
+    """Incrementally built deposition index matches the fully recomputed one."""
+    domain = make_domain()
+    deposits = _two_deposits()
+
+    expected_idx = Simulator(domain, deposits).sample_field(field="deposition_index")
+
+    sim = Simulator(domain)
+    for dep in deposits:
+        sim.add_deposit(dep)
+
+    np.testing.assert_allclose(sim.sample_field(field="deposition_index"), expected_idx)
+
+
+def test_apply_deposit_to_field_accumulates_in_place() -> None:
+    """apply_deposit_to_field applies one kernel to a pre-allocated grid."""
+    domain = make_domain()
+    deposit = PointDeposit(x=5.0, y=5.0, z=5.0, profile=make_profile(width=2.0, height=2.0))
+    grid = np.zeros(domain.grid_shape, dtype=float)
+
+    hit = apply_deposit_to_field(domain, grid, deposit, composition="sum")
+
+    assert hit is True
+    assert grid.sum() > 0.0
+
+
+def test_apply_deposit_to_field_returns_false_for_out_of_bounds_deposit() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(x=-50.0, y=-50.0, z=-50.0, profile=make_profile())
+    grid = np.zeros(domain.grid_shape, dtype=float)
+
+    hit = apply_deposit_to_field(domain, grid, deposit)
+
+    assert hit is False
+    assert grid.sum() == pytest.approx(0.0)
+
+
+def test_apply_deposit_to_index_field_marks_touched_voxels() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(x=5.0, y=5.0, z=5.0, profile=make_profile(width=2.0, height=2.0))
+    index_field = np.full(domain.grid_shape, -1, dtype=np.intp)
+
+    hit = apply_deposit_to_index_field(domain, index_field, deposit, deposit_index=7)
+
+    assert hit is True
+    assert int(index_field.max()) == 7
+    assert int(index_field[4, 4, 4]) == 7

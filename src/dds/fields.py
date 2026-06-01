@@ -11,7 +11,7 @@ from .analysis import normalize_field
 from .domain import Domain
 from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
-from .primitives import DepositInput, LineDeposit, PointDeposit, iter_deposits
+from .primitives import Deposit, DepositInput, LineDeposit, PointDeposit, iter_deposits
 from .types import DensityComposition, FieldName
 
 
@@ -74,6 +74,71 @@ def accumulate_deposition_index(
         touched = sampled.values > 0.0
         index_field[sampled.slices][touched] = deposit_index
     return index_field
+
+
+def apply_deposit_to_field(
+    domain: Domain,
+    grid: npt.NDArray[np.float64],
+    deposit: Deposit,
+    *,
+    composition: DensityComposition = "sum",
+) -> bool:
+    """Apply one deposit kernel to *grid* in-place.
+
+    Returns ``True`` when the kernel overlapped the domain and was applied,
+    ``False`` when the deposit falls entirely outside the domain.
+
+    Parameters
+    ----------
+    domain:
+        Simulation domain.
+    grid:
+        Dense float64 array of shape ``domain.grid_shape``.  Modified in-place.
+    deposit:
+        A single leaf deposit (``PointDeposit`` or ``LineDeposit``).
+    composition:
+        ``"sum"`` accumulates additively; ``"max"`` takes the element-wise maximum.
+    """
+
+    sampled = sample_deposit_kernel(domain, deposit)
+    if sampled is None:
+        return False
+    if composition == "sum":
+        grid[sampled.slices] += sampled.values
+    else:
+        np.maximum(grid[sampled.slices], sampled.values, out=grid[sampled.slices])
+    return True
+
+
+def apply_deposit_to_index_field(
+    domain: Domain,
+    index_field: npt.NDArray[np.intp],
+    deposit: Deposit,
+    deposit_index: int,
+) -> bool:
+    """Update *index_field* in-place for one deposit using last-writer-wins semantics.
+
+    Returns ``True`` when the kernel overlapped the domain, ``False`` otherwise.
+
+    Parameters
+    ----------
+    domain:
+        Simulation domain.
+    index_field:
+        Dense ``np.intp`` array of shape ``domain.grid_shape`` initialised to -1.
+    deposit:
+        A single leaf deposit.
+    deposit_index:
+        0-based index of this deposit; written to every voxel whose kernel value
+        is strictly positive.
+    """
+
+    sampled = sample_deposit_kernel(domain, deposit)
+    if sampled is None:
+        return False
+    touched = sampled.values > 0.0
+    index_field[sampled.slices][touched] = deposit_index
+    return True
 
 
 def sample_field(

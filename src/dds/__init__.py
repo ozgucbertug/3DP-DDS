@@ -19,6 +19,7 @@ from .primitives import (
 from .types import DensityComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
+from .fields import apply_deposit_to_field, apply_deposit_to_index_field
 from .simulator import Simulator
 
 if TYPE_CHECKING:
@@ -44,6 +45,8 @@ __all__ = [
     "ToolpathDepositSequence",
     "WorkbenchViewConfig",
     "analysis_bundle",
+    "apply_deposit_to_field",
+    "apply_deposit_to_index_field",
     "formats",
     "geometry",
     "run_cli",

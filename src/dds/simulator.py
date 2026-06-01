@@ -11,6 +11,7 @@ import numpy.typing as npt
 from .analysis import AnalysisBundle, normalize_field
 from .domain import Domain
 from .fields import accumulate_density, accumulate_deposition_index, sample_field as sample_dense_field
+from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
 from .results import SimulationResult
@@ -32,7 +33,6 @@ class Simulator:
         self._normalized_density_cache: npt.NDArray[np.float64] | None = None
         self._deposition_index_cache: npt.NDArray[np.intp] | None = None
         self._analysis_bundle_cache: AnalysisBundle | None = None
-        # TODO: replace full-field invalidation with partial updates for streamed toolpaths.
         if deposits is not None:
             self.add_deposits(deposits)
 
@@ -47,6 +47,35 @@ class Simulator:
         self._density_max_cache = None
         self._normalized_density_cache = None
         self._deposition_index_cache = None
+        self._analysis_bundle_cache = None
+
+    def _apply_incremental(self, deposit: Deposit, index: int) -> None:
+        """Apply one deposit kernel to every live dense cache in a single sample pass."""
+
+        if not (
+            self._density_cache is not None
+            or self._density_max_cache is not None
+            or self._deposition_index_cache is not None
+        ):
+            # No base caches are warm yet; skip sampling.
+            self._normalized_density_cache = None
+            self._analysis_bundle_cache = None
+            return
+
+        sampled = sample_deposit_kernel(self.domain, deposit)
+        if sampled is not None:
+            if self._density_cache is not None:
+                self._density_cache[sampled.slices] += sampled.values
+            if self._density_max_cache is not None:
+                np.maximum(
+                    self._density_max_cache[sampled.slices],
+                    sampled.values,
+                    out=self._density_max_cache[sampled.slices],
+                )
+            if self._deposition_index_cache is not None:
+                touched = sampled.values > 0.0
+                self._deposition_index_cache[sampled.slices][touched] = index
+        self._normalized_density_cache = None
         self._analysis_bundle_cache = None
 
     def _density_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
@@ -69,22 +98,33 @@ class Simulator:
         return self._deposition_index_cache
 
     def add_deposit(self, deposit: DepositInput) -> None:
-        """Add one deposit or toolpath sequence."""
+        """Add one deposit or toolpath sequence, updating caches incrementally."""
 
-        self._deposits.extend(iter_deposits(deposit))
-        self._invalidate_cache()
+        for leaf in iter_deposits(deposit):
+            new_index = len(self._deposits)
+            self._deposits.append(leaf)
+            self._apply_incremental(leaf, new_index)
 
     def add_deposits(self, deposits: Iterable[DepositInput] | DepositInput) -> None:
-        """Add multiple deposits or sequences."""
+        """Add multiple deposits or sequences, updating caches incrementally."""
 
-        self._deposits.extend(iter_deposits(deposits))
-        self._invalidate_cache()
+        for leaf in iter_deposits(deposits):
+            new_index = len(self._deposits)
+            self._deposits.append(leaf)
+            self._apply_incremental(leaf, new_index)
 
     def clear_deposits(self) -> None:
-        """Remove all deposits and reset caches."""
+        """Remove all deposits, reusing grid allocations where possible."""
 
         self._deposits.clear()
-        self._invalidate_cache()
+        if self._density_cache is not None:
+            self._density_cache.fill(0.0)
+        if self._density_max_cache is not None:
+            self._density_max_cache.fill(0.0)
+        if self._deposition_index_cache is not None:
+            self._deposition_index_cache.fill(-1)
+        self._normalized_density_cache = None
+        self._analysis_bundle_cache = None
 
     def analysis_bundle(self) -> AnalysisBundle:
         """Return a cached AnalysisBundle for the current density field."""
@@ -92,8 +132,8 @@ class Simulator:
         if self._analysis_bundle_cache is None:
             self._analysis_bundle_cache = AnalysisBundle(
                 self.domain,
-                self._density_field(normalize=False),
-                deposition_index=self._deposition_index_field(),
+                self._density_field(normalize=False).copy(),
+                deposition_index=self._deposition_index_field().copy(),
             )
         return self._analysis_bundle_cache
 
@@ -106,11 +146,11 @@ class Simulator:
         """Return a reusable SimulationResult built from cached density fields."""
 
         requested = tuple(dict.fromkeys(compositions))
-        density_sum = self._density_field() if "sum" in requested else None
+        density_sum = self._density_field().copy() if "sum" in requested else None
         return SimulationResult(
             domain=self.domain,
             deposits=tuple(self._deposits),
-            density_max=self._density_max_field(),
+            density_max=self._density_max_field().copy(),
             density_sum=density_sum,
             default_threshold=threshold,
         )
