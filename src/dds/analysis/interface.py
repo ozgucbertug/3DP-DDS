@@ -56,10 +56,6 @@ def _contact_for_pair(
     return contact, face_count, contact_area
 
 
-def _resolve_strata(source: Any, *, mode: StrataMode, threshold: float) -> StratumFieldSet:
-    return build_strata(source, mode=mode, threshold=threshold)
-
-
 def interface(
     source: Any,
     *,
@@ -68,7 +64,7 @@ def interface(
 ) -> InterfaceAnalysis:
     """Compute aggregate contact and overlap metrics across consecutive strata."""
 
-    field_set = _resolve_strata(source, mode=mode, threshold=threshold)
+    field_set = build_strata(source, mode=mode, threshold=threshold)
     occupancy_fields = field_set.occupancy_fields
     stratum_ids = field_set.stratum_ids
     shape = field_set.domain.grid_shape

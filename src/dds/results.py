@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import inspect
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -38,16 +39,16 @@ class WorkbenchViewConfig:
     scalar_field: ViewScalarField | None = None
     color_mode: ViewColorMode | None = None
     build_direction: str | tuple[float, float, float] = "+Z"
+    _VALID_DIRECTION_STRINGS: ClassVar[frozenset[str]] = frozenset(
+        {"+X", "-X", "+Y", "-Y", "+Z", "-Z"}
+    )
 
-
-def _normalize_compositions(compositions: Sequence[DensityComposition]) -> tuple[DensityComposition, ...]:
-    values = tuple(dict.fromkeys(compositions))
-    if not values:
-        raise ValueError("compositions must contain at least one density composition.")
-    invalid = [value for value in values if value not in {"max", "sum"}]
-    if invalid:
-        raise ValueError("compositions must contain only 'max' and/or 'sum'.")
-    return values
+    def __post_init__(self) -> None:
+        if isinstance(self.build_direction, str) and self.build_direction not in self._VALID_DIRECTION_STRINGS:
+            raise ValueError(
+                f"build_direction string {self.build_direction!r} is not valid. "
+                f"Must be one of {sorted(self._VALID_DIRECTION_STRINGS)}."
+            )
 
 
 @dataclass(slots=True)
@@ -245,10 +246,9 @@ def simulation_result(
         result._analysis_bundle_cache = source
         return result
     if hasattr(source, "result") and callable(source.result):
-        try:
+        if "compositions" in inspect.signature(source.result).parameters:
             return source.result(threshold=threshold, compositions=("max", "sum"))
-        except TypeError:
-            return source.result(threshold=threshold)
+        return source.result(threshold=threshold)
     if hasattr(source, "analysis_bundle") and callable(source.analysis_bundle):
         bundle = source.analysis_bundle()
         return simulation_result(bundle, threshold=threshold)
@@ -264,7 +264,11 @@ def simulate(
 ) -> SimulationResult:
     """Run a high-level simulation and return a reusable SimulationResult."""
 
-    requested = _normalize_compositions(compositions)
+    requested = tuple(dict.fromkeys(compositions))
+    if not requested:
+        raise ValueError("compositions must contain at least one density composition.")
+    if any(v not in {"max", "sum"} for v in requested):
+        raise ValueError("compositions must contain only 'max' and/or 'sum'.")
     deposit_tuple = tuple(iter_deposits(deposits))
     needed = ("max",) if "sum" not in requested else ("max", "sum")
     fields = accumulate_density_fields(domain, deposit_tuple, compositions=needed)

@@ -14,13 +14,13 @@ from ..primitives import LineDeposit, PointDeposit, iter_deposits
 def normalize_field(field: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     """Normalize a field by its maximum value when possible."""
 
-    result = field.astype(float, copy=True)
-    if result.size == 0:
-        return result
-    maximum = float(np.max(result))
+    arr = np.asarray(field, dtype=float)
+    if arr.size == 0:
+        return arr.copy()
+    maximum = float(arr.max())
     if maximum > 0.0:
-        result /= maximum
-    return result
+        return arr / maximum
+    return arr.copy()
 
 
 def summarize_layers(
