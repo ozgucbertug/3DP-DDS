@@ -6,8 +6,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ..targets import TargetPoint
 
 PLANE_COMPONENT_RE = re.compile(r"([A-Za-z])\(([^)]*)\)")
@@ -42,6 +40,13 @@ def _parse_origin_value(value: Any, *, name: str) -> tuple[float, float, float]:
 
 def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
     """Load ordered target points from a YAML file."""
+
+    try:
+        import yaml
+    except ImportError as exc:
+        raise ImportError(
+            'pyyaml is required for YAML target loading. Install it with `pip install -e ".[formats]"`.',
+        ) from exc
 
     yaml_path = Path(path)
     with yaml_path.open("r", encoding="utf-8") as file:
