@@ -3,9 +3,13 @@
 from typing import TYPE_CHECKING, Any
 
 from . import formats, geometry, targets, viz
+from .analysis import AnalysisBundle, analysis_bundle
 from .attributes import BeadProfile, DepositionMetadata, ProcessState, UnitSystem
+from .chunked import ChunkedField
 from .cli import run_cli
 from .domain import Domain
+from .fields import accumulate_chunked_field, apply_deposit_to_field, apply_deposit_to_index_field
+from .io import load_checkpoint, save_checkpoint
 from .primitives import (
     Deposit,
     DepositInput,
@@ -17,13 +21,9 @@ from .primitives import (
     PolylineDeposit,
     Pose3D,
 )
-from .types import FieldComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
-from .analysis import AnalysisBundle, analysis_bundle
-from .chunked import ChunkedField
-from .fields import accumulate_chunked_field, apply_deposit_to_field, apply_deposit_to_index_field
-from .io import load_checkpoint, save_checkpoint
 from .simulator import Simulator
+from .types import FieldComposition, FieldName
 
 if TYPE_CHECKING:
     from .workbench import SimulationWorkbench
@@ -64,9 +64,6 @@ __all__ = [
     "targets",
     "viz",
 ]
-
-__version__ = "0.1.0"
-
 
 def __getattr__(name: str) -> Any:
     if name == "SimulationWorkbench":

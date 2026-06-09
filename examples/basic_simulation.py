@@ -4,7 +4,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from dds import (  # noqa: E402
+import dds.viz
+from dds import (
     BeadProfile,
     DepositionMetadata,
     Domain,
@@ -14,10 +15,7 @@ from dds import (  # noqa: E402
     Simulator,
     run_cli,
 )
-import dds.viz  # noqa: E402
-from dds.analysis import summarize_layers  # noqa: E402
-from dds.analysis import occupancy_fraction  # noqa: E402
-from dds.io import save_simulation_bundle  # noqa: E402
+from dds.analysis import occupancy_fraction, summarize_layers
 
 
 def build_example_domain() -> Domain:
@@ -88,11 +86,8 @@ def main(args: Args) -> None:
     print(f"Layer summary: {summarize_layers(deposits)}")
 
     if args.output_dir is not None:
-        written = save_simulation_bundle(
+        written = result.save(
             args.output_dir,
-            domain=domain,
-            occupancy=occupancy,
-            deposition_index=deposition_index,
             metadata={"example": "basic_simulation", "threshold": args.threshold},
         )
         for label, path in written.items():

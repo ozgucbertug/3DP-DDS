@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+
 import numpy as np
 import pytest
 
@@ -10,7 +11,15 @@ if os.environ.get("DDS_RUN_VIZ_TESTS") != "1":
 pyvistaqt = pytest.importorskip("pyvistaqt")
 pytest.importorskip("PySide6")
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator, WorkbenchViewConfig  # noqa: E402
+from dds import (  # noqa: E402
+    BeadProfile,
+    DepositionMetadata,
+    Domain,
+    LineDeposit,
+    PointDeposit,
+    Simulator,
+    WorkbenchViewConfig,
+)
 from dds.workbench import SimulationWorkbench  # noqa: E402
 
 

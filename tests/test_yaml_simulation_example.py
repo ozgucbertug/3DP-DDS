@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,6 +13,15 @@ from dds import SimulationResult
 
 ROOT = Path(__file__).resolve().parents[1]
 EXAMPLE_PATH = ROOT / "examples" / "yaml_simulation.py"
+
+
+def source_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    source_path = str(ROOT / "src")
+    env["PYTHONPATH"] = os.pathsep.join(
+        value for value in (source_path, env.get("PYTHONPATH")) if value
+    )
+    return env
 
 
 def load_example_module() -> object:
@@ -28,6 +38,7 @@ def test_yaml_simulation_example_exposes_tyro_help() -> None:
     result = subprocess.run(
         [sys.executable, str(EXAMPLE_PATH), "--help"],
         cwd=ROOT,
+        env=source_environment(),
         check=False,
         capture_output=True,
         text=True,
@@ -57,6 +68,7 @@ def test_yaml_simulation_config_is_ide_friendly() -> None:
     assert config.build_direction == "+Z"
     assert config.bead_width == pytest.approx(18.0)
     assert config.bead_height == pytest.approx(12.0)
+    assert config.write_mesh_output is False
     assert config.view is False
 
 
@@ -81,6 +93,7 @@ targets:
             bead_height=12.0,
             analysis="interface",
             build_direction="+Z",
+            field_composition="coverage",
             write_mesh_output=False,
             view=False,
         )
@@ -93,6 +106,9 @@ targets:
     assert result.coverage is not None
     assert result.coverage.shape == result.domain.grid_shape
     assert np.all(result.coverage >= result.density_max)
+    assert (tmp_path / "out" / "density.npy").exists()
+    assert (tmp_path / "out" / "coverage.npy").exists()
+    assert (tmp_path / "out" / "metadata.json").exists()
 
 
 def test_yaml_example_keeps_coverage_distinct_from_max_for_overlap(tmp_path: Path) -> None:
@@ -118,6 +134,7 @@ targets:
             bead_height=12.0,
             analysis="interface",
             build_direction="+Z",
+            field_composition="coverage",
             write_mesh_output=False,
             view=False,
         )

@@ -1,6 +1,6 @@
 # 3DP-DDS
 
-`3DP-DDS` is a Python library for dense deposition simulation on a 3D voxel grid. The import package is `dds`. It covers the full pipeline from raw deposit primitives through density accumulation, occupancy and surface extraction, headless analysis, and result serialization — all without requiring a display or visualization stack.
+`3DP-DDS` is a Python library for deposition simulation on a 3D voxel grid. The import package is `dds`. It represents fabricated geometry with point, line, and polyline deposition events and supports dense or chunked digital-twin fields, headless analysis, and result serialization without requiring a display stack.
 
 ## Contents
 
@@ -36,14 +36,14 @@
 pip install -e .
 ```
 
-Core dependencies: `numpy`, `scipy`, `trimesh`, `tyro`.
+Core dependencies: `numpy`, `scipy`, `tyro`.
 
 ### Optional extras
 
 | Extra | Adds | Install |
 |-------|------|---------|
 | `formats` | YAML target file support via PyYAML | `pip install -e ".[formats]"` |
-| `mesh` | Mesh file I/O and marching-cubes extraction via meshio + scikit-image | `pip install -e ".[mesh]"` |
+| `mesh` | Mesh I/O, extraction, containment, and signed-distance queries | `pip install -e ".[mesh]"` |
 | `viz` | Interactive PyVistaQt workbench | `pip install -e ".[viz]"` |
 | `dev` | pytest and pytest-qt for running the test suite | `pip install -e ".[dev]"` |
 
@@ -291,7 +291,7 @@ Adding deposits updates only the warm caches rather than recomputing the full gr
 ```python
 sim = Simulator(domain)
 
-for deposit in toolpath:
+for deposit in deposits:
     sim.add_deposit(deposit)               # O(kernel window) per deposit
 
 # add_deposits accepts a list or any DepositInput
@@ -311,8 +311,9 @@ Because `add_deposit` and field queries are both cheap after the first warm-up, 
 ```python
 sim = Simulator(domain)
 probe = (25.0, 25.0, 1.0)
+previous_layer = None
 
-for i, deposit in enumerate(toolpath):
+for i, deposit in enumerate(deposits):
     sim.add_deposit(deposit)
 
     # query every 100 deposits
@@ -320,9 +321,11 @@ for i, deposit in enumerate(toolpath):
         print(f"deposit {i}: occupied={sim.is_occupied(probe)}")
 
     # snapshot per layer boundary
-    if deposit.metadata.layer_id != getattr(previous, "metadata.layer_id", None):
+    current_layer = deposit.metadata.layer_id
+    if current_layer != previous_layer:
         layer_result = sim.result()
-        layer_result.checkpoint(f"checkpoints/layer_{deposit.metadata.layer_id}.npz")
+        layer_result.checkpoint(f"checkpoints/layer_{current_layer}.npz")
+    previous_layer = current_layer
 ```
 
 ### Low-level field helpers
@@ -396,7 +399,7 @@ print(sim.chunked_field().event_count)  # 0, object reused
 
 ## Checkpoints
 
-A checkpoint is a single compressed `.npz` file containing the density arrays and a JSON blob with the full deposit list, domain geometry, and threshold. No re-simulation is needed to restore a result.
+A checkpoint is a single compressed `.npz` file containing field arrays and a JSON blob with the full deposit list, domain geometry, and threshold. No re-simulation is needed to restore a result.
 
 ```python
 from dds import simulate, save_checkpoint, load_checkpoint, SimulationResult
@@ -419,7 +422,7 @@ print(len(restored.deposits))
 occ = restored.occupancy()
 ```
 
-The checkpoint format is versioned. An unsupported version raises `ValueError`.
+The checkpoint schema is versioned independently from package releases. An unsupported schema raises `ValueError`.
 
 ---
 
@@ -432,6 +435,7 @@ from dds import Simulator
 from dds.analysis import sample_points, signed_distance_at
 
 sim    = Simulator(domain, deposits)
+result = sim.result(compositions=("max", "coverage"))
 bundle = sim.analysis_bundle()           # or result.analysis_bundle()
 
 # Density and field sampling
@@ -454,13 +458,13 @@ samples = sample_points(
 )
 
 # Strata (requires deposits to carry layer_id metadata)
-strata = bundle.strata(mode="layer", threshold=0.5)
+strata = result.strata(mode="layer", threshold=0.5)
 
 # Interface metrics between consecutive strata
-iface = bundle.interface(mode="layer", threshold=0.5)
+iface = result.interface(mode="layer", threshold=0.5)
 
 # Support analysis
-support = bundle.support(build_direction=(0.0, 0.0, 1.0), threshold=0.5)
+support = result.support(build_direction=(0.0, 0.0, 1.0), threshold=0.5)
 ```
 
 Analysis API summary:
@@ -544,8 +548,8 @@ hole  = cylinder(radius=0.8, height=8.0)
 shape = difference(outer, hole)          # outer - hole
 
 # Sample onto a dense grid
-density = shape.sample(domain)           # ndarray; values ≤ 0 are inside
-occupancy = density <= 0.0
+sdf_values = shape.sample(domain)        # ndarray; values <= 0 are inside
+occupancy = sdf_values <= 0.0
 ```
 
 Available primitives: `sphere`, `box`, `cylinder`, `capsule`, `plane`, `slab`, `ellipsoid`, `torus`, `rounded_box`, `capped_cylinder`, `rounded_cylinder`, `capped_cone`, `cone`, `rounded_cone`, `capsule_chain`
@@ -572,8 +576,9 @@ from dds.geometry import (
     write_mesh,
 )
 
-# Extract a surface mesh from a density field
-surface = density_to_mesh(domain, density, threshold=0.5)
+# Extract a surface mesh from a deposition density field
+density_field = result.field("max")
+surface = density_to_mesh(domain, density_field, threshold=0.5)
 write_mesh("outputs/surface.ply", surface)
 
 # Load a mesh and convert it back to a sampled SDF
@@ -581,10 +586,10 @@ mesh    = read_mesh("outputs/surface.ply")
 sdf_arr = mesh_to_sdf_field(domain, mesh)    # float64 grid
 
 # Derive an SDF from density and wrap it as a sampled SDF object
-sdf_obj = density_to_sdf(domain, density, threshold=0.5)
+sdf_obj = density_to_sdf(domain, density_field, threshold=0.5)
 
 # Occupancy → mesh (marching cubes on a bool grid)
-occ_surface = occupancy_to_mesh(domain, density <= 0.5)
+occ_surface = occupancy_to_mesh(domain, result.occupancy())
 ```
 
 Mesh API:
@@ -665,20 +670,21 @@ A checkpoint stores the full deposit list alongside the density arrays, so the r
 Requires the `viz` extra (`pip install -e ".[viz]"`).
 
 ```python
+import dds.viz
 from dds import Simulator, WorkbenchViewConfig
 
 sim = Simulator(domain, deposits)
+result = sim.result(compositions=("max", "coverage"), threshold=0.5)
 
-sim.show(
-    WorkbenchViewConfig(
+workbench = dds.viz.show(
+    result,
+    initial_view=WorkbenchViewConfig(
         view_mode="surface",        # "surface" | "occupancy" | "density"
         build_direction="+Z",
-        threshold=0.5,
-    )
+    ),
+    off_screen=False,
 )
-
-# Or from a SimulationResult
-result.show()
+workbench.app.exec()
 ```
 
 `SimulationWorkbench` is loaded lazily; an `ImportError` with a clear install hint is raised if the `viz` dependencies are missing.
@@ -702,6 +708,9 @@ python examples/basic_simulation.py --output-dir outputs/basic
 
 # YAML-driven example
 python examples/yaml_simulation.py
+
+# Include the additive coverage diagnostic
+python examples/yaml_simulation.py --field-composition coverage
 ```
 
 All example scripts expose typed `--help` output through dataclass-backed configs using `tyro`.
@@ -767,3 +776,5 @@ src/dds/
 - **Deposition index**: 0-based index of the last deposit touching each voxel; −1 for untouched voxels
 - **Snapshot isolation**: `Simulator.result()` and `Simulator.analysis_bundle()` copy their backing arrays at creation time — holding an old snapshot is safe after further `add_deposit` calls
 - **Cache sharing**: when multiple caches are warm, `add_deposit` samples the kernel once and fans the result out to all of them
+
+See `docs/architecture.md` for module boundaries and `docs/modeling-assumptions.md` for the mathematical scope and current physical limitations.

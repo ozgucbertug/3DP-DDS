@@ -3,7 +3,16 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dds import AnalysisBundle, BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator, analysis_bundle
+from dds import (
+    AnalysisBundle,
+    BeadProfile,
+    DepositionMetadata,
+    Domain,
+    LineDeposit,
+    PointDeposit,
+    Simulator,
+    analysis_bundle,
+)
 from dds.analysis import (
     contains_point,
     sample_density_at,

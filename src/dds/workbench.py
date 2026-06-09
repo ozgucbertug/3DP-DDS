@@ -8,8 +8,8 @@ import numpy as np
 import numpy.typing as npt
 
 try:
-    from PySide6 import QtCore, QtWidgets
     import pyvista as pv
+    from PySide6 import QtCore, QtWidgets
     from pyvistaqt import QtInteractor
 except ImportError as exc:
     raise ImportError(
@@ -17,9 +17,9 @@ except ImportError as exc:
         'Install them with `pip install -e ".[viz]"`.'
     ) from exc
 
+from .analysis import AnalysisBundle
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals
-from .analysis import AnalysisBundle
 from .results import SimulationResult, WorkbenchViewConfig, simulation_result
 
 Representation = Literal["surface", "occupancy", "density"]

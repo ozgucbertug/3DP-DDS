@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+import dds.viz
 from dds import (
     BeadProfile,
     DepositionMetadata,
@@ -13,9 +14,9 @@ from dds import (
     WorkbenchViewConfig,
     run_cli,
 )
-import dds.viz
 from dds.analysis import occupancy_fraction
 from dds.formats.yaml import load_targets
+from dds.geometry import write_mesh
 from dds.targets import point_deposits_from_targets
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,7 +38,7 @@ class YamlSimulationConfig:
     analysis: Literal["none", "interface", "support", "all"] = "none"
     stratification: Literal["auto", "layer", "order"] = "auto"
     build_direction: Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"] = "+Z"
-    write_mesh_output: bool = True
+    write_mesh_output: bool = False
     mesh_step_size: int = 1
     view: bool = False
     view_mode: Literal["surface", "occupancy", "density"] = "surface"
@@ -62,7 +63,12 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         padding="auto" if config.padding is None else config.padding,
     )
     simulator = Simulator(domain, deposits)
-    result = simulator.result(compositions=("max", "coverage"), threshold=config.threshold)
+    compositions = (
+        ("max", "coverage")
+        if config.field_composition == "coverage"
+        else ("max",)
+    )
+    result = simulator.result(compositions=compositions, threshold=config.threshold)
 
     occupancy = result.occupancy(threshold=config.threshold)
     deposition_index = result.analysis_bundle().deposition_index_field()
@@ -107,29 +113,35 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         print(f"Shadow volume: {support_analysis.shadow_volume:.4f}")
         print(f"Max unsupported span: {support_analysis.max_unsupported_span:.4f}")
 
-    # written = result.save(
-    #     config.output_dir,
-    #     metadata={
-    #         "example": "yaml_simulation",
-    #         "yaml_path": config.yaml_path,
-    #         "target_count": len(targets),
-    #         "deposit_count": len(deposits),
-    #         "bead_width": config.bead_width,
-    #         "bead_height": config.bead_height,
-    #         "origin_reference": config.origin_reference,
-    #         "threshold": config.threshold,
-    #         "field_composition": config.field_composition,
-    #     },
-    # )
-    # if config.write_mesh_output:
-    #     mesh = result.surface_mesh(threshold=config.threshold, step_size=config.mesh_step_size)
-    #     write_mesh(config.output_dir / "surface_mesh.ply", mesh)
+    written = result.save(
+        config.output_dir,
+        metadata={
+            "example": "yaml_simulation",
+            "yaml_path": config.yaml_path,
+            "target_count": len(targets),
+            "deposit_count": len(deposits),
+            "bead_width": config.bead_width,
+            "bead_height": config.bead_height,
+            "origin_reference": config.origin_reference,
+            "threshold": config.threshold,
+            "field_composition": config.field_composition,
+        },
+    )
+    for label, path in written.items():
+        print(f"Saved {label}: {path}")
+    if config.write_mesh_output:
+        mesh = result.surface_mesh(
+            threshold=config.threshold,
+            step_size=config.mesh_step_size,
+        )
+        mesh_path = write_mesh(config.output_dir / "surface_mesh.ply", mesh)
+        print(f"Saved surface mesh: {mesh_path}")
 
     if config.view:
         initial_scalar_field = None
         initial_color_mode = None
         if config.view_mode == "density":
-            if config.analysis in {"interface", "all"} or config.field_composition == "coverage":
+            if config.field_composition == "coverage":
                 initial_scalar_field = "coverage"
             else:
                 initial_scalar_field = "density"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -8,6 +9,15 @@ from pathlib import Path
 from dds.cli import parse_cli, run_cli
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def source_environment() -> dict[str, str]:
+    env = os.environ.copy()
+    source_path = str(ROOT / "src")
+    env["PYTHONPATH"] = os.pathsep.join(
+        value for value in (source_path, env.get("PYTHONPATH")) if value
+    )
+    return env
 
 
 @dataclass
@@ -38,6 +48,7 @@ def test_basic_simulation_example_exposes_tyro_help() -> None:
     result = subprocess.run(
         [sys.executable, str(ROOT / "examples" / "basic_simulation.py"), "--help"],
         cwd=ROOT,
+        env=source_environment(),
         check=False,
         capture_output=True,
         text=True,

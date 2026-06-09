@@ -450,7 +450,7 @@ def capsule_chain(
         resolved_radius = _radius_from_inputs(radius=radius, diameter=diameter, name="radius")
         parts = [
             capsule(start, end, radius=resolved_radius)
-            for start, end in zip(point_array[:-1], point_array[1:])
+            for start, end in zip(point_array[:-1], point_array[1:], strict=True)
         ]
     else:
         if radius is not None or diameter is not None:
@@ -465,7 +465,7 @@ def capsule_chain(
             point_array[:-1],
             point_array[1:],
             radius_array[:-1],
-            radius_array[1:],
+            radius_array[1:], strict=True,
         ):
             if np.isclose(start_radius, end_radius):
                 parts.append(capsule(start, end, radius=float(start_radius)))

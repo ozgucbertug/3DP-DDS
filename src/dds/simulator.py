@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -17,7 +17,6 @@ from .primitives import Deposit, DepositInput, iter_deposits
 from .results import SimulationResult
 from .types import FieldComposition
 
-from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .chunked import ChunkedField
 

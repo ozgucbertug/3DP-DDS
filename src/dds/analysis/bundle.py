@@ -8,11 +8,11 @@ from typing import Any, Literal
 import numpy as np
 import numpy.typing as npt
 
-from .fields import normalize_field
 from ..domain import Domain
 from ..geometry.sdf import _coerce_points
 from ..occupancy import occupancy_from_density
 from ..utils import EPSILON, ensure_finite_triplet, normalize_axis, readonly_array
+from .fields import normalize_field
 
 InterpolationMode = Literal["nearest", "trilinear"]
 RepresentationMode = Literal["occupancy", "density", "sdf", "mesh"]

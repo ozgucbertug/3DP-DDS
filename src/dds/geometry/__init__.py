@@ -1,5 +1,18 @@
 """SDF-, mesh-, and mesh-analysis helpers for dds."""
 
+from ..mesh_analysis import (
+    downfacing_mask,
+    face_areas,
+    face_centroids,
+    face_normals,
+    mesh_bounds_stats,
+    mesh_surface_area,
+    mesh_volume_estimate,
+    normal_rgb_from_normals,
+    overhang_angles,
+    support_risk_mask,
+    vertex_normals,
+)
 from .adapters import (
     MeshSDF3,
     density_to_sdf,
@@ -13,6 +26,7 @@ from .adapters import (
 )
 from .mesh import TriangleMesh, density_to_mesh, extract_mesh_from_field, occupancy_to_mesh, sdf_to_mesh
 from .ops import difference, dilate, erode, intersection, shell, union
+from .sdf import SDF3, GridSDF3, as_sdf3
 from .shapes import (
     ORIGIN,
     X,
@@ -34,21 +48,7 @@ from .shapes import (
     sphere,
     torus,
 )
-from .sdf import GridSDF3, SDF3, as_sdf3
 from .transforms import orient, rotate, rotation_matrix, scale, translate
-from ..mesh_analysis import (
-    downfacing_mask,
-    face_areas,
-    face_centroids,
-    face_normals,
-    mesh_bounds_stats,
-    mesh_surface_area,
-    mesh_volume_estimate,
-    normal_rgb_from_normals,
-    overhang_angles,
-    support_risk_mask,
-    vertex_normals,
-)
 
 __all__ = [
     "GridSDF3",

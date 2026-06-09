@@ -12,7 +12,7 @@ import numpy.typing as npt
 
 from ..domain import Domain
 from .mesh import TriangleMesh, _load_trimesh, _validate_field_shape
-from .sdf import GridSDF3, SDF3
+from .sdf import SDF3, GridSDF3
 
 
 def _load_meshio() -> Any:
@@ -39,7 +39,7 @@ def _ensure_watertight(mesh: Any, *, require_watertight: bool, context: str) -> 
     )
     if require_watertight:
         raise ValueError(message)
-    warnings.warn(message, RuntimeWarning)
+    warnings.warn(message, RuntimeWarning, stacklevel=2)
 
 
 def read_mesh(path: str | Path) -> TriangleMesh:

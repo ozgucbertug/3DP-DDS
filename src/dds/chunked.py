@@ -70,7 +70,7 @@ class ChunkedField:
         starts = tuple(int(axis_slice.start) for axis_slice in sampled.slices)
         stops = tuple(int(axis_slice.stop) for axis_slice in sampled.slices)
         expected_shape = tuple(stops[axis] - starts[axis] for axis in range(3))
-        if any(stop <= start for start, stop in zip(starts, stops)):
+        if any(stop <= start for start, stop in zip(starts, stops, strict=True)):
             raise ValueError("Kernel slices must be nonempty.")
         if sampled.values.shape != expected_shape:
             raise ValueError(

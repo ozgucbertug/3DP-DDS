@@ -11,7 +11,7 @@ import numpy as np
 from ..fields import accumulate_fields
 from ..occupancy import occupancy_from_density
 from ..primitives import Deposit, iter_deposits
-from .models import StratumFieldSet, StratificationMode
+from .models import StratificationMode, StratumFieldSet
 
 StrataMode = Literal["auto", "layer", "order"]
 

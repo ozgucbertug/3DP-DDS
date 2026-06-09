@@ -231,6 +231,7 @@ def test_checkpoint_load_accepts_path_without_extension(tmp_path) -> None:
 
 def test_checkpoint_raises_on_unsupported_version(tmp_path) -> None:
     import json
+
     import numpy as np_inner
 
     # Build a minimal npz with wrong version number.

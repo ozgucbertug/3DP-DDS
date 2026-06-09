@@ -227,7 +227,7 @@ def sample_polyline_kernel(
     upper = stops.max(axis=0)
     values = np.zeros(tuple(int(value) for value in upper - lower), dtype=float)
 
-    for sampled, start in zip(segment_samples, starts):
+    for sampled, start in zip(segment_samples, starts, strict=True):
         offset = start - lower
         local_slices = tuple(
             slice(int(offset[axis]), int(offset[axis]) + sampled.values.shape[axis])

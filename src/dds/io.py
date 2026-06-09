@@ -46,7 +46,7 @@ def save_simulation_bundle(
     *,
     domain: Domain,
     occupancy: npt.NDArray[np.bool_] | None = None,
-    deposition_index: npt.NDArray[np.float64] | None = None,
+    deposition_index: npt.NDArray[np.integer[Any]] | npt.NDArray[np.float64] | None = None,
     density: npt.NDArray[np.float64] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Path]:

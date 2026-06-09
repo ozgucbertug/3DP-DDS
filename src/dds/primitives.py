@@ -176,7 +176,7 @@ class Polyline3D:
 
         return tuple(
             LineSegment3D(start=start, end=end)
-            for start, end in zip(self.points[:-1], self.points[1:])
+            for start, end in zip(self.points[:-1], self.points[1:], strict=True)
         )
 
     def bounds(self) -> tuple[Point3D, Point3D]:
@@ -443,7 +443,7 @@ class PolylineDeposit:
         )
         if len(poses) < 2:
             raise ValueError("PolylineDeposit requires at least two poses.")
-        for start, end in zip(poses[:-1], poses[1:]):
+        for start, end in zip(poses[:-1], poses[1:], strict=True):
             if float(np.dot(start.axis.to_array(), end.axis.to_array())) <= -1.0 + 1e-8:
                 raise ValueError(
                     "Consecutive PolylineDeposit axes must not be antiparallel."
@@ -470,7 +470,7 @@ class PolylineDeposit:
         return cls(
             poses=tuple(
                 Pose3D(position=point, z_axis=axis)
-                for point, axis in zip(polyline.points, axes)
+                for point, axis in zip(polyline.points, axes, strict=True)
             ),
             profile=profile,
             metadata=metadata or DepositionMetadata(),
@@ -488,7 +488,7 @@ class PolylineDeposit:
                 metadata=self.metadata,
                 process=self.process,
             )
-            for start, end in zip(self.poses[:-1], self.poses[1:])
+            for start, end in zip(self.poses[:-1], self.poses[1:], strict=True)
         )
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:

@@ -27,13 +27,13 @@ def ensure_finite_triplet(values: Any, name: str) -> tuple[float, float, float]:
         array = values.astype(float, copy=False).reshape(-1)
         if array.size != 3:
             raise ValueError(f"{name} must contain exactly three values.")
-        result = tuple(float(item) for item in array)
+        result = (float(array[0]), float(array[1]), float(array[2]))
     elif all(hasattr(values, axis) for axis in ("x", "y", "z")):
         result = (float(values.x), float(values.y), float(values.z))
     elif isinstance(values, Sequence) and not isinstance(values, (str, bytes)):
         if len(values) != 3:
             raise ValueError(f"{name} must contain exactly three values.")
-        result = tuple(float(item) for item in values)
+        result = (float(values[0]), float(values[1]), float(values[2]))
     else:
         raise TypeError(f"{name} must be a sequence of three numeric values.")
 
@@ -103,7 +103,8 @@ def normalize_axis(value: Any, name: str) -> tuple[float, float, float]:
     norm = float(np.linalg.norm(array))
     if norm <= EPSILON:
         raise ValueError(f"{name} must not be the zero vector.")
-    return tuple(float(component) for component in array / norm)  # type: ignore[return-value]
+    normalized = array / norm
+    return (float(normalized[0]), float(normalized[1]), float(normalized[2]))
 
 
 def slerp_unit_vectors(

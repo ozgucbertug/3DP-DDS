@@ -1,5 +1,6 @@
 """Public analysis namespace for dense simulation results."""
 
+from ..occupancy import occupancy_fraction
 from .bundle import (
     AnalysisBundle,
     analysis_bundle,
@@ -16,7 +17,6 @@ from .interface import interface
 from .models import InterfaceAnalysis, InterfacePairSummary, StratumFieldSet, SupportAnalysis
 from .strata import strata
 from .support import support
-from ..occupancy import occupancy_fraction
 
 __all__ = [
     "AnalysisBundle",

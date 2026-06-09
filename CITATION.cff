@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software in research, cite the repository and the associated publication when available."
+title: "3DP-DDS: Dense Deposition Simulation for Robotic Additive Manufacturing"
+type: software
+authors:
+  - given-names: "Ozguc Bertug"
+    family-names: "Capunaman"
+repository-code: "https://github.com/ozgucbertug/3DP-DDS"
+license: BSD-3-Clause

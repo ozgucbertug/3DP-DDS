@@ -16,14 +16,20 @@ from .analysis import (
     InterfaceAnalysis,
     StratumFieldSet,
     SupportAnalysis,
+)
+from .analysis import (
     interface as build_interface,
+)
+from .analysis import (
     strata as build_strata,
+)
+from .analysis import (
     support as build_support,
 )
+from .domain import Domain
 from .fields import accumulate_fields
 from .io import save_array, save_simulation_bundle
 from .primitives import Deposit, DepositInput, iter_deposits
-from .domain import Domain
 from .types import FieldComposition
 from .utils import ensure_finite_scalar, readonly_array
 
