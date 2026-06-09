@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .primitives import Deposit
     from .results import SimulationResult
 
-_CHECKPOINT_VERSION = 1
+_CHECKPOINT_VERSION = 2
 
 
 def _json_default(value: Any) -> Any:
@@ -173,8 +173,8 @@ def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:
         "density_max": result.density_max,
         "_meta": np.frombuffer(meta_bytes, dtype=np.uint8),
     }
-    if result.density_sum is not None:
-        arrays["density_sum"] = result.density_sum
+    if result.coverage is not None:
+        arrays["coverage"] = result.coverage
 
     np.savez_compressed(target, **arrays)
     return target.resolve()
@@ -223,12 +223,12 @@ def load_checkpoint(path: str | Path) -> SimulationResult:
     )
 
     deposits = tuple(_deposit_from_dict(dep) for dep in meta["deposits"])
-    density_sum = data["density_sum"] if "density_sum" in data else None
+    coverage = data["coverage"] if "coverage" in data else None
 
     return SimulationResult(
         domain=domain,
         deposits=deposits,
         density_max=data["density_max"],
-        density_sum=density_sum,
+        coverage=coverage,
         default_threshold=float(meta["threshold"]),
     )

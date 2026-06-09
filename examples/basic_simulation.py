@@ -55,7 +55,7 @@ def main(args: Args) -> None:
     domain = build_example_domain()
     deposits = build_example_deposits()
     simulator = Simulator(domain, deposits)
-    result = simulator.result(compositions=("max", "sum"), threshold=args.threshold)
+    result = simulator.result(compositions=("max", "coverage"), threshold=args.threshold)
 
     occupancy = result.occupancy(threshold=args.threshold)
     deposition_index = result.analysis_bundle().deposition_index_field()

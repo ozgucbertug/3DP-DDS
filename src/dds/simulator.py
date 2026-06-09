@@ -10,12 +10,12 @@ import numpy.typing as npt
 
 from .analysis import AnalysisBundle, normalize_field
 from .domain import Domain
-from .fields import accumulate_density, accumulate_deposition_index, accumulate_density_sparse
+from .fields import accumulate_deposition_index, accumulate_density_sparse, accumulate_field
 from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
 from .results import SimulationResult
-from .types import DensityComposition
+from .types import FieldComposition
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -32,7 +32,7 @@ class Simulator:
     ) -> None:
         self.domain = domain
         self._deposits: list[Deposit] = []
-        self._density_cache: npt.NDArray[np.float64] | None = None
+        self._coverage_cache: npt.NDArray[np.float64] | None = None
         self._density_max_cache: npt.NDArray[np.float64] | None = None
         self._normalized_density_cache: npt.NDArray[np.float64] | None = None
         self._deposition_index_cache: npt.NDArray[np.intp] | None = None
@@ -48,7 +48,7 @@ class Simulator:
         return tuple(self._deposits)
 
     def _invalidate_cache(self) -> None:
-        self._density_cache = None
+        self._coverage_cache = None
         self._density_max_cache = None
         self._normalized_density_cache = None
         self._deposition_index_cache = None
@@ -59,7 +59,7 @@ class Simulator:
         """Apply one deposit kernel to every live dense cache in a single sample pass."""
 
         if not (
-            self._density_cache is not None
+            self._coverage_cache is not None
             or self._density_max_cache is not None
             or self._deposition_index_cache is not None
             or self._sparse_cache is not None
@@ -71,8 +71,8 @@ class Simulator:
 
         sampled = sample_deposit_kernel(self.domain, deposit)
         if sampled is not None:
-            if self._density_cache is not None:
-                self._density_cache[sampled.slices] += sampled.values
+            if self._coverage_cache is not None:
+                self._coverage_cache[sampled.slices] += sampled.values
             if self._density_max_cache is not None:
                 np.maximum(
                     self._density_max_cache[sampled.slices],
@@ -88,18 +88,29 @@ class Simulator:
         self._analysis_bundle_cache = None
 
     def _density_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
-        if self._density_cache is None:
-            self._density_cache = accumulate_density(self.domain, self._deposits, composition="sum")
+        if self._density_max_cache is None:
+            self._density_max_cache = accumulate_field(
+                self.domain,
+                self._deposits,
+                composition="max",
+            )
         if not normalize:
-            return self._density_cache
+            return self._density_max_cache
         if self._normalized_density_cache is None:
-            self._normalized_density_cache = normalize_field(self._density_cache)
+            self._normalized_density_cache = normalize_field(self._density_max_cache)
         return self._normalized_density_cache
 
     def _density_max_field(self) -> npt.NDArray[np.float64]:
-        if self._density_max_cache is None:
-            self._density_max_cache = accumulate_density(self.domain, self._deposits, composition="max")
-        return self._density_max_cache
+        return self._density_field(normalize=False)
+
+    def _coverage_field(self) -> npt.NDArray[np.float64]:
+        if self._coverage_cache is None:
+            self._coverage_cache = accumulate_field(
+                self.domain,
+                self._deposits,
+                composition="coverage",
+            )
+        return self._coverage_cache
 
     def _deposition_index_field(self) -> npt.NDArray[np.intp]:
         if self._deposition_index_cache is None:
@@ -126,8 +137,8 @@ class Simulator:
         """Remove all deposits, reusing grid allocations where possible."""
 
         self._deposits.clear()
-        if self._density_cache is not None:
-            self._density_cache.fill(0.0)
+        if self._coverage_cache is not None:
+            self._coverage_cache.fill(0.0)
         if self._density_max_cache is not None:
             self._density_max_cache.fill(0.0)
         if self._deposition_index_cache is not None:
@@ -163,7 +174,7 @@ class Simulator:
     def result(
         self,
         *,
-        compositions: tuple[DensityComposition, ...] = ("max",),
+        compositions: tuple[FieldComposition, ...] = ("max",),
         threshold: float = 0.5,
     ) -> SimulationResult:
         """Return a reusable SimulationResult built from cached density fields."""
@@ -171,14 +182,14 @@ class Simulator:
         requested = tuple(dict.fromkeys(compositions))
         if not requested:
             raise ValueError("compositions must contain at least one density composition.")
-        if any(composition not in {"max", "sum"} for composition in requested):
-            raise ValueError("compositions must contain only 'max' and/or 'sum'.")
-        density_sum = self._density_field().copy() if "sum" in requested else None
+        if any(composition not in {"max", "coverage"} for composition in requested):
+            raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
+        coverage = self._coverage_field().copy() if "coverage" in requested else None
         return SimulationResult(
             domain=self.domain,
             deposits=tuple(self._deposits),
             density_max=self._density_max_field().copy(),
-            density_sum=density_sum,
+            coverage=coverage,
             default_threshold=threshold,
         )
 
@@ -191,14 +202,20 @@ class Simulator:
     ) -> npt.NDArray[np.float64] | npt.NDArray[np.bool_]:
         """Sample the requested field using cached density when possible."""
 
-        density = self._density_field(normalize=normalize)
         if field == "density":
-            return density.copy()
+            return self._density_field(normalize=normalize).copy()
+        if field == "coverage":
+            if normalize:
+                raise ValueError("coverage cannot be normalized as a physical density.")
+            return self._coverage_field().copy()
         if field == "deposition_index":
             return self._deposition_index_field().astype(float, copy=False)
         if field == "occupancy":
-            return occupancy_from_density(density, threshold=threshold)
-        raise ValueError("field must be 'density', 'occupancy', or 'deposition_index'.")
+            return occupancy_from_density(
+                self._density_field(normalize=normalize),
+                threshold=threshold,
+            )
+        raise ValueError("field must be 'density', 'coverage', 'occupancy', or 'deposition_index'.")
 
     def simulate_occupancy(
         self,

@@ -11,7 +11,7 @@ import numpy.typing as npt
 
 from .domain import Domain
 from .kernels import SampledKernel
-from .types import DensityComposition
+from .types import FieldComposition
 
 if TYPE_CHECKING:
     pass
@@ -52,15 +52,15 @@ class SparseDensityField:
 
         self._contributions.append((sampled.slices, sampled.values.copy()))
 
-    def to_dense(self, composition: DensityComposition = "max") -> npt.NDArray[np.float64]:
+    def to_dense(self, composition: FieldComposition = "max") -> npt.NDArray[np.float64]:
         """Materialise all contributions into a dense grid.
 
         Parameters
         ----------
         composition:
             ``"max"`` keeps the element-wise maximum across contributions
-            (suitable for geometric occupancy queries).  ``"sum"`` accumulates
-            additively (suitable for total-material queries).
+            (suitable for geometric occupancy queries). ``"coverage"`` adds
+            kernel samples as a nonphysical overlap diagnostic.
 
         Returns
         -------
@@ -69,33 +69,35 @@ class SparseDensityField:
         """
 
         grid = np.zeros(self.domain.grid_shape, dtype=float)
-        if composition == "sum":
+        if composition == "coverage":
             for slices, values in self._contributions:
                 grid[slices] += values
-        else:
+        elif composition == "max":
             for slices, values in self._contributions:
                 np.maximum(grid[slices], values, out=grid[slices])
+        else:
+            raise ValueError("composition must be 'max' or 'coverage'.")
         return grid
 
     def to_dense_all(
         self,
-        *compositions: DensityComposition,
-    ) -> dict[DensityComposition, npt.NDArray[np.float64]]:
+        *compositions: FieldComposition,
+    ) -> dict[FieldComposition, npt.NDArray[np.float64]]:
         """Materialise several compositions in a single pass over contributions.
 
         More efficient than calling :meth:`to_dense` multiple times when both
-        ``"max"`` and ``"sum"`` are needed, because each contribution array is
+        ``"max"`` and ``"coverage"`` are needed, because each contribution array is
         read only once.
 
         Parameters
         ----------
         *compositions:
-            One or more :class:`~dds.types.DensityComposition` strings.
+            One or more :class:`~dds.types.FieldComposition` strings.
             Duplicates are silently deduplicated.
 
         Returns
         -------
-        dict[DensityComposition, npt.NDArray[np.float64]]
+        dict[FieldComposition, npt.NDArray[np.float64]]
             A dense grid for each requested composition.
 
         Raises
@@ -104,15 +106,17 @@ class SparseDensityField:
             When no compositions are supplied.
         """
 
-        requested: tuple[DensityComposition, ...] = tuple(dict.fromkeys(compositions))
+        requested: tuple[FieldComposition, ...] = tuple(dict.fromkeys(compositions))
         if not requested:
             raise ValueError("At least one composition must be requested.")
-        grids: dict[DensityComposition, npt.NDArray[np.float64]] = {
+        if any(composition not in {"max", "coverage"} for composition in requested):
+            raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
+        grids: dict[FieldComposition, npt.NDArray[np.float64]] = {
             c: np.zeros(self.domain.grid_shape, dtype=float) for c in requested
         }
         for slices, values in self._contributions:
-            if "sum" in grids:
-                grids["sum"][slices] += values
+            if "coverage" in grids:
+                grids["coverage"][slices] += values
             if "max" in grids:
                 np.maximum(grids["max"][slices], values, out=grids["max"][slices])
         return grids

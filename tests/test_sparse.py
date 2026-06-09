@@ -8,7 +8,6 @@ import pytest
 from dds import (
     BeadProfile,
     Domain,
-    LineDeposit,
     PointDeposit,
     Simulator,
     SparseDensityField,
@@ -48,22 +47,22 @@ def test_sparse_to_dense_max_matches_simulate_max() -> None:
     sparse = accumulate_density_sparse(domain, deposits)
     dense_max = sparse.to_dense(composition="max")
 
-    expected = simulate(domain, deposits).density("max")
+    expected = simulate(domain, deposits).field("max")
     np.testing.assert_allclose(dense_max, expected)
 
 
-def test_sparse_to_dense_sum_matches_accumulate_density() -> None:
-    """to_dense('sum') must reproduce the sum-composition dense grid."""
-    from dds.fields import accumulate_density
+def test_sparse_to_dense_coverage_matches_accumulate_field() -> None:
+    """to_dense('coverage') must reproduce the additive coverage grid."""
+    from dds.fields import accumulate_field
 
     domain = make_domain()
     deposits = make_deposits()
 
     sparse = accumulate_density_sparse(domain, deposits)
-    dense_sum = sparse.to_dense(composition="sum")
+    dense_coverage = sparse.to_dense(composition="coverage")
 
-    expected = accumulate_density(domain, deposits, composition="sum")
-    np.testing.assert_allclose(dense_sum, expected)
+    expected = accumulate_field(domain, deposits, composition="coverage")
+    np.testing.assert_allclose(dense_coverage, expected)
 
 
 def test_sparse_to_dense_all_matches_individual_calls() -> None:
@@ -72,10 +71,10 @@ def test_sparse_to_dense_all_matches_individual_calls() -> None:
     deposits = make_deposits()
 
     sparse = accumulate_density_sparse(domain, deposits)
-    all_grids = sparse.to_dense_all("max", "sum")
+    all_grids = sparse.to_dense_all("max", "coverage")
 
     np.testing.assert_allclose(all_grids["max"], sparse.to_dense("max"))
-    np.testing.assert_allclose(all_grids["sum"], sparse.to_dense("sum"))
+    np.testing.assert_allclose(all_grids["coverage"], sparse.to_dense("coverage"))
 
 
 def test_sparse_to_dense_all_raises_on_empty_compositions() -> None:

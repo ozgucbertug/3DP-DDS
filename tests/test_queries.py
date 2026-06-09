@@ -116,7 +116,7 @@ def test_analysis_bundle_owns_read_only_snapshots() -> None:
 
 def test_trilinear_sampling_differs_from_nearest_near_gradient_regions() -> None:
     simulator = make_simulator()
-    point = (2.6, 2.25, 0.25)
+    point = (1.5, 2.25, 0.25)
 
     nearest = simulator.sample_density_at(point, interpolation="nearest")
     trilinear = simulator.sample_density_at(point, interpolation="trilinear")

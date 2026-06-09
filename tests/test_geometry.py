@@ -344,7 +344,7 @@ def test_density_to_sdf_field_matches_occupancy_to_sdf_field_at_threshold() -> N
     domain = Domain.from_bounds(xmin=0.0, xmax=10.0, ymin=0.0, ymax=10.0, zmin=0.0, zmax=10.0, voxel_size=0.5)
     profile = BeadProfile(width=2.0, height=2.0)
     result = simulate(domain, [PointDeposit(x=5.0, y=5.0, z=5.0, profile=profile)], threshold=0.5)
-    density = result.density("max")
+    density = result.field("max")
     threshold = 0.5
     sdf_from_density = density_to_sdf_field(domain, density, threshold=threshold)
     occupancy = density >= threshold

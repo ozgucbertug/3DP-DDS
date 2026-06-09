@@ -176,15 +176,15 @@ Coordinates are top-referenced: the target represents the nozzle tip or the top 
 ```python
 from dds import simulate
 
-# Default: max-composition density only
+# Default: max-envelope density only
 result = simulate(domain, deposits, threshold=0.5)
 
-# Request both compositions
-result = simulate(domain, deposits, compositions=("max", "sum"), threshold=0.5)
+# Request the geometry field and additive coverage diagnostic
+result = simulate(domain, deposits, compositions=("max", "coverage"), threshold=0.5)
 
 # Result queries
-density_max  = result.density("max")           # ndarray (nx, ny, nz)
-density_sum  = result.density("sum")           # ndarray or raises if not computed
+density_max  = result.field("max")             # ndarray (nx, ny, nz)
+coverage     = result.field("coverage")        # ndarray or raises if not computed
 occupancy    = result.occupancy()              # bool ndarray
 surface      = result.surface_mesh()          # TriangleMesh (requires [mesh])
 bundle       = result.analysis_bundle()       # AnalysisBundle for further queries
@@ -217,7 +217,8 @@ result  = sim.result(compositions=("max",), threshold=0.5)
 bundle  = sim.analysis_bundle()
 
 # Convenience field accessors
-density = sim.sample_field(field="density")       # sum composition
+density = sim.sample_field(field="density")       # max-envelope geometry
+coverage = sim.sample_field(field="coverage")     # additive diagnostic
 occ     = sim.simulate_occupancy(threshold=0.5)
 idx     = sim.simulate_deposition_index()
 
@@ -283,7 +284,7 @@ grid       = np.zeros(domain.grid_shape, dtype=float)
 index_grid = np.full(domain.grid_shape, -1, dtype=np.intp)
 
 for i, deposit in enumerate(deposits):
-    apply_deposit_to_field(domain, grid, deposit, composition="sum")  # returns bool
+    apply_deposit_to_field(domain, grid, deposit, composition="coverage")  # returns bool
     apply_deposit_to_index_field(domain, index_grid, deposit, i)
 ```
 
@@ -302,10 +303,10 @@ sparse = accumulate_density_sparse(domain, deposits)
 
 # Materialise when needed
 dense_max = sparse.to_dense(composition="max")
-dense_sum = sparse.to_dense(composition="sum")
+dense_coverage = sparse.to_dense(composition="coverage")
 
 # Both compositions in a single pass
-grids = sparse.to_dense_all("max", "sum")
+grids = sparse.to_dense_all("max", "coverage")
 
 # Memory diagnostics
 print(f"{sparse.contribution_count} kernel sub-arrays")
@@ -339,7 +340,7 @@ A checkpoint is a single compressed `.npz` file containing the density arrays an
 ```python
 from dds import simulate, save_checkpoint, load_checkpoint, SimulationResult
 
-result = simulate(domain, deposits, compositions=("max", "sum"), threshold=0.5)
+result = simulate(domain, deposits, compositions=("max", "coverage"), threshold=0.5)
 
 # Save
 path = save_checkpoint("outputs/wall_layer3.npz", result)
@@ -438,7 +439,7 @@ line_deposits = line_deposits_from_targets(
 )
 
 domain = Domain.from_deposits(point_deposits, voxel_size=1.0, padding="auto")
-result = simulate(domain, point_deposits, compositions=("max", "sum"), threshold=0.5)
+result = simulate(domain, point_deposits, compositions=("max", "coverage"), threshold=0.5)
 ```
 
 YAML target file structure:
@@ -569,11 +570,11 @@ save_simulation_bundle(
     domain=domain,
     occupancy=result.occupancy(),
     deposition_index=result.analysis_bundle().deposition_index_field(),
-    density=result.density("max"),
+    density=result.field("max"),
     metadata={"run": "01", "threshold": 0.5},
 )
 
-save_array("outputs/run_01/density_sum.npy", result.density("sum"))
+save_array("outputs/run_01/coverage.npy", result.field("coverage"))
 ```
 
 Files written: `occupancy.npy`, `deposition_index.npy`, `density.npy`, `metadata.json` (plus any arrays you write separately).
@@ -676,7 +677,7 @@ src/dds/
 ├── simulator.py        Simulator (stateful, incremental caches)
 ├── sparse.py           SparseDensityField
 ├── targets.py          TargetPoint, point/line_deposits_from_targets
-├── types.py            DensityComposition, FieldName type aliases
+├── types.py            FieldComposition, FieldName type aliases
 ├── utils.py            Shared math helpers
 ├── viz.py              Lazy viz imports
 └── workbench.py        SimulationWorkbench (optional: [viz])
@@ -691,9 +692,9 @@ src/dds/
 - **Top-referenced deposits**: the target point is the nozzle tip or the top surface of the bead, not the bead centre
 - **Bead dimensions**: `width` is the full transverse bead width; `height` is the full bead height along the local axis
 - **SDF sign convention**: negative inside, positive outside, zero on the surface
-- **Density composition**: `"max"` is the canonical field for geometry, occupancy, and surfaces; `"sum"` is for accumulation and overlap inspection only
+- **Field composition**: `"max"` is the canonical geometry field used for occupancy and surfaces
+- **Coverage diagnostic**: `"coverage"` adds anti-aliased kernel samples for overlap inspection; it is not mass, volume, or physical density and changes with voxel resolution and path segmentation
 - **Deposition index**: 0-based index of the last deposit touching each voxel; −1 for untouched voxels
 - **Snapshot isolation**: `Simulator.result()` and `Simulator.analysis_bundle()` copy their backing arrays at creation time — holding an old snapshot is safe after further `add_deposit` calls
 - **Cache sharing**: when multiple caches are warm, `add_deposit` samples the kernel once and fans the result out to all of them
-
 

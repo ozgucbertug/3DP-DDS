@@ -82,7 +82,7 @@ def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
         missing_layer_result.layer_density(0, threshold=0.5)
 
 
-def test_simulation_result_from_simulator_requests_sum_density() -> None:
+def test_simulation_result_from_simulator_requests_coverage() -> None:
     domain = make_domain()
     profile = make_profile()
     simulator = Simulator(
@@ -95,6 +95,6 @@ def test_simulation_result_from_simulator_requests_sum_density() -> None:
 
     result = simulation_result(simulator, threshold=0.5)
 
-    assert result.density_sum is not None
-    assert result.density_sum.shape == domain.grid_shape
-    assert np.all(result.density_sum >= result.density_max)
+    assert result.coverage is not None
+    assert result.coverage.shape == domain.grid_shape
+    assert np.all(result.coverage >= result.density_max)

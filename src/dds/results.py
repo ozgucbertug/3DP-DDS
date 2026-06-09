@@ -20,16 +20,16 @@ from .analysis import (
     strata as build_strata,
     support as build_support,
 )
-from .fields import accumulate_density_fields
+from .fields import accumulate_fields
 from .io import save_array, save_simulation_bundle
 from .primitives import Deposit, DepositInput, iter_deposits
 from .domain import Domain
-from .types import DensityComposition
+from .types import FieldComposition
 from .utils import ensure_finite_scalar, readonly_array
 
 ViewMode = Literal["surface", "occupancy", "density"]
 ViewColorMode = Literal["plain", "normals", "overhang"]
-ViewScalarField = Literal["occupancy", "density", "accumulation", "deposition_order"]
+ViewScalarField = Literal["occupancy", "density", "coverage", "deposition_order"]
 
 
 @dataclass(slots=True, frozen=True)
@@ -59,7 +59,7 @@ class SimulationResult:
     domain: Domain
     deposits: tuple[Deposit, ...]
     density_max: npt.NDArray[np.float64]
-    density_sum: npt.NDArray[np.float64] | None = None
+    coverage: npt.NDArray[np.float64] | None = None
     default_threshold: float = 0.5
     _analysis_bundle_cache: AnalysisBundle | None = field(default=None, init=False, repr=False)
     _deposition_index_cache: npt.NDArray[np.intp] | None = field(default=None, init=False, repr=False)
@@ -78,18 +78,18 @@ class SimulationResult:
             raise ValueError(
                 f"density_max shape {self.density_max.shape} does not match domain grid shape {self.domain.grid_shape}."
             )
-        if self.density_sum is not None:
-            self.density_sum = readonly_array(self.density_sum, dtype=float)
-            if self.density_sum.shape != self.domain.grid_shape:
+        if self.coverage is not None:
+            self.coverage = readonly_array(self.coverage, dtype=float)
+            if self.coverage.shape != self.domain.grid_shape:
                 raise ValueError(
-                    f"density_sum shape {self.density_sum.shape} does not match domain grid shape {self.domain.grid_shape}."
+                    f"coverage shape {self.coverage.shape} does not match domain grid shape {self.domain.grid_shape}."
                 )
         if not np.all(np.isfinite(self.density_max)) or np.any(self.density_max < 0.0):
             raise ValueError("density_max must contain only finite, non-negative values.")
-        if self.density_sum is not None and (
-            not np.all(np.isfinite(self.density_sum)) or np.any(self.density_sum < 0.0)
+        if self.coverage is not None and (
+            not np.all(np.isfinite(self.coverage)) or np.any(self.coverage < 0.0)
         ):
-            raise ValueError("density_sum must contain only finite, non-negative values.")
+            raise ValueError("coverage must contain only finite, non-negative values.")
         self.default_threshold = ensure_finite_scalar(
             self.default_threshold,
             "default_threshold",
@@ -190,16 +190,16 @@ class SimulationResult:
             self._support_cache[key] = cached
         return cached
 
-    def density(self, composition: DensityComposition = "max") -> npt.NDArray[np.float64]:
-        """Return the requested density composition field."""
+    def field(self, composition: FieldComposition = "max") -> npt.NDArray[np.float64]:
+        """Return the geometric envelope or nonphysical coverage field."""
 
         if composition == "max":
             return self.density_max
-        if composition == "sum":
-            if self.density_sum is None:
-                raise ValueError("density_sum is not available on this SimulationResult.")
-            return self.density_sum
-        raise ValueError("composition must be 'max' or 'sum'.")
+        if composition == "coverage":
+            if self.coverage is None:
+                raise ValueError("coverage is not available on this SimulationResult.")
+            return self.coverage
+        raise ValueError("composition must be 'max' or 'coverage'.")
 
     def occupancy(self, *, threshold: float | None = None, normalize: bool = False) -> npt.NDArray[np.bool_]:
         """Return a max-based occupancy field."""
@@ -236,8 +236,8 @@ class SimulationResult:
             density=self.density_max,
             metadata=metadata,
         )
-        if self.density_sum is not None:
-            written["density_sum"] = save_array(Path(directory) / "density_sum.npy", self.density_sum)
+        if self.coverage is not None:
+            written["coverage"] = save_array(Path(directory) / "coverage.npy", self.coverage)
         return written
 
     def checkpoint(self, path: str | Path) -> Path:
@@ -295,14 +295,14 @@ def simulation_result(
             domain=source.domain,
             deposits=(),
             density_max=source.density_field(normalize=False),
-            density_sum=None,
+            coverage=None,
             default_threshold=threshold,
         )
         result._analysis_bundle_cache = source
         return result
     if hasattr(source, "result") and callable(source.result):
         if "compositions" in inspect.signature(source.result).parameters:
-            return source.result(threshold=threshold, compositions=("max", "sum"))
+            return source.result(threshold=threshold, compositions=("max", "coverage"))
         return source.result(threshold=threshold)
     if hasattr(source, "analysis_bundle") and callable(source.analysis_bundle):
         bundle = source.analysis_bundle()
@@ -314,7 +314,7 @@ def simulate(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
     *,
-    compositions: Sequence[DensityComposition] = ("max",),
+    compositions: Sequence[FieldComposition] = ("max",),
     threshold: float = 0.5,
 ) -> SimulationResult:
     """Run a high-level simulation and return a reusable SimulationResult."""
@@ -322,15 +322,15 @@ def simulate(
     requested = tuple(dict.fromkeys(compositions))
     if not requested:
         raise ValueError("compositions must contain at least one density composition.")
-    if any(v not in {"max", "sum"} for v in requested):
-        raise ValueError("compositions must contain only 'max' and/or 'sum'.")
+    if any(v not in {"max", "coverage"} for v in requested):
+        raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
     deposit_tuple = tuple(iter_deposits(deposits))
-    needed = ("max",) if "sum" not in requested else ("max", "sum")
-    fields = accumulate_density_fields(domain, deposit_tuple, compositions=needed)
+    needed = ("max",) if "coverage" not in requested else ("max", "coverage")
+    fields = accumulate_fields(domain, deposit_tuple, compositions=needed)
     return SimulationResult(
         domain=domain,
         deposits=deposit_tuple,
         density_max=fields["max"],
-        density_sum=fields.get("sum"),
+        coverage=fields.get("coverage"),
         default_threshold=threshold,
     )

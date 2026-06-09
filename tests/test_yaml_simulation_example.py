@@ -36,7 +36,7 @@ def test_yaml_simulation_example_exposes_tyro_help() -> None:
     assert result.returncode == 0
     assert "--yaml-path" in result.stdout
     assert "--origin-reference" in result.stdout
-    assert "--density-composition {max,sum}" in result.stdout
+    assert "--field-composition {max,coverage}" in result.stdout
     assert "--analysis {none,interface,support,all}" in result.stdout
     assert "--stratification {auto,layer,order}" in result.stdout
     assert "--build-direction {+X,-X,+Y,-Y,+Z,-Z}" in result.stdout
@@ -51,7 +51,7 @@ def test_yaml_simulation_config_is_ide_friendly() -> None:
 
     assert config.yaml_path.name == "example_wall.yaml"
     assert config.origin_reference == "top"
-    assert config.density_composition == "max"
+    assert config.field_composition == "max"
     assert config.analysis == "none"
     assert config.stratification == "auto"
     assert config.build_direction == "+Z"
@@ -90,12 +90,12 @@ targets:
     assert result.occupancy(threshold=0.5).any()
     assert result.analysis_bundle().deposition_index_field().max() >= 0  # at least one deposit has index ≥ 0
     assert result.density_max.max() >= 0.5
-    assert result.density_sum is not None
-    assert result.density_sum.shape == result.domain.grid_shape
-    assert np.all(result.density_sum >= result.density_max)
+    assert result.coverage is not None
+    assert result.coverage.shape == result.domain.grid_shape
+    assert np.all(result.coverage >= result.density_max)
 
 
-def test_yaml_example_keeps_sum_distinct_from_max_for_overlap(tmp_path: Path) -> None:
+def test_yaml_example_keeps_coverage_distinct_from_max_for_overlap(tmp_path: Path) -> None:
     example = load_example_module()
     yaml_path = tmp_path / "targets.yaml"
     yaml_path.write_text(
@@ -123,8 +123,8 @@ targets:
         )
     )
 
-    assert result.density_sum is not None
-    assert np.any(result.density_sum > result.density_max)
+    assert result.coverage is not None
+    assert np.any(result.coverage > result.density_max)
 
 
 def test_yaml_example_support_analysis_runs(tmp_path: Path) -> None:

@@ -4,5 +4,5 @@ from __future__ import annotations
 
 from typing import Literal
 
-DensityComposition = Literal["max", "sum"]
-FieldName = Literal["density", "occupancy", "deposition_index"]
+FieldComposition = Literal["max", "coverage"]
+FieldName = Literal["density", "coverage", "occupancy", "deposition_index"]

@@ -18,13 +18,13 @@ except ImportError as exc:
     ) from exc
 
 from .domain import Domain
-from .mesh_analysis import normal_rgb_from_normals, overhang_angles
+from .mesh_analysis import normal_rgb_from_normals
 from .analysis import AnalysisBundle
 from .results import SimulationResult, WorkbenchViewConfig, simulation_result
 
 Representation = Literal["surface", "occupancy", "density"]
 ColorMode = Literal["plain", "normals", "overhang"]
-ScalarFieldName = Literal["occupancy", "density", "accumulation", "deposition_order"]
+ScalarFieldName = Literal["occupancy", "density", "coverage", "deposition_order"]
 
 
 def _field_to_image_data(
@@ -125,7 +125,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._last_roi_stats: dict[str, float] | None = None
         self._surface_polydata_cache: dict[float, Any] = {}
         self._occupied_bounds_cache: dict[float, tuple[float, float, float, float, float, float]] = {}
-        self._density_sum = self.result.density_sum
+        self._coverage = self.result.coverage
         self._surface_coloring_registry: dict[str, Any] = {
             "plain": self._apply_plain_surface_coloring,
             "normals": self._apply_normal_surface_coloring,
@@ -138,7 +138,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             },
             "density": {
                 "density": self._density_scalar_field,
-                "accumulation": self._accumulation_scalar_field,
+                "coverage": self._coverage_scalar_field,
                 "deposition_order": self._deposition_order_scalar_field,
             },
         }
@@ -149,7 +149,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             },
             "density": {
                 "density": "Density",
-                "accumulation": "Accumulation",
+                "coverage": "Coverage (nonphysical)",
                 "deposition_order": "Deposition Order",
             },
         }
@@ -656,11 +656,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             view_values[view_values < floor] = 0.0
         return view_values
 
-    def _accumulation_scalar_field(self) -> npt.NDArray[np.float64]:
-        if self._density_sum is None:
+    def _coverage_scalar_field(self) -> npt.NDArray[np.float64]:
+        if self._coverage is None:
             return self._density_scalar_field()
-        density = np.asarray(self._density_sum, dtype=float)
-        view_values = density.copy()
+        coverage = np.asarray(self._coverage, dtype=float)
+        view_values = coverage.copy()
         maximum = float(np.max(view_values)) if view_values.size else 0.0
         if maximum > 0.0:
             floor = max(0.05 * maximum, 0.05 * self.threshold)
@@ -688,8 +688,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _available_scalar_field_labels(self, representation: Literal["occupancy", "density"]) -> dict[str, str]:
         labels = dict(self._scalar_field_labels[representation])
-        if representation == "density" and self._density_sum is None:
-            labels.pop("accumulation", None)
+        if representation == "density" and self._coverage is None:
+            labels.pop("coverage", None)
         return labels
 
     def _sync_scalar_field_options(self) -> None:
@@ -725,8 +725,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return grid.threshold(value=0.5, scalars=self.occupancy_field_name, preference="cell")
 
     def _active_density_field(self) -> npt.NDArray[np.float64]:
-        if self.density_field_name == "accumulation" and self._density_sum is not None:
-            return self._density_sum
+        if self.density_field_name == "coverage" and self._coverage is not None:
+            return self._coverage
         return self.bundle.density_field()
 
     def _density_grid(self) -> Any:

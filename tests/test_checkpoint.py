@@ -25,7 +25,7 @@ def make_domain() -> Domain:
     )
 
 
-def make_result(*, include_sum: bool = False) -> SimulationResult:
+def make_result(*, include_coverage: bool = False) -> SimulationResult:
     domain = make_domain()
     deposits = [
         PointDeposit(
@@ -40,7 +40,7 @@ def make_result(*, include_sum: bool = False) -> SimulationResult:
             metadata=DepositionMetadata(layer_id=1),
         ),
     ]
-    compositions = ("max", "sum") if include_sum else ("max",)
+    compositions = ("max", "coverage") if include_coverage else ("max",)
     return simulate(domain, deposits, compositions=compositions, threshold=0.3)
 
 
@@ -131,23 +131,23 @@ def test_checkpoint_round_trip_density_max(tmp_path) -> None:
     assert not loaded.density_max.flags.writeable
 
 
-def test_checkpoint_round_trip_with_density_sum(tmp_path) -> None:
-    result = make_result(include_sum=True)
-    assert result.density_sum is not None
+def test_checkpoint_round_trip_with_coverage(tmp_path) -> None:
+    result = make_result(include_coverage=True)
+    assert result.coverage is not None
 
     path = save_checkpoint(tmp_path / "sim", result)
     loaded = load_checkpoint(path)
 
-    assert loaded.density_sum is not None
-    np.testing.assert_allclose(loaded.density_sum, result.density_sum)
+    assert loaded.coverage is not None
+    np.testing.assert_allclose(loaded.coverage, result.coverage)
 
 
-def test_checkpoint_round_trip_no_density_sum(tmp_path) -> None:
-    result = make_result(include_sum=False)
-    assert result.density_sum is None
+def test_checkpoint_round_trip_no_coverage(tmp_path) -> None:
+    result = make_result(include_coverage=False)
+    assert result.coverage is None
 
     loaded = load_checkpoint(save_checkpoint(tmp_path / "sim", result))
-    assert loaded.density_sum is None
+    assert loaded.coverage is None
 
 
 def test_checkpoint_round_trip_domain(tmp_path) -> None:

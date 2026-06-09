@@ -240,9 +240,9 @@ def test_simulate_returns_rich_result_with_max_based_geometry() -> None:
     result = simulate(domain, deposits, threshold=0.5)
 
     assert isinstance(result, SimulationResult)
-    assert result.density("max").shape == domain.grid_shape
+    assert result.field("max").shape == domain.grid_shape
     assert result.density_max.max() <= 1.0
-    assert result.density_sum is None
+    assert result.coverage is None
     assert result.occupancy(threshold=0.5)[2, 2, 2]
     assert result.analysis_bundle().contains_point((2.5, 2.5, 2.5), representation="occupancy", threshold=0.5)
 
@@ -262,11 +262,11 @@ def test_simulator_result_matches_stateless_simulate() -> None:
     direct = simulate(domain, deposits, threshold=0.5)
     cached = simulator.result(threshold=0.5)
 
-    np.testing.assert_allclose(cached.density("max"), direct.density("max"))
+    np.testing.assert_allclose(cached.field("max"), direct.field("max"))
     assert cached.default_threshold == pytest.approx(0.5)
 
 
-def test_simulate_can_produce_max_and_sum_density_fields() -> None:
+def test_simulate_can_produce_max_and_coverage_fields() -> None:
     domain = make_domain()
     profile = make_profile(width=2.0, height=2.0)
     metadata = make_metadata()
@@ -275,11 +275,11 @@ def test_simulate_can_produce_max_and_sum_density_fields() -> None:
         PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata),
     ]
 
-    result = simulate(domain, deposits, compositions=("max", "sum"), threshold=0.5)
+    result = simulate(domain, deposits, compositions=("max", "coverage"), threshold=0.5)
 
-    assert result.density_sum is not None
-    assert np.all(result.density_sum >= result.density_max)
-    assert float(result.density_sum.max()) > float(result.density_max.max())
+    assert result.coverage is not None
+    assert np.all(result.coverage >= result.density_max)
+    assert float(result.coverage.max()) > float(result.density_max.max())
 
 
 def test_domain_from_deposits_anisotropic_voxel_size() -> None:
@@ -376,7 +376,7 @@ def test_incremental_add_deposit_matches_batch_simulate() -> None:
     for dep in deposits:
         sim.add_deposit(dep)
 
-    np.testing.assert_allclose(sim.sample_field(field="density"), expected.density("max"))
+    np.testing.assert_allclose(sim.sample_field(field="density"), expected.field("max"))
 
 
 def test_incremental_add_deposits_matches_batch_simulate() -> None:
@@ -432,10 +432,29 @@ def test_apply_deposit_to_field_accumulates_in_place() -> None:
     deposit = PointDeposit(x=5.0, y=5.0, z=5.0, profile=make_profile(width=2.0, height=2.0))
     grid = np.zeros(domain.grid_shape, dtype=float)
 
-    hit = apply_deposit_to_field(domain, grid, deposit, composition="sum")
+    hit = apply_deposit_to_field(domain, grid, deposit, composition="coverage")
 
     assert hit is True
     assert grid.sum() > 0.0
+
+
+def test_density_is_geometric_envelope_and_coverage_is_additive() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(
+        x=5.0,
+        y=5.0,
+        z=5.0,
+        profile=make_profile(width=2.0, height=2.0),
+    )
+    simulator = Simulator(domain, [deposit, deposit])
+
+    density = simulator.sample_field(field="density")
+    coverage = simulator.sample_field(field="coverage")
+
+    assert float(density.max()) <= 1.0
+    assert float(coverage.max()) > float(density.max())
+    with pytest.raises(ValueError, match="cannot be normalized"):
+        simulator.sample_field(field="coverage", normalize=True)
 
 
 def test_apply_deposit_to_field_returns_false_for_out_of_bounds_deposit() -> None:
@@ -447,6 +466,25 @@ def test_apply_deposit_to_field_returns_false_for_out_of_bounds_deposit() -> Non
 
     assert hit is False
     assert grid.sum() == pytest.approx(0.0)
+
+
+def test_apply_deposit_to_field_rejects_invalid_composition_before_sampling() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(
+        x=-50.0,
+        y=-50.0,
+        z=-50.0,
+        profile=make_profile(),
+    )
+    grid = np.zeros(domain.grid_shape, dtype=float)
+
+    with pytest.raises(ValueError, match="composition"):
+        apply_deposit_to_field(
+            domain,
+            grid,
+            deposit,
+            composition="invalid",  # type: ignore[arg-type]
+        )
 
 
 def test_apply_deposit_to_index_field_marks_touched_voxels() -> None:

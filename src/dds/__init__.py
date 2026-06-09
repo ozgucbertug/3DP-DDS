@@ -16,7 +16,7 @@ from .primitives import (
     Polyline3D,
     ToolpathDepositSequence,
 )
-from .types import DensityComposition, FieldName
+from .types import FieldComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
 from .fields import apply_deposit_to_field, apply_deposit_to_index_field, accumulate_density_sparse
@@ -30,12 +30,12 @@ if TYPE_CHECKING:
 __all__ = [
     "AnalysisBundle",
     "BeadProfile",
-    "DensityComposition",
     "Deposit",
     "DepositInput",
     "DepositionMetadata",
     "Domain",
     "FieldName",
+    "FieldComposition",
     "LineDeposit",
     "LineSegment3D",
     "Point3D",

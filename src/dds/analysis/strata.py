@@ -8,9 +8,9 @@ from typing import Any, Literal
 
 import numpy as np
 
-from ..fields import accumulate_density_fields
+from ..fields import accumulate_fields
 from ..occupancy import occupancy_from_density
-from ..primitives import Deposit, DepositInput, iter_deposits
+from ..primitives import Deposit, iter_deposits
 from .models import StratumFieldSet, StratificationMode
 
 StrataMode = Literal["auto", "layer", "order"]
@@ -71,7 +71,7 @@ def strata(
     stratum_ids: list[int] = []
 
     for position, (stratum_id, grouped_deposits) in enumerate(groups, start=1):
-        density = accumulate_density_fields(
+        density = accumulate_fields(
             result.domain,
             grouped_deposits,
             compositions=("max",),
