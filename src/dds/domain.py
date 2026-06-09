@@ -24,6 +24,38 @@ class Domain:
     voxel_size: tuple[float, float, float]
     grid_shape: tuple[int, int, int]
 
+    def __post_init__(self) -> None:
+        minimum = ensure_finite_triplet(self.min_corner, "min_corner")
+        maximum = ensure_finite_triplet(self.max_corner, "max_corner")
+        spacing = ensure_positive_triplet(self.voxel_size, "voxel_size")
+        if len(self.grid_shape) != 3:
+            raise ValueError("grid_shape must contain exactly three integer values.")
+        if any(
+            isinstance(value, bool) or not isinstance(value, (int, np.integer))
+            for value in self.grid_shape
+        ):
+            raise TypeError("grid_shape must contain exactly three integer values.")
+        shape = tuple(int(value) for value in self.grid_shape)
+        if any(value <= 0 for value in shape):
+            raise ValueError("grid_shape values must all be positive.")
+        if any(lower >= upper for lower, upper in zip(minimum, maximum)):
+            raise ValueError("Domain bounds must be strictly increasing on every axis.")
+
+        expected_maximum = tuple(
+            lower + count * step
+            for lower, count, step in zip(minimum, shape, spacing)
+        )
+        if not np.allclose(maximum, expected_maximum, rtol=1e-12, atol=1e-12):
+            raise ValueError(
+                "max_corner must equal min_corner + grid_shape * voxel_size. "
+                "Use Domain.from_bounds() to align arbitrary requested bounds."
+            )
+
+        object.__setattr__(self, "min_corner", minimum)
+        object.__setattr__(self, "max_corner", expected_maximum)
+        object.__setattr__(self, "voxel_size", spacing)
+        object.__setattr__(self, "grid_shape", shape)
+
     @classmethod
     def from_bounds(
         cls,
@@ -52,9 +84,13 @@ class Domain:
             int(math.ceil((upper - lower) / step))
             for lower, upper, step in zip(minimum, maximum, voxel_triplet)
         )
+        aligned_maximum = tuple(
+            lower + count * step
+            for lower, count, step in zip(minimum, shape, voxel_triplet)
+        )
         return cls(
             min_corner=minimum,
-            max_corner=maximum,
+            max_corner=aligned_maximum,
             voxel_size=voxel_triplet,
             grid_shape=shape,
         )
@@ -166,7 +202,13 @@ class Domain:
 
         if axis not in (0, 1, 2):
             raise ValueError("axis must be 0, 1, or 2.")
+        if isinstance(start, bool) or not isinstance(start, (int, np.integer)):
+            raise TypeError("start must be an integer.")
         end = self.grid_shape[axis] if stop is None else stop
+        if isinstance(end, bool) or not isinstance(end, (int, np.integer)):
+            raise TypeError("stop must be an integer or None.")
+        if not 0 <= int(start) <= int(end) <= self.grid_shape[axis]:
+            raise ValueError("axis-center bounds must satisfy 0 <= start <= stop <= axis size.")
         indices = np.arange(start, end, dtype=float)
         return self.min_corner[axis] + (indices + 0.5) * self.voxel_size[axis]
 

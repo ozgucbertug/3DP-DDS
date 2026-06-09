@@ -12,7 +12,7 @@ from .fields import normalize_field
 from ..domain import Domain
 from ..geometry.sdf import _coerce_points
 from ..occupancy import occupancy_from_density
-from ..utils import EPSILON, ensure_finite_triplet, normalize_axis
+from ..utils import EPSILON, ensure_finite_triplet, normalize_axis, readonly_array
 
 InterpolationMode = Literal["nearest", "trilinear"]
 RepresentationMode = Literal["occupancy", "density", "sdf", "mesh"]
@@ -111,17 +111,31 @@ class AnalysisBundle:
     )
 
     def __post_init__(self) -> None:
-        self.density = np.asarray(self.density, dtype=float)
+        self.density = readonly_array(self.density, dtype=float)
         if self.density.shape != self.domain.grid_shape:
             raise ValueError(
                 f"density shape {self.density.shape} does not match domain grid shape {self.domain.grid_shape}."
             )
 
+        if not np.all(np.isfinite(self.density)) or np.any(self.density < 0.0):
+            raise ValueError("density must contain only finite, non-negative values.")
+        if self.deposition_index is not None:
+            deposition_index = readonly_array(self.deposition_index, dtype=np.intp)
+            if deposition_index.shape != self.domain.grid_shape:
+                raise ValueError(
+                    "deposition_index shape "
+                    f"{deposition_index.shape} does not match domain grid shape {self.domain.grid_shape}."
+                )
+            self.deposition_index = deposition_index
+
     def density_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
         if not normalize:
             return self.density
         if self._normalized_density is None:
-            self._normalized_density = normalize_field(self.density)
+            self._normalized_density = readonly_array(
+                normalize_field(self.density),
+                dtype=float,
+            )
         return self._normalized_density
 
     def deposition_index_field(self) -> npt.NDArray[np.intp]:
@@ -146,9 +160,12 @@ class AnalysisBundle:
     ) -> npt.NDArray[np.bool_]:
         key = (float(threshold), bool(normalize))
         if key not in self._occupancy_cache:
-            self._occupancy_cache[key] = occupancy_from_density(
-                self.density_field(normalize=normalize),
-                threshold=threshold,
+            self._occupancy_cache[key] = readonly_array(
+                occupancy_from_density(
+                    self.density_field(normalize=normalize),
+                    threshold=threshold,
+                ),
+                dtype=bool,
             )
         return self._occupancy_cache[key]
 

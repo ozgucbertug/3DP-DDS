@@ -10,7 +10,7 @@ import numpy.typing as npt
 
 from .analysis import AnalysisBundle, normalize_field
 from .domain import Domain
-from .fields import accumulate_density, accumulate_deposition_index, accumulate_density_sparse, sample_field as sample_dense_field
+from .fields import accumulate_density, accumulate_deposition_index, accumulate_density_sparse
 from .kernels import sample_deposit_kernel
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
@@ -169,6 +169,10 @@ class Simulator:
         """Return a reusable SimulationResult built from cached density fields."""
 
         requested = tuple(dict.fromkeys(compositions))
+        if not requested:
+            raise ValueError("compositions must contain at least one density composition.")
+        if any(composition not in {"max", "sum"} for composition in requested):
+            raise ValueError("compositions must contain only 'max' and/or 'sum'.")
         density_sum = self._density_field().copy() if "sum" in requested else None
         return SimulationResult(
             domain=self.domain,
@@ -211,7 +215,7 @@ class Simulator:
     ) -> npt.NDArray[np.intp]:
         """Return the per-voxel last-deposit-index grid (0-based; -1 = untouched)."""
 
-        return self._deposition_index_field()
+        return self._deposition_index_field().copy()
 
     def is_occupied(
         self,

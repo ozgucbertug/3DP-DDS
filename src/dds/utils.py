@@ -11,6 +11,15 @@ import numpy.typing as npt
 EPSILON = 1e-12
 
 
+def ensure_finite_scalar(value: Any, name: str) -> float:
+    """Convert an input to a finite float."""
+
+    result = float(value)
+    if not np.isfinite(result):
+        raise ValueError(f"{name} must be finite.")
+    return result
+
+
 def ensure_finite_triplet(values: Any, name: str) -> tuple[float, float, float]:
     """Convert an input to a finite 3-tuple of floats."""
 
@@ -95,6 +104,49 @@ def normalize_axis(value: Any, name: str) -> tuple[float, float, float]:
     if norm <= EPSILON:
         raise ValueError(f"{name} must not be the zero vector.")
     return tuple(float(component) for component in array / norm)  # type: ignore[return-value]
+
+
+def slerp_unit_vectors(
+    start: npt.ArrayLike,
+    end: npt.ArrayLike,
+    parameters: npt.ArrayLike,
+) -> npt.NDArray[np.float64]:
+    """Spherically interpolate between two non-antiparallel unit vectors."""
+
+    start_axis = np.asarray(normalize_axis(start, "start axis"), dtype=float)
+    end_axis = np.asarray(normalize_axis(end, "end axis"), dtype=float)
+    dot = float(np.clip(np.dot(start_axis, end_axis), -1.0, 1.0))
+    if dot <= -1.0 + 1e-8:
+        raise ValueError(
+            "Cannot interpolate antiparallel axes uniquely. "
+            "Subdivide the path with an intermediate orientation."
+        )
+
+    t = np.asarray(parameters, dtype=float)
+    if np.any(~np.isfinite(t)):
+        raise ValueError("parameters must contain only finite values.")
+    if dot >= 1.0 - 1e-8:
+        interpolated = (1.0 - t[..., np.newaxis]) * start_axis + t[..., np.newaxis] * end_axis
+        norms = np.linalg.norm(interpolated, axis=-1, keepdims=True)
+        return interpolated / np.clip(norms, EPSILON, None)
+
+    angle = float(np.arccos(dot))
+    denominator = float(np.sin(angle))
+    start_weight = np.sin((1.0 - t) * angle) / denominator
+    end_weight = np.sin(t * angle) / denominator
+    return start_weight[..., np.newaxis] * start_axis + end_weight[..., np.newaxis] * end_axis
+
+
+def readonly_array(
+    values: npt.ArrayLike,
+    *,
+    dtype: npt.DTypeLike | None = None,
+) -> npt.NDArray[Any]:
+    """Return an owning, read-only NumPy array snapshot."""
+
+    result = np.array(values, dtype=dtype, copy=True)
+    result.setflags(write=False)
+    return result
 
 
 def point_to_segment_distances(

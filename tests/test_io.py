@@ -30,6 +30,14 @@ def test_save_array_writes_npy_file(tmp_path: Path) -> None:
     np.testing.assert_array_equal(np.load(path), array)
 
 
+def test_save_array_returns_actual_path_when_extension_is_omitted(tmp_path: Path) -> None:
+    array = np.arange(4, dtype=float)
+    path = save_array(tmp_path / "field", array)
+
+    assert path == (tmp_path / "field.npy").resolve()
+    assert path.exists()
+
+
 def test_save_simulation_bundle_writes_expected_outputs(tmp_path: Path) -> None:
     domain = make_domain()
     occupancy = np.zeros(domain.grid_shape, dtype=bool)
@@ -51,6 +59,15 @@ def test_save_simulation_bundle_writes_expected_outputs(tmp_path: Path) -> None:
     payload = json.loads(written["metadata"].read_text(encoding="utf-8"))
     assert payload["metadata"] == {"example": "io_test"}
     assert payload["domain"]["grid_shape"] == [2, 2, 2]
+
+
+def test_save_simulation_bundle_rejects_non_json_metadata(tmp_path: Path) -> None:
+    with pytest.raises(TypeError, match="not JSON serializable"):
+        save_simulation_bundle(
+            tmp_path / "bundle",
+            domain=make_domain(),
+            metadata={"unsupported": object()},
+        )
 
 
 def test_write_read_mesh_round_trip(tmp_path: Path) -> None:

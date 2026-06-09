@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
 from typing import Protocol, TypeAlias, runtime_checkable
@@ -9,7 +10,12 @@ from typing import Protocol, TypeAlias, runtime_checkable
 import numpy as np
 
 from .attributes import BeadProfile, DepositionMetadata
-from .utils import bounding_box_from_points, ensure_finite_triplet, normalize_axis
+from .utils import (
+    bounding_box_from_points,
+    ensure_finite_scalar,
+    ensure_finite_triplet,
+    normalize_axis,
+)
 
 DEFAULT_Z_AXIS = (0.0, 0.0, 1.0)
 
@@ -45,6 +51,9 @@ def _point_target_support_bounds(
     height: float,
     padding: float = 0.0,
 ) -> tuple[np.ndarray, np.ndarray]:
+    padding = ensure_finite_scalar(padding, "padding")
+    if padding < 0.0:
+        raise ValueError("padding must be non-negative.")
     target_array = np.asarray(ensure_finite_triplet(target, "target"), dtype=float)
     axis_array = np.asarray(ensure_finite_triplet(axis, "axis"), dtype=float)
     center = target_array - axis_array * (height / 2.0)
@@ -257,6 +266,11 @@ class LineDeposit:
         )
         object.__setattr__(self, "start_z_axis", Point3D.from_value(start_z_axis))
         object.__setattr__(self, "end_z_axis", Point3D.from_value(end_z_axis))
+        if float(np.dot(self.start_axis.to_array(), self.end_axis.to_array())) <= -1.0 + 1e-8:
+            raise ValueError(
+                "LineDeposit endpoint axes must not be antiparallel. "
+                "Subdivide the path with an intermediate orientation."
+            )
 
     @property
     def segment(self) -> LineSegment3D:
@@ -288,22 +302,13 @@ class LineDeposit:
         if dimensions is None:
             return self.segment.bounds()
         width, height = dimensions
-        start_min, start_max = _point_target_support_bounds(
-            self.start,
-            self.start_axis,
-            width=width,
-            height=height,
-            padding=padding,
-        )
-        end_min, end_max = _point_target_support_bounds(
-            self.end,
-            self.end_axis,
-            width=width,
-            height=height,
-            padding=padding,
-        )
-        minimum = np.minimum(start_min, end_min)
-        maximum = np.maximum(start_max, end_max)
+        padding_value = ensure_finite_scalar(padding, "padding")
+        if padding_value < 0.0:
+            raise ValueError("padding must be non-negative.")
+        support_radius = math.sqrt((width / 2.0) ** 2 + height**2) + padding_value
+        endpoints = np.stack((self.start.to_array(), self.end.to_array()), axis=0)
+        minimum = endpoints.min(axis=0) - support_radius
+        maximum = endpoints.max(axis=0) + support_radius
         return Point3D.from_value(minimum), Point3D.from_value(maximum)
 
     def bounds(self) -> tuple[Point3D, Point3D]:

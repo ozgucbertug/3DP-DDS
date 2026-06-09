@@ -43,6 +43,32 @@ def test_domain_shape_matches_bounds() -> None:
     assert domain.grid_shape == (10, 10, 10)
 
 
+def test_domain_aligns_nonintegral_bounds_to_voxel_grid() -> None:
+    domain = Domain.from_bounds(
+        xmin=0.0,
+        xmax=1.1,
+        ymin=0.0,
+        ymax=1.1,
+        zmin=0.0,
+        zmax=1.1,
+        voxel_size=1.0,
+    )
+
+    assert domain.grid_shape == (2, 2, 2)
+    assert domain.max_corner == pytest.approx((2.0, 2.0, 2.0))
+    assert domain.contains_point(domain.index_to_world((1, 1, 1)))
+
+
+def test_domain_rejects_inconsistent_direct_construction() -> None:
+    with pytest.raises(ValueError, match="max_corner"):
+        Domain(
+            min_corner=(0.0, 0.0, 0.0),
+            max_corner=(1.1, 1.1, 1.1),
+            voxel_size=(1.0, 1.0, 1.0),
+            grid_shape=(2, 2, 2),
+        )
+
+
 def test_coordinate_conversion_round_trip_for_voxel_centers() -> None:
     domain = make_domain()
     point = domain.index_to_world((2, 3, 4))
@@ -88,6 +114,39 @@ def test_line_deposit_produces_continuous_occupied_region() -> None:
     occupancy = Simulator(domain, [deposit]).simulate_occupancy(threshold=0.25)
 
     assert all(bool(occupancy[x, 2, 2]) for x in range(1, 7))
+
+
+def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> None:
+    domain = Domain.from_bounds(
+        xmin=-3.0,
+        xmax=5.0,
+        ymin=-3.0,
+        ymax=3.0,
+        zmin=-4.0,
+        zmax=4.0,
+        voxel_size=0.25,
+    )
+    deposit = LineDeposit(
+        start=(0.0, 0.0, 1.0),
+        end=(2.0, 0.0, 1.0),
+        profile=BeadProfile(width=1.0, height=2.0),
+        start_z_axis=(-0.58861627, -0.45646528, -0.66721087),
+        end_z_axis=(0.68238459, -0.07779286, -0.72684217),
+    )
+
+    density = Simulator(domain, [deposit]).sample_field(field="density")
+
+    assert density[domain.world_to_index((0.875, 0.625, 3.125))] > 0.0
+
+
+def test_line_deposit_rejects_antiparallel_endpoint_axes() -> None:
+    with pytest.raises(ValueError, match="antiparallel"):
+        LineDeposit(
+            start=(0.0, 0.0, 0.0),
+            end=(1.0, 0.0, 0.0),
+            start_z_axis=(0.0, 0.0, 1.0),
+            end_z_axis=(0.0, 0.0, -1.0),
+        )
 
 
 def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
@@ -152,6 +211,23 @@ def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
     assert simulator.query_deposition_index((2.5, 2.5, 2.5)) == pytest.approx(0.0)  # first deposit → index 0
     assert simulator.is_occupied((-1.0, -1.0, -1.0)) is False
     assert simulator.query_deposition_index((-1.0, -1.0, -1.0)) == pytest.approx(-1.0)  # outside domain → -1
+
+
+def test_simulator_deposition_index_is_a_snapshot() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(
+        x=2.5,
+        y=2.5,
+        z=3.5,
+        profile=make_profile(width=2.0, height=2.0),
+    )
+    simulator = Simulator(domain, [deposit])
+
+    first = simulator.simulate_deposition_index()
+    first.fill(99)
+    second = simulator.simulate_deposition_index()
+
+    assert int(second.max()) == 0
 
 
 def test_simulate_returns_rich_result_with_max_based_geometry() -> None:
@@ -241,6 +317,39 @@ def test_workbench_view_config_rejects_non_canonical_build_direction_string() ->
     # Tuple form must also be accepted without error.
     cfg = WorkbenchViewConfig(build_direction=(0.0, 0.0, 1.0))
     assert cfg.build_direction == (0.0, 0.0, 1.0)
+
+
+@pytest.mark.parametrize(
+    ("width", "height"),
+    [
+        (float("nan"), 1.0),
+        (1.0, float("inf")),
+        (0.0, 1.0),
+        (1.0, -1.0),
+    ],
+)
+def test_bead_profile_rejects_invalid_dimensions(width: float, height: float) -> None:
+    with pytest.raises(ValueError):
+        BeadProfile(width=width, height=height)
+
+
+def test_metadata_is_validated_and_user_data_is_immutable() -> None:
+    source = {"labels": ["calibration"]}
+    metadata = DepositionMetadata(
+        layer_id=1,
+        feedrate=10.0,
+        user_data=source,
+    )
+    source["labels"].append("mutated")
+
+    assert metadata.to_dict()["user_data"] == {"labels": ["calibration"]}
+    with pytest.raises(TypeError):
+        metadata.user_data["new"] = "value"  # type: ignore[index]
+
+    with pytest.raises(ValueError):
+        DepositionMetadata(feedrate=float("nan"))
+    with pytest.raises(TypeError):
+        DepositionMetadata(user_data={"bad": object()})
 
 
 # ---------------------------------------------------------------------------

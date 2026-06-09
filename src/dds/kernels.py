@@ -13,10 +13,9 @@ from .domain import Domain
 from .primitives import (
     LineDeposit,
     PointDeposit,
-    _bead_half_extents,
     _point_target_support_bounds,
 )
-from .utils import closest_point_parameters
+from .utils import closest_point_parameters, slerp_unit_vectors
 
 
 @dataclass(frozen=True, slots=True)
@@ -166,24 +165,9 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
 
     start_axis = deposit.start_axis.to_array()
     end_axis = deposit.end_axis.to_array()
-    start_center = start - start_axis * profile.half_height
-    end_center = end - end_axis * profile.half_height
-    extent = np.maximum(
-        _bead_half_extents(
-            start_axis,
-            width=profile.width,
-            height=profile.height,
-            padding=profile.support_padding,
-        ),
-        _bead_half_extents(
-            end_axis,
-            width=profile.width,
-            height=profile.height,
-            padding=profile.support_padding,
-        ),
+    support_min, support_max = deposit.support_bounds(
+        padding=profile.support_padding,
     )
-    support_min = np.minimum(start_center, end_center) - extent
-    support_max = np.maximum(start_center, end_center) + extent
     index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
     if index_bounds is None:
         return None
@@ -194,9 +178,7 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
     flat_points = points.reshape(-1, 3)
     parameters = closest_point_parameters(flat_points, start, end)
     closest_targets = start + parameters[:, np.newaxis] * (end - start)
-    axis_raw = (1.0 - parameters)[:, np.newaxis] * start_axis + parameters[:, np.newaxis] * end_axis
-    axis_norms = np.linalg.norm(axis_raw, axis=1, keepdims=True)
-    axes = axis_raw / np.clip(axis_norms, 1e-12, None)
+    axes = slerp_unit_vectors(start_axis, end_axis, parameters)
     signed_distance = rounded_cylinder_signed_distance(
         flat_points,
         target=closest_targets,

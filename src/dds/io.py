@@ -27,16 +27,18 @@ def _json_default(value: Any) -> Any:
         return str(value)
     if hasattr(value, "to_dict"):
         return value.to_dict()
-    return str(value)
+    raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable.")
 
 
 def save_array(path: str | Path, array: npt.NDArray[np.generic]) -> Path:
     """Save an array to disk using NumPy's native `.npy` format."""
 
     target = Path(path)
+    if target.suffix != ".npy":
+        target = Path(f"{target}.npy")
     target.parent.mkdir(parents=True, exist_ok=True)
     np.save(target, array)
-    return target
+    return target.resolve()
 
 
 def save_simulation_bundle(
@@ -67,7 +69,7 @@ def save_simulation_bundle(
     }
     metadata_path = output_dir / "metadata.json"
     metadata_path.write_text(json.dumps(payload, indent=2, default=_json_default), encoding="utf-8")
-    written["metadata"] = metadata_path
+    written["metadata"] = metadata_path.resolve()
     return written
 
 
@@ -175,7 +177,7 @@ def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:
         arrays["density_sum"] = result.density_sum
 
     np.savez_compressed(target, **arrays)
-    return target
+    return target.resolve()
 
 
 def load_checkpoint(path: str | Path) -> SimulationResult:

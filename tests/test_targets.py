@@ -41,6 +41,40 @@ targets:
     assert targets[1].origin == (1.0, 2.0, 3.0)
 
 
+def test_load_targets_reads_z_axis_with_origin_form(tmp_path: Path) -> None:
+    yaml_path = tmp_path / "targets.yaml"
+    yaml_path.write_text(
+        """
+targets:
+  - index: 0
+    origin: [1, 2, 3]
+    z_axis: [0, 1, 0]
+""".strip(),
+        encoding="utf-8",
+    )
+
+    targets = load_targets(yaml_path)
+
+    assert targets[0].z_axis == (0.0, 1.0, 0.0)
+
+
+def test_load_targets_rejects_duplicate_indices(tmp_path: Path) -> None:
+    yaml_path = tmp_path / "targets.yaml"
+    yaml_path.write_text(
+        """
+targets:
+  - index: 1
+    origin: [1, 2, 3]
+  - index: 1
+    origin: [4, 5, 6]
+""".strip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="unique"):
+        load_targets(yaml_path)
+
+
 def test_point_target_workflow_creates_top_referenced_deposits() -> None:
     targets = (TargetPoint(index=0, origin=(1.0, 2.0, 3.0)),)
     profile = BeadProfile(width=4.0, height=2.0)

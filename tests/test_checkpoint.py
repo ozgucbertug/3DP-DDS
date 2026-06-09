@@ -128,6 +128,7 @@ def test_checkpoint_round_trip_density_max(tmp_path) -> None:
 
     loaded = load_checkpoint(path)
     np.testing.assert_allclose(loaded.density_max, result.density_max)
+    assert not loaded.density_max.flags.writeable
 
 
 def test_checkpoint_round_trip_with_density_sum(tmp_path) -> None:

@@ -97,6 +97,23 @@ def test_analysis_bundle_cache_invalidates_after_deposit_changes() -> None:
     assert float(after.density_field().sum()) > float(before.density_field().sum())
 
 
+def test_analysis_bundle_owns_read_only_snapshots() -> None:
+    domain = make_domain()
+    density = np.zeros(domain.grid_shape, dtype=float)
+    deposition_index = np.full(domain.grid_shape, -1, dtype=np.intp)
+    bundle = AnalysisBundle(domain, density, deposition_index=deposition_index)
+
+    density.fill(1.0)
+    deposition_index.fill(5)
+
+    assert float(bundle.density_field().max()) == pytest.approx(0.0)
+    assert int(bundle.deposition_index_field().max()) == -1
+    with pytest.raises(ValueError):
+        bundle.density_field()[0, 0, 0] = 1.0
+    with pytest.raises(ValueError):
+        bundle.occupancy_field()[0, 0, 0] = True
+
+
 def test_trilinear_sampling_differs_from_nearest_near_gradient_regions() -> None:
     simulator = make_simulator()
     point = (2.6, 2.25, 0.25)

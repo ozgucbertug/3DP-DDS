@@ -25,6 +25,7 @@ from .io import save_array, save_simulation_bundle
 from .primitives import Deposit, DepositInput, iter_deposits
 from .domain import Domain
 from .types import DensityComposition
+from .utils import ensure_finite_scalar, readonly_array
 
 ViewMode = Literal["surface", "occupancy", "density"]
 ViewColorMode = Literal["plain", "normals", "overhang"]
@@ -72,23 +73,37 @@ class SimulationResult:
 
     def __post_init__(self) -> None:
         self.deposits = tuple(self.deposits)
-        self.density_max = np.asarray(self.density_max, dtype=float)
+        self.density_max = readonly_array(self.density_max, dtype=float)
         if self.density_max.shape != self.domain.grid_shape:
             raise ValueError(
                 f"density_max shape {self.density_max.shape} does not match domain grid shape {self.domain.grid_shape}."
             )
         if self.density_sum is not None:
-            self.density_sum = np.asarray(self.density_sum, dtype=float)
+            self.density_sum = readonly_array(self.density_sum, dtype=float)
             if self.density_sum.shape != self.domain.grid_shape:
                 raise ValueError(
                     f"density_sum shape {self.density_sum.shape} does not match domain grid shape {self.domain.grid_shape}."
                 )
-        self.default_threshold = float(self.default_threshold)
+        if not np.all(np.isfinite(self.density_max)) or np.any(self.density_max < 0.0):
+            raise ValueError("density_max must contain only finite, non-negative values.")
+        if self.density_sum is not None and (
+            not np.all(np.isfinite(self.density_sum)) or np.any(self.density_sum < 0.0)
+        ):
+            raise ValueError("density_sum must contain only finite, non-negative values.")
+        self.default_threshold = ensure_finite_scalar(
+            self.default_threshold,
+            "default_threshold",
+        )
+        if not 0.0 <= self.default_threshold <= 1.0:
+            raise ValueError("default_threshold must be between 0 and 1.")
 
     def _deposition_index_field(self) -> npt.NDArray[np.intp]:
         if self._deposition_index_cache is None:
             from .fields import accumulate_deposition_index
-            self._deposition_index_cache = accumulate_deposition_index(self.domain, self.deposits)
+            self._deposition_index_cache = readonly_array(
+                accumulate_deposition_index(self.domain, self.deposits),
+                dtype=np.intp,
+            )
         return self._deposition_index_cache
 
     def analysis_bundle(self) -> AnalysisBundle:

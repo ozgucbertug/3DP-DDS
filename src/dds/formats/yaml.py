@@ -62,7 +62,10 @@ def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
 
         if "origin" in item:
             origin = _parse_origin_value(item["origin"], name=f"target {index} origin")
-            z_axis = (0.0, 0.0, 1.0)
+            z_axis = _parse_origin_value(
+                item.get("z_axis", (0.0, 0.0, 1.0)),
+                name=f"target {index} z_axis",
+            )
         elif "plane" in item:
             components = parse_plane_string(str(item["plane"]))
             origin = components["O"]
@@ -72,4 +75,7 @@ def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
 
         targets.append(TargetPoint(index=index, origin=origin, z_axis=z_axis))
 
+    indices = [target.index for target in targets]
+    if len(indices) != len(set(indices)):
+        raise ValueError("Target indices must be unique.")
     return tuple(sorted(targets, key=lambda target: target.index))
