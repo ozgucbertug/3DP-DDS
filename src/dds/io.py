@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .primitives import Deposit
     from .results import SimulationResult
 
-_CHECKPOINT_VERSION = 2
+_CHECKPOINT_VERSION = 3
 
 
 def _json_default(value: Any) -> Any:
@@ -81,7 +81,7 @@ def save_simulation_bundle(
 def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
     """Serialise one leaf deposit to a plain JSON-compatible dict."""
 
-    from .primitives import LineDeposit, PointDeposit
+    from .primitives import LineDeposit, PointDeposit, PolylineDeposit
 
     if isinstance(deposit, PointDeposit):
         return {
@@ -92,6 +92,7 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "z_axis": list(deposit.z_axis.to_tuple()),
             "profile": deposit.profile.to_dict() if deposit.profile is not None else None,
             "metadata": deposit.metadata.to_dict(),
+            "process": deposit.process.to_dict(),
         }
     if isinstance(deposit, LineDeposit):
         return {
@@ -102,6 +103,15 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "end_z_axis": list(deposit.end_z_axis.to_tuple()),
             "profile": deposit.profile.to_dict() if deposit.profile is not None else None,
             "metadata": deposit.metadata.to_dict(),
+            "process": deposit.process.to_dict(),
+        }
+    if isinstance(deposit, PolylineDeposit):
+        return {
+            "type": "PolylineDeposit",
+            "poses": [pose.to_dict() for pose in deposit.poses],
+            "profile": deposit.profile.to_dict() if deposit.profile is not None else None,
+            "metadata": deposit.metadata.to_dict(),
+            "process": deposit.process.to_dict(),
         }
     raise TypeError(f"Cannot serialise deposit of type {type(deposit).__name__!r}.")
 
@@ -109,11 +119,12 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
 def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
     """Reconstruct a leaf deposit from a plain dict produced by :func:`_deposit_to_dict`."""
 
-    from .attributes import BeadProfile, DepositionMetadata
-    from .primitives import LineDeposit, PointDeposit
+    from .attributes import BeadProfile, DepositionMetadata, ProcessState
+    from .primitives import LineDeposit, PointDeposit, PolylineDeposit, Pose3D
 
     profile = BeadProfile(**d["profile"]) if d["profile"] is not None else None
     metadata = DepositionMetadata(**d["metadata"])
+    process = ProcessState(**d["process"])
 
     if d["type"] == "PointDeposit":
         return PointDeposit(
@@ -123,6 +134,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
             z_axis=tuple(d["z_axis"]),
             profile=profile,
             metadata=metadata,
+            process=process,
         )
     if d["type"] == "LineDeposit":
         return LineDeposit(
@@ -132,6 +144,20 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
             end_z_axis=tuple(d["end_z_axis"]),
             profile=profile,
             metadata=metadata,
+            process=process,
+        )
+    if d["type"] == "PolylineDeposit":
+        return PolylineDeposit(
+            poses=tuple(
+                Pose3D(
+                    position=tuple(pose["position"]),
+                    z_axis=tuple(pose["z_axis"]),
+                )
+                for pose in d["poses"]
+            ),
+            profile=profile,
+            metadata=metadata,
+            process=process,
         )
     raise ValueError(f"Unknown deposit type {d['type']!r}.")
 
@@ -199,6 +225,7 @@ def load_checkpoint(path: str | Path) -> SimulationResult:
         When the file format version is not supported.
     """
 
+    from .attributes import UnitSystem
     from .results import SimulationResult
 
     target = Path(path)
@@ -220,6 +247,7 @@ def load_checkpoint(path: str | Path) -> SimulationResult:
         max_corner=tuple(d["max_corner"]),
         voxel_size=tuple(d["voxel_size"]),
         grid_shape=tuple(d["grid_shape"]),
+        unit_system=UnitSystem(**d["unit_system"]),
     )
 
     deposits = tuple(_deposit_from_dict(dep) for dep in meta["deposits"])

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain
+from dds import BeadProfile, DepositionMetadata, Domain, ProcessState, simulate
 from dds.formats.yaml import load_targets, parse_plane_string
 from dds.targets import (
     TargetPoint,
@@ -95,14 +95,22 @@ def test_line_and_toolpath_workflows_follow_target_order() -> None:
         TargetPoint(index=2, origin=(2.0, 2.0, 1.0)),
     )
     profile = BeadProfile(width=2.0, height=1.0)
+    process = ProcessState(material_id="test")
 
     line_deposits = line_deposits_from_targets(targets, profile=profile)
-    toolpath = toolpath_from_targets(targets, profile=profile)
+    toolpath = toolpath_from_targets(targets, profile=profile, process=process)
 
     assert len(line_deposits) == 2
     assert line_deposits[0].start.to_tuple() == (0.0, 0.0, 1.0)
     assert line_deposits[0].end.to_tuple() == (2.0, 0.0, 1.0)
-    assert len(toolpath.deposits) == 2
+    assert len(toolpath.poses) == 3
+    assert len(toolpath.segments()) == 2
+    assert toolpath.process == process
+
+    domain = Domain.from_deposits(toolpath, voxel_size=0.5)
+    result = simulate(domain, toolpath, compositions=("max", "coverage"))
+    assert len(result.deposits) == 1
+    assert result.coverage is not None
 
 
 def test_domain_from_deposits_infers_padded_bounds() -> None:

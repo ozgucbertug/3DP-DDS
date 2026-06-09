@@ -11,6 +11,9 @@ from dds import (
     Domain,
     LineDeposit,
     PointDeposit,
+    PolylineDeposit,
+    Pose3D,
+    ProcessState,
     SimulationResult,
     load_checkpoint,
     save_checkpoint,
@@ -31,7 +34,8 @@ def make_result(*, include_coverage: bool = False) -> SimulationResult:
         PointDeposit(
             x=2.5, y=2.5, z=3.5,
             profile=BeadProfile(width=2.0, height=2.0),
-            metadata=DepositionMetadata(layer_id=0, material_id="PLA"),
+            metadata=DepositionMetadata(layer_id=0),
+            process=ProcessState(material_id="PLA"),
         ),
         LineDeposit(
             start=(1.5, 5.0, 3.5),
@@ -53,7 +57,8 @@ def test_point_deposit_serialization_round_trip() -> None:
     original = PointDeposit(
         x=1.0, y=2.0, z=3.0,
         profile=BeadProfile(width=1.5, height=0.8),
-        metadata=DepositionMetadata(layer_id=5, feedrate=120.0, user_data={"tag": "A"}),
+        metadata=DepositionMetadata(layer_id=5, user_data={"tag": "A"}),
+        process=ProcessState(feedrate=120.0),
         z_axis=(0.0, 0.0, 1.0),
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
@@ -63,7 +68,7 @@ def test_point_deposit_serialization_round_trip() -> None:
     assert restored.z == pytest.approx(original.z)
     assert restored.profile == original.profile
     assert restored.metadata.layer_id == original.metadata.layer_id
-    assert restored.metadata.feedrate == pytest.approx(original.metadata.feedrate)
+    assert restored.process.feedrate == pytest.approx(original.process.feedrate)
     assert restored.metadata.user_data == {"tag": "A"}
 
 
@@ -78,7 +83,7 @@ def test_line_deposit_serialization_round_trip() -> None:
         start=(1.0, 2.0, 3.0),
         end=(4.0, 5.0, 6.0),
         profile=BeadProfile(width=2.0, height=1.0),
-        metadata=DepositionMetadata(tool_id="T1"),
+        process=ProcessState(tool_id="T1"),
         start_z_axis=(0.0, 0.0, 1.0),
         end_z_axis=(0.0, 0.0, 1.0),
     )
@@ -88,7 +93,29 @@ def test_line_deposit_serialization_round_trip() -> None:
     assert restored.end.to_tuple() == pytest.approx(original.end.to_tuple())
     assert restored.start_z_axis.to_tuple() == pytest.approx(original.start_z_axis.to_tuple())
     assert restored.end_z_axis.to_tuple() == pytest.approx(original.end_z_axis.to_tuple())
-    assert restored.metadata.tool_id == "T1"
+    assert restored.process.tool_id == "T1"
+
+
+def test_polyline_deposit_serialization_round_trip() -> None:
+    original = PolylineDeposit(
+        poses=(
+            Pose3D((0.0, 0.0, 1.0)),
+            Pose3D((1.0, 0.0, 1.0), (0.0, 1.0, 1.0)),
+            Pose3D((1.0, 1.0, 1.0)),
+        ),
+        profile=BeadProfile(width=1.0, height=0.5),
+        metadata=DepositionMetadata(layer_id=2),
+        process=ProcessState(material_id="clay", feedrate=20.0),
+    )
+
+    restored = _deposit_from_dict(_deposit_to_dict(original))
+
+    assert isinstance(restored, PolylineDeposit)
+    assert len(restored.poses) == 3
+    assert restored.poses[1].axis.to_tuple() == pytest.approx(
+        original.poses[1].axis.to_tuple()
+    )
+    assert restored.process.material_id == "clay"
 
 
 def test_line_deposit_inherited_end_z_axis_round_trip() -> None:
@@ -112,7 +139,14 @@ def test_deposit_to_dict_raises_for_unknown_type() -> None:
 
 def test_deposit_from_dict_raises_for_unknown_type() -> None:
     with pytest.raises(ValueError, match="Unknown deposit type"):
-        _deposit_from_dict({"type": "GhostDeposit", "profile": None, "metadata": {}})
+        _deposit_from_dict(
+            {
+                "type": "GhostDeposit",
+                "profile": None,
+                "metadata": {},
+                "process": {},
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +211,7 @@ def test_checkpoint_round_trip_deposits(tmp_path) -> None:
     assert point_loaded.x == pytest.approx(point_orig.x)
     assert point_loaded.profile == point_orig.profile
     assert point_loaded.metadata.layer_id == point_orig.metadata.layer_id
-    assert point_loaded.metadata.material_id == point_orig.metadata.material_id
+    assert point_loaded.process.material_id == point_orig.process.material_id
 
 
 def test_checkpoint_extension_appended_automatically(tmp_path) -> None:

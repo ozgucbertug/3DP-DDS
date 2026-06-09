@@ -6,7 +6,7 @@ from typing import Any, Literal
 
 import numpy as np
 
-from .models import InterfaceAnalysis, InterfacePairSummary, StratumFieldSet
+from .models import InterfaceAnalysis, InterfacePairSummary
 from .strata import strata as build_strata
 
 StrataMode = Literal["auto", "layer", "order"]

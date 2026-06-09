@@ -9,7 +9,6 @@ import numpy as np
 import numpy.typing as npt
 
 from ..domain import Domain
-from ..utils import ensure_finite_triplet
 
 SDFCallable = Callable[[npt.NDArray[np.float64]], npt.ArrayLike]
 

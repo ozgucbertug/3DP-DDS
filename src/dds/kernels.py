@@ -13,6 +13,7 @@ from .domain import Domain
 from .primitives import (
     LineDeposit,
     PointDeposit,
+    PolylineDeposit,
     _point_target_support_bounds,
 )
 from .utils import closest_point_parameters, slerp_unit_vectors
@@ -159,6 +160,7 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
             z=float(start[2]),
             profile=deposit.profile,
             metadata=deposit.metadata,
+            process=deposit.process,
             z_axis=deposit.start_axis,
         )
         return sample_point_kernel(domain, point_deposit)
@@ -196,9 +198,52 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
     )
 
 
+def sample_polyline_kernel(
+    domain: Domain,
+    deposit: PolylineDeposit,
+) -> SampledKernel | None:
+    """Sample one polyline event as the envelope of its line segments."""
+
+    segment_samples = [
+        sampled
+        for segment in deposit.segments()
+        if (sampled := sample_line_kernel(domain, segment)) is not None
+    ]
+    if not segment_samples:
+        return None
+
+    starts = np.asarray(
+        [[axis_slice.start for axis_slice in sampled.slices] for sampled in segment_samples],
+        dtype=int,
+    )
+    stops = np.asarray(
+        [[axis_slice.stop for axis_slice in sampled.slices] for sampled in segment_samples],
+        dtype=int,
+    )
+    lower = starts.min(axis=0)
+    upper = stops.max(axis=0)
+    values = np.zeros(tuple(int(value) for value in upper - lower), dtype=float)
+
+    for sampled, start in zip(segment_samples, starts):
+        offset = start - lower
+        local_slices = tuple(
+            slice(int(offset[axis]), int(offset[axis]) + sampled.values.shape[axis])
+            for axis in range(3)
+        )
+        np.maximum(values[local_slices], sampled.values, out=values[local_slices])
+
+    return SampledKernel(
+        slices=tuple(
+            slice(int(lower[axis]), int(upper[axis]))
+            for axis in range(3)
+        ),
+        values=values,
+    )
+
+
 def sample_deposit_kernel(
     domain: Domain,
-    deposit: PointDeposit | LineDeposit,
+    deposit: PointDeposit | LineDeposit | PolylineDeposit,
 ) -> SampledKernel | None:
     """Dispatch kernel sampling based on deposit type."""
 
@@ -206,4 +251,6 @@ def sample_deposit_kernel(
         return sample_point_kernel(domain, deposit)
     if isinstance(deposit, LineDeposit):
         return sample_line_kernel(domain, deposit)
+    if isinstance(deposit, PolylineDeposit):
+        return sample_polyline_kernel(domain, deposit)
     raise TypeError("Unsupported deposit type.")

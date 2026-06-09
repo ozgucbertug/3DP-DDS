@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Any
 
 from . import formats, geometry, targets, viz
-from .attributes import BeadProfile, DepositionMetadata
+from .attributes import BeadProfile, DepositionMetadata, ProcessState, UnitSystem
 from .cli import run_cli
 from .domain import Domain
 from .primitives import (
@@ -14,7 +14,8 @@ from .primitives import (
     Point3D,
     PointDeposit,
     Polyline3D,
-    ToolpathDepositSequence,
+    PolylineDeposit,
+    Pose3D,
 )
 from .types import FieldComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
@@ -41,11 +42,14 @@ __all__ = [
     "Point3D",
     "PointDeposit",
     "Polyline3D",
+    "PolylineDeposit",
+    "Pose3D",
+    "ProcessState",
     "SimulationWorkbench",
     "SimulationResult",
     "Simulator",
     "SparseDensityField",
-    "ToolpathDepositSequence",
+    "UnitSystem",
     "WorkbenchViewConfig",
     "accumulate_density_sparse",
     "analysis_bundle",

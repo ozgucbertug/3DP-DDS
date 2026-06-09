@@ -59,25 +59,44 @@ pip install -e ".[formats,mesh,viz,dev]"
 ## Quick start
 
 ```python
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate
+from dds import (
+    BeadProfile,
+    DepositionMetadata,
+    Domain,
+    LineDeposit,
+    PointDeposit,
+    ProcessState,
+    UnitSystem,
+    simulate,
+)
 
 domain = Domain.from_bounds(
     xmin=0.0, xmax=100.0,
     ymin=0.0, ymax=100.0,
     zmin=0.0, zmax=20.0,
     voxel_size=0.5,
+    unit_system=UnitSystem(length="mm", time="s", temperature="degC"),
 )
 
 profile = BeadProfile(width=1.2, height=0.4)
 metadata = DepositionMetadata(layer_id=0)
+process = ProcessState(material_id="PLA", tool_id="T0", feedrate=40.0)
 
 deposits = [
-    PointDeposit(x=10.25, y=10.25, z=0.25, profile=profile, metadata=metadata),
+    PointDeposit(
+        x=10.25,
+        y=10.25,
+        z=0.25,
+        profile=profile,
+        metadata=metadata,
+        process=process,
+    ),
     LineDeposit(
         start=(10.25, 10.25, 0.25),
         end=(50.25, 10.25, 0.25),
         profile=profile,
         metadata=metadata,
+        process=process,
     ),
 ]
 
@@ -90,10 +109,10 @@ surface   = result.surface_mesh()       # triangle mesh (requires [mesh])
 
 ## Simulation domain
 
-`Domain` defines the axis-aligned workspace and its dense voxel grid.
+`Domain` defines the axis-aligned workspace, dense voxel grid, and unit system.
 
 ```python
-from dds import Domain
+from dds import Domain, UnitSystem
 
 # Explicit scalar bounds with isotropic voxel size
 domain = Domain.from_bounds(
@@ -101,6 +120,7 @@ domain = Domain.from_bounds(
     ymin=0.0, ymax=50.0,
     zmin=0.0, zmax=10.0,
     voxel_size=0.5,
+    unit_system=UnitSystem(length="mm", time="s", temperature="degC"),
 )
 
 # Anisotropic voxels
@@ -117,6 +137,7 @@ domain = Domain.from_deposits(deposits, voxel_size=0.5, padding="auto")
 print(domain.grid_shape)           # (nx, ny, nz)
 print(domain.voxel_size)           # (dx, dy, dz)
 print(domain.min_corner)           # world origin
+print(domain.unit_system)          # geometry/process units
 world = domain.index_to_world((5, 10, 2))
 idx   = domain.world_to_index(world)
 ```
@@ -128,24 +149,43 @@ Array indexing follows `(x, y, z)` / NumPy `indexing="ij"` convention throughout
 ## Deposit primitives
 
 ```python
-from dds import BeadProfile, DepositionMetadata, LineDeposit, PointDeposit
+from dds import (
+    BeadProfile,
+    DepositionMetadata,
+    LineDeposit,
+    PointDeposit,
+    PolylineDeposit,
+    Pose3D,
+    ProcessState,
+)
 
 profile  = BeadProfile(width=1.5, height=0.6)
 metadata = DepositionMetadata(
     layer_id=0,
+    user_data={"pass": "contour"},
+)
+process = ProcessState(
     material_id="PLA",
     tool_id="T0",
-    feedrate=2400.0,
+    feedrate=40.0,
+    extrusion_rate=12.0,
     temperature=215.0,
     timestamp=0.0,
-    user_data={"pass": "contour"},
 )
 
 # Point deposit — nozzle-tip / top-of-bead target at (x, y, z)
-pt = PointDeposit(x=5.0, y=5.0, z=0.3, profile=profile, metadata=metadata)
+pt = PointDeposit(
+    x=5.0,
+    y=5.0,
+    z=0.3,
+    profile=profile,
+    metadata=metadata,
+    process=process,
+)
 
-# Or from a sequence or Point3D
-pt = PointDeposit.from_point((5.0, 5.0, 0.3), profile=profile, metadata=metadata)
+# Or from a robot pose
+start_pose = Pose3D(position=(5.0, 5.0, 0.3), z_axis=(0.0, 0.0, 1.0))
+pt = PointDeposit.from_pose(start_pose, profile=profile, metadata=metadata, process=process)
 
 # Line deposit — swept bead between two nozzle-tip targets
 ln = LineDeposit(
@@ -153,6 +193,7 @@ ln = LineDeposit(
     end=(45.0, 5.0, 0.3),
     profile=profile,
     metadata=metadata,
+    process=process,
 )
 
 # Non-vertical print axis (e.g. for tilted deposition heads)
@@ -162,6 +203,18 @@ ln_tilted = LineDeposit(
     profile=profile,
     start_z_axis=(0.0, 0.0, 1.0),
     end_z_axis=(0.1, 0.0, 0.995),   # axis interpolated along segment
+)
+
+# A first-class multi-segment deposition event
+polyline = PolylineDeposit(
+    poses=(
+        Pose3D((5.0, 5.0, 0.3)),
+        Pose3D((25.0, 5.0, 0.3)),
+        Pose3D((25.0, 20.0, 0.3)),
+    ),
+    profile=profile,
+    metadata=metadata,
+    process=process,
 )
 ```
 
@@ -418,7 +471,11 @@ Analysis API summary:
 ```python
 from dds import BeadProfile, Domain, simulate
 from dds.formats.yaml import load_targets
-from dds.targets import point_deposits_from_targets, line_deposits_from_targets
+from dds.targets import (
+    line_deposits_from_targets,
+    point_deposits_from_targets,
+    toolpath_from_targets,
+)
 
 # Load from a YAML target file
 targets  = load_targets("example_wall.yaml")
@@ -437,6 +494,9 @@ line_deposits = line_deposits_from_targets(
     profile=profile,
     origin_reference="top",
 )
+
+# All targets become one PolylineDeposit event
+toolpath = toolpath_from_targets(targets, profile=profile, origin_reference="top")
 
 domain = Domain.from_deposits(point_deposits, voxel_size=1.0, padding="auto")
 result = simulate(domain, point_deposits, compositions=("max", "coverage"), threshold=0.5)
@@ -664,7 +724,7 @@ src/dds/
 │   ├── shapes.py       Analytic SDF primitives
 │   └── transforms.py   Spatial transforms for SDFs
 ├── __init__.py         Public API surface
-├── attributes.py       BeadProfile, DepositionMetadata
+├── attributes.py       BeadProfile, DepositionMetadata, ProcessState, UnitSystem
 ├── cli.py              Tyro-backed CLI entry point
 ├── domain.py           Domain definition and coordinate transforms
 ├── fields.py           Dense accumulation, apply_deposit_to_field, SparseDensityField helpers
@@ -672,7 +732,7 @@ src/dds/
 ├── kernels.py          SDF-kernel sampling (SampledKernel, sample_deposit_kernel)
 ├── mesh_analysis.py    Headless triangle-mesh metrics
 ├── occupancy.py        Threshold helpers
-├── primitives.py       PointDeposit, LineDeposit, ToolpathDepositSequence, Point3D
+├── primitives.py       Pose3D and point, line, polyline deposition primitives
 ├── results.py          SimulationResult, simulate(), WorkbenchViewConfig
 ├── simulator.py        Simulator (stateful, incremental caches)
 ├── sparse.py           SparseDensityField
@@ -690,6 +750,8 @@ src/dds/
 - **Import name**: `dds`; distribution name: `3dp-dds`; repository name: `3DP-DDS`
 - **Array axis order**: `(x, y, z)` / NumPy `indexing="ij"` throughout
 - **Top-referenced deposits**: the target point is the nozzle tip or the top surface of the bead, not the bead centre
+- **Units**: every domain records a `UnitSystem`; geometry and process values are interpreted in those units
+- **Process separation**: `DepositionMetadata` stores provenance/annotations, while `ProcessState` stores robot and material settings
 - **Bead dimensions**: `width` is the full transverse bead width; `height` is the full bead height along the local axis
 - **SDF sign convention**: negative inside, positive outside, zero on the surface
 - **Field composition**: `"max"` is the canonical geometry field used for occupancy and surfaces
@@ -697,4 +759,3 @@ src/dds/
 - **Deposition index**: 0-based index of the last deposit touching each voxel; −1 for untouched voxels
 - **Snapshot isolation**: `Simulator.result()` and `Simulator.analysis_bundle()` copy their backing arrays at creation time — holding an old snapshot is safe after further `add_deposit` calls
 - **Cache sharing**: when multiple caches are warm, `add_deposit` samples the kernel once and fans the result out to all of them
-

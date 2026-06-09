@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 import numpy.typing as npt
 
+from .attributes import UnitSystem
 from .primitives import DepositInput, Point3D, iter_deposits
 from .utils import ensure_finite_triplet, ensure_positive_triplet
 
@@ -23,6 +24,7 @@ class Domain:
     max_corner: tuple[float, float, float]
     voxel_size: tuple[float, float, float]
     grid_shape: tuple[int, int, int]
+    unit_system: UnitSystem = field(default_factory=UnitSystem)
 
     def __post_init__(self) -> None:
         minimum = ensure_finite_triplet(self.min_corner, "min_corner")
@@ -55,6 +57,8 @@ class Domain:
         object.__setattr__(self, "max_corner", expected_maximum)
         object.__setattr__(self, "voxel_size", spacing)
         object.__setattr__(self, "grid_shape", shape)
+        if not isinstance(self.unit_system, UnitSystem):
+            raise TypeError("unit_system must be a UnitSystem.")
 
     @classmethod
     def from_bounds(
@@ -67,6 +71,7 @@ class Domain:
         zmin: float,
         zmax: float,
         voxel_size: float | Sequence[float],
+        unit_system: UnitSystem | None = None,
     ) -> "Domain":
         """Create a domain from scalar bounds and isotropic or anisotropic voxel size."""
 
@@ -93,6 +98,7 @@ class Domain:
             max_corner=aligned_maximum,
             voxel_size=voxel_triplet,
             grid_shape=shape,
+            unit_system=unit_system or UnitSystem(),
         )
 
     @classmethod
@@ -102,6 +108,7 @@ class Domain:
         *,
         voxel_size: float | Sequence[float],
         padding: float | str = "auto",
+        unit_system: UnitSystem | None = None,
     ) -> "Domain":
         """Create a padded domain that encloses the support bounds of deposits."""
 
@@ -139,6 +146,7 @@ class Domain:
             zmin=float(lower[2]),
             zmax=float(upper[2]),
             voxel_size=voxel_triplet,
+            unit_system=unit_system,
         )
 
     def to_dict(self) -> dict[str, object]:
@@ -149,6 +157,7 @@ class Domain:
             "max_corner": self.max_corner,
             "voxel_size": self.voxel_size,
             "grid_shape": self.grid_shape,
+            "unit_system": self.unit_system.to_dict(),
         }
 
     def contains_point(self, point: Point3D | Sequence[float]) -> bool:

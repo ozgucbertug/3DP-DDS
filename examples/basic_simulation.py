@@ -10,6 +10,7 @@ from dds import (  # noqa: E402
     Domain,
     LineDeposit,
     PointDeposit,
+    ProcessState,
     Simulator,
     run_cli,
 )
@@ -33,11 +34,31 @@ def build_example_domain() -> Domain:
 
 def build_example_deposits() -> list[PointDeposit | LineDeposit]:
     profile = BeadProfile(width=1.2, height=0.6)
-    metadata = DepositionMetadata(layer_id=0, material_id="mat0", tool_id="tool0")
+    metadata = DepositionMetadata(layer_id=0)
+    process = ProcessState(material_id="mat0", tool_id="tool0")
     return [
-        PointDeposit(x=2.25, y=2.25, z=0.55, profile=profile, metadata=metadata),
-        LineDeposit(start=(2.25, 2.25, 0.55), end=(10.25, 2.25, 0.55), profile=profile, metadata=metadata),
-        LineDeposit(start=(10.25, 2.25, 0.55), end=(10.25, 8.25, 0.55), profile=profile, metadata=metadata),
+        PointDeposit(
+            x=2.25,
+            y=2.25,
+            z=0.55,
+            profile=profile,
+            metadata=metadata,
+            process=process,
+        ),
+        LineDeposit(
+            start=(2.25, 2.25, 0.55),
+            end=(10.25, 2.25, 0.55),
+            profile=profile,
+            metadata=metadata,
+            process=process,
+        ),
+        LineDeposit(
+            start=(10.25, 2.25, 0.55),
+            end=(10.25, 8.25, 0.55),
+            profile=profile,
+            metadata=metadata,
+            process=process,
+        ),
     ]
 
 
