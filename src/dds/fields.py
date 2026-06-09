@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -10,13 +10,13 @@ import numpy.typing as npt
 
 from .analysis import normalize_field
 from .domain import Domain
-from .kernels import sample_deposit_kernel
+from .kernels import iter_deposit_kernels
 from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
 from .types import FieldComposition, FieldName
 
 if TYPE_CHECKING:
-    from .sparse import SparseDensityField
+    from .chunked import ChunkedField
 
 
 def accumulate_fields(
@@ -39,13 +39,15 @@ def accumulate_fields(
         for composition in requested
     }
     for deposit in iter_deposits(deposits):
-        sampled = sample_deposit_kernel(domain, deposit)
-        if sampled is None:
-            continue
-        if "max" in fields:
-            fields["max"][sampled.slices] = np.maximum(fields["max"][sampled.slices], sampled.values)
-        if "coverage" in fields:
-            fields["coverage"][sampled.slices] += sampled.values
+        for sampled in iter_deposit_kernels(domain, deposit):
+            if "max" in fields:
+                np.maximum(
+                    fields["max"][sampled.slices],
+                    sampled.values,
+                    out=fields["max"][sampled.slices],
+                )
+            if "coverage" in fields:
+                fields["coverage"][sampled.slices] += sampled.values
     return fields
 
 
@@ -72,11 +74,9 @@ def accumulate_deposition_index(
 
     index_field = np.full(domain.grid_shape, -1, dtype=np.intp)
     for deposit_index, deposit in enumerate(iter_deposits(deposits)):
-        sampled = sample_deposit_kernel(domain, deposit)
-        if sampled is None:
-            continue
-        touched = sampled.values > 0.0
-        index_field[sampled.slices][touched] = deposit_index
+        for sampled in iter_deposit_kernels(domain, deposit):
+            touched = sampled.values > 0.0
+            index_field[sampled.slices][touched] = deposit_index
     return index_field
 
 
@@ -99,7 +99,7 @@ def apply_deposit_to_field(
     grid:
         Dense float64 array of shape ``domain.grid_shape``.  Modified in-place.
     deposit:
-        A single leaf deposit (``PointDeposit`` or ``LineDeposit``).
+        A single point, line, or polyline deposition event.
     composition:
         ``"max"`` takes the geometric envelope. ``"coverage"`` adds kernel
         samples as a nonphysical overlap diagnostic whose values depend on
@@ -108,14 +108,14 @@ def apply_deposit_to_field(
 
     if composition not in {"max", "coverage"}:
         raise ValueError("composition must be 'max' or 'coverage'.")
-    sampled = sample_deposit_kernel(domain, deposit)
-    if sampled is None:
-        return False
-    if composition == "coverage":
-        grid[sampled.slices] += sampled.values
-    elif composition == "max":
-        np.maximum(grid[sampled.slices], sampled.values, out=grid[sampled.slices])
-    return True
+    hit = False
+    for sampled in iter_deposit_kernels(domain, deposit):
+        hit = True
+        if composition == "coverage":
+            grid[sampled.slices] += sampled.values
+        elif composition == "max":
+            np.maximum(grid[sampled.slices], sampled.values, out=grid[sampled.slices])
+    return hit
 
 
 def apply_deposit_to_index_field(
@@ -135,18 +135,18 @@ def apply_deposit_to_index_field(
     index_field:
         Dense ``np.intp`` array of shape ``domain.grid_shape`` initialised to -1.
     deposit:
-        A single leaf deposit.
+        A single point, line, or polyline deposition event.
     deposit_index:
         0-based index of this deposit; written to every voxel whose kernel value
         is strictly positive.
     """
 
-    sampled = sample_deposit_kernel(domain, deposit)
-    if sampled is None:
-        return False
-    touched = sampled.values > 0.0
-    index_field[sampled.slices][touched] = deposit_index
-    return True
+    hit = False
+    for sampled in iter_deposit_kernels(domain, deposit):
+        hit = True
+        touched = sampled.values > 0.0
+        index_field[sampled.slices][touched] = deposit_index
+    return hit
 
 
 def sample_field(
@@ -174,16 +174,13 @@ def sample_field(
     raise ValueError("field must be 'density', 'coverage', 'occupancy', or 'deposition_index'.")
 
 
-def accumulate_density_sparse(
+def accumulate_chunked_field(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
-) -> "SparseDensityField":
-    """Build a :class:`~dds.sparse.SparseDensityField` without allocating the full dense grid.
-
-    Each deposit kernel is stored as a compact sub-array.  Call
-    :meth:`~dds.sparse.SparseDensityField.to_dense` or
-    :meth:`~dds.sparse.SparseDensityField.to_dense_all` to materialise a
-    dense grid when needed.
+    *,
+    chunk_shape: Sequence[int] = (32, 32, 32),
+) -> "ChunkedField":
+    """Build a chunked field without allocating full-domain dense arrays.
 
     Parameters
     ----------
@@ -193,11 +190,17 @@ def accumulate_density_sparse(
         One or more deposit primitives or sequences thereof.
     """
 
-    from .sparse import SparseDensityField
+    from .chunked import ChunkedField
 
-    sparse = SparseDensityField(domain)
+    chunked = ChunkedField(domain, chunk_shape=tuple(chunk_shape))
     for deposit in iter_deposits(deposits):
-        sampled = sample_deposit_kernel(domain, deposit)
-        if sampled is not None:
-            sparse.add_contribution(sampled)
-    return sparse
+        hit = False
+        for sampled in iter_deposit_kernels(
+            domain,
+            deposit,
+            tile_shape=chunked.chunk_shape,
+        ):
+            hit = chunked.add_kernel(sampled) or hit
+        if hit:
+            chunked.record_event()
+    return chunked

@@ -20,10 +20,10 @@ from .primitives import (
 from .types import FieldComposition, FieldName
 from .results import SimulationResult, WorkbenchViewConfig, simulate
 from .analysis import AnalysisBundle, analysis_bundle
-from .fields import apply_deposit_to_field, apply_deposit_to_index_field, accumulate_density_sparse
+from .chunked import ChunkedField
+from .fields import accumulate_chunked_field, apply_deposit_to_field, apply_deposit_to_index_field
 from .io import load_checkpoint, save_checkpoint
 from .simulator import Simulator
-from .sparse import SparseDensityField
 
 if TYPE_CHECKING:
     from .workbench import SimulationWorkbench
@@ -48,10 +48,10 @@ __all__ = [
     "SimulationWorkbench",
     "SimulationResult",
     "Simulator",
-    "SparseDensityField",
+    "ChunkedField",
     "UnitSystem",
     "WorkbenchViewConfig",
-    "accumulate_density_sparse",
+    "accumulate_chunked_field",
     "analysis_bundle",
     "apply_deposit_to_field",
     "apply_deposit_to_index_field",

@@ -13,7 +13,7 @@
   - [Incremental accumulation](#incremental-accumulation)
   - [Step-by-step / iterative use](#step-by-step--iterative-use)
   - [Low-level field helpers](#low-level-field-helpers)
-- [Sparse density field](#sparse-density-field)
+- [Chunked fields](#chunked-fields)
 - [Checkpoints](#checkpoints)
 - [Analysis](#analysis)
 - [Target workflows and YAML](#target-workflows-and-yaml)
@@ -343,45 +343,53 @@ for i, deposit in enumerate(deposits):
 
 ---
 
-## Sparse density field
+## Chunked fields
 
-`SparseDensityField` stores deposit kernels as compact sub-arrays instead of a full dense grid. The full grid is materialised on demand. This is useful when the domain is large but the toolpath only covers a small fraction of it.
+`ChunkedField` stores only fixed-size grid chunks touched by deposition. Kernel evaluation uses the same tile size, so long diagonal lines and polylines do not allocate their full axis-aligned bounding boxes. Full fields or index-space regions of interest are materialized on demand.
 
 ### Standalone
 
 ```python
-from dds import accumulate_density_sparse
+from dds import accumulate_chunked_field
 
-sparse = accumulate_density_sparse(domain, deposits)
+chunked = accumulate_chunked_field(
+    domain,
+    deposits,
+    chunk_shape=(32, 32, 32),
+)
 
 # Materialise when needed
-dense_max = sparse.to_dense(composition="max")
-dense_coverage = sparse.to_dense(composition="coverage")
+dense_max = chunked.to_dense(composition="max")
+dense_coverage = chunked.to_dense(composition="coverage")
 
 # Both compositions in a single pass
-grids = sparse.to_dense_all("max", "coverage")
+grids = chunked.to_dense_all("max", "coverage")
 
-# Memory diagnostics
-print(f"{sparse.contribution_count} kernel sub-arrays")
-print(f"{sparse.nbytes / 1e6:.1f} MB stored  vs  {sparse.dense_nbytes / 1e6:.1f} MB dense")
-print(f"sparsity ratio: {sparse.sparsity:.3f}")
+# Materialize an index-space ROI
+roi = chunked.materialize("max", index_bounds=((0, 64), (0, 64), (0, 32)))
+
+# Diagnostics
+print(f"{chunked.chunk_count} chunks for {chunked.event_count} in-domain events")
+print(f"{chunked.active_voxel_count} active voxels")
+print(f"allocation fraction: {chunked.allocation_fraction:.3f}")
+print(f"memory ratio: {chunked.memory_ratio:.3f}")
 ```
 
 ### Via Simulator
 
-`Simulator.sparse_field()` is built lazily and kept in sync with the deposit list. The same kernel sample that updates the dense caches also updates the sparse cache — no extra SDF evaluation.
+`Simulator.chunked_field()` is built lazily and kept in sync with the deposit list. The same kernel tiles update dense caches and the chunked cache.
 
 ```python
 sim = Simulator(domain, deposits[:10])
 
-sparse = sim.sparse_field()          # built from current deposits
-print(sparse.contribution_count)     # 10
+chunked = sim.chunked_field(chunk_shape=(32, 32, 32))
+print(chunked.event_count)           # 10
 
 sim.add_deposit(deposits[10])
-print(sim.sparse_field().contribution_count)  # 11 — incremental update
+print(sim.chunked_field().event_count)  # 11
 
 sim.clear_deposits()
-print(sim.sparse_field().contribution_count)  # 0 — cleared, object reused
+print(sim.chunked_field().event_count)  # 0, object reused
 ```
 
 ---
@@ -727,7 +735,8 @@ src/dds/
 ├── attributes.py       BeadProfile, DepositionMetadata, ProcessState, UnitSystem
 ├── cli.py              Tyro-backed CLI entry point
 ├── domain.py           Domain definition and coordinate transforms
-├── fields.py           Dense accumulation, apply_deposit_to_field, SparseDensityField helpers
+├── chunked.py          Chunked storage, ROI materialization, diagnostics
+├── fields.py           Dense and chunked accumulation helpers
 ├── io.py               save_array, save_simulation_bundle, save/load_checkpoint
 ├── kernels.py          SDF-kernel sampling (SampledKernel, sample_deposit_kernel)
 ├── mesh_analysis.py    Headless triangle-mesh metrics
@@ -735,7 +744,6 @@ src/dds/
 ├── primitives.py       Pose3D and point, line, polyline deposition primitives
 ├── results.py          SimulationResult, simulate(), WorkbenchViewConfig
 ├── simulator.py        Simulator (stateful, incremental caches)
-├── sparse.py           SparseDensityField
 ├── targets.py          TargetPoint, point/line_deposits_from_targets
 ├── types.py            FieldComposition, FieldName type aliases
 ├── utils.py            Shared math helpers

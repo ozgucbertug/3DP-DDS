@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -17,6 +18,8 @@ from .primitives import (
     _point_target_support_bounds,
 )
 from .utils import closest_point_parameters, slerp_unit_vectors
+
+TileShape = tuple[int, int, int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,6 +242,193 @@ def sample_polyline_kernel(
         ),
         values=values,
     )
+
+
+def validate_tile_shape(tile_shape: Sequence[int]) -> TileShape:
+    if len(tile_shape) != 3:
+        raise ValueError("tile_shape must contain exactly three integers.")
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, np.integer))
+        for value in tile_shape
+    ):
+        raise TypeError("tile_shape must contain exactly three integers.")
+    resolved = tuple(int(value) for value in tile_shape)
+    if any(value <= 0 for value in resolved):
+        raise ValueError("tile_shape values must all be positive.")
+    return resolved
+
+
+def _iter_index_tiles(
+    index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
+    tile_shape: TileShape,
+    grid_shape: tuple[int, int, int],
+) -> Iterator[tuple[tuple[int, int], tuple[int, int], tuple[int, int]]]:
+    x_bounds, y_bounds, z_bounds = index_bounds
+    first = tuple(
+        (bounds[0] // tile_shape[axis]) * tile_shape[axis]
+        for axis, bounds in enumerate(index_bounds)
+    )
+    for x_start in range(first[0], x_bounds[1], tile_shape[0]):
+        for y_start in range(first[1], y_bounds[1], tile_shape[1]):
+            for z_start in range(first[2], z_bounds[1], tile_shape[2]):
+                yield (
+                    (x_start, min(x_start + tile_shape[0], grid_shape[0])),
+                    (y_start, min(y_start + tile_shape[1], grid_shape[1])),
+                    (z_start, min(z_start + tile_shape[2], grid_shape[2])),
+                )
+
+
+def _sample_point_on_bounds(
+    domain: Domain,
+    deposit: PointDeposit,
+    profile: ResolvedBeadProfile,
+    index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
+) -> SampledKernel:
+    xs, ys, zs = domain.grid_centers(index_bounds)
+    points = np.stack((xs, ys, zs), axis=-1)
+    signed_distance = rounded_cylinder_signed_distance(
+        points,
+        target=deposit.target.to_array(),
+        axis=deposit.axis.to_array(),
+        profile=profile,
+    )
+    values = density_from_signed_distance(signed_distance, profile.transition_width)
+    return SampledKernel(
+        slices=tuple(slice(*bounds) for bounds in index_bounds),
+        values=values.astype(float, copy=False),
+    )
+
+
+def _sample_line_on_bounds(
+    domain: Domain,
+    deposit: LineDeposit,
+    profile: ResolvedBeadProfile,
+    index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
+) -> SampledKernel:
+    start = deposit.start.to_array()
+    end = deposit.end.to_array()
+    if np.allclose(start, end):
+        point_deposit = PointDeposit(
+            x=float(start[0]),
+            y=float(start[1]),
+            z=float(start[2]),
+            profile=deposit.profile,
+            metadata=deposit.metadata,
+            process=deposit.process,
+            z_axis=deposit.start_axis,
+        )
+        return _sample_point_on_bounds(domain, point_deposit, profile, index_bounds)
+
+    xs, ys, zs = domain.grid_centers(index_bounds)
+    points = np.stack((xs, ys, zs), axis=-1)
+    flat_points = points.reshape(-1, 3)
+    parameters = closest_point_parameters(flat_points, start, end)
+    closest_targets = start + parameters[:, np.newaxis] * (end - start)
+    axes = slerp_unit_vectors(
+        deposit.start_axis.to_array(),
+        deposit.end_axis.to_array(),
+        parameters,
+    )
+    signed_distance = rounded_cylinder_signed_distance(
+        flat_points,
+        target=closest_targets,
+        axis=axes,
+        profile=profile,
+    ).reshape(xs.shape)
+    values = density_from_signed_distance(signed_distance, profile.transition_width)
+    return SampledKernel(
+        slices=tuple(slice(*bounds) for bounds in index_bounds),
+        values=values.astype(float, copy=False),
+    )
+
+
+def _iter_point_kernels(
+    domain: Domain,
+    deposit: PointDeposit,
+    tile_shape: TileShape,
+) -> Iterator[SampledKernel]:
+    profile = resolve_bead_profile(deposit.profile, domain)
+    support_min, support_max = _point_target_support_bounds(
+        deposit.target,
+        deposit.axis,
+        width=profile.width,
+        height=profile.height,
+        padding=profile.support_padding,
+    )
+    index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
+    if index_bounds is None:
+        return
+    for tile_bounds in _iter_index_tiles(index_bounds, tile_shape, domain.grid_shape):
+        sampled = _sample_point_on_bounds(domain, deposit, profile, tile_bounds)
+        if np.any(sampled.values > 0.0):
+            yield sampled
+
+
+def _iter_line_kernels(
+    domain: Domain,
+    deposit: LineDeposit,
+    tile_shape: TileShape,
+) -> Iterator[SampledKernel]:
+    profile = resolve_bead_profile(deposit.profile, domain)
+    support_min, support_max = deposit.support_bounds(
+        padding=profile.support_padding,
+    )
+    index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
+    if index_bounds is None:
+        return
+    for tile_bounds in _iter_index_tiles(index_bounds, tile_shape, domain.grid_shape):
+        sampled = _sample_line_on_bounds(domain, deposit, profile, tile_bounds)
+        if np.any(sampled.values > 0.0):
+            yield sampled
+
+
+def _iter_polyline_kernels(
+    domain: Domain,
+    deposit: PolylineDeposit,
+    tile_shape: TileShape,
+) -> Iterator[SampledKernel]:
+    merged: dict[
+        tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
+        npt.NDArray[np.float64],
+    ] = {}
+    for segment in deposit.segments():
+        for sampled in _iter_line_kernels(domain, segment, tile_shape):
+            key = tuple(
+                (int(axis_slice.start), int(axis_slice.stop))
+                for axis_slice in sampled.slices
+            )
+            existing = merged.get(key)
+            if existing is None:
+                merged[key] = sampled.values.copy()
+            else:
+                np.maximum(existing, sampled.values, out=existing)
+
+    for bounds in sorted(merged):
+        yield SampledKernel(
+            slices=tuple(slice(*axis_bounds) for axis_bounds in bounds),
+            values=merged[bounds],
+        )
+
+
+def iter_deposit_kernels(
+    domain: Domain,
+    deposit: PointDeposit | LineDeposit | PolylineDeposit,
+    *,
+    tile_shape: Sequence[int] = (32, 32, 32),
+) -> Iterator[SampledKernel]:
+    """Yield nonempty, bounded kernel tiles for one deposition event."""
+
+    resolved_tile_shape = validate_tile_shape(tile_shape)
+    if isinstance(deposit, PointDeposit):
+        yield from _iter_point_kernels(domain, deposit, resolved_tile_shape)
+        return
+    if isinstance(deposit, LineDeposit):
+        yield from _iter_line_kernels(domain, deposit, resolved_tile_shape)
+        return
+    if isinstance(deposit, PolylineDeposit):
+        yield from _iter_polyline_kernels(domain, deposit, resolved_tile_shape)
+        return
+    raise TypeError("Unsupported deposit type.")
 
 
 def sample_deposit_kernel(
