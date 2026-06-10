@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,22 +10,7 @@ from typing import ClassVar, Literal
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import (
-    AnalysisBundle,
-    InterfaceAnalysis,
-    StratumFieldSet,
-    SupportAnalysis,
-)
-from .analysis import (
-    interface as build_interface,
-)
-from .analysis import (
-    strata as build_strata,
-)
-from .analysis import (
-    support as build_support,
-)
-from .analysis.support import BuildDirection
+from .analysis import SimulationAnalysis
 from .domain import Domain
 from .fields import accumulate_fields
 from .io import save_array, save_simulation_bundle
@@ -68,15 +52,8 @@ class SimulationResult:
     density_max: npt.NDArray[np.float64]
     coverage: npt.NDArray[np.float64] | None = None
     default_threshold: float = 0.5
-    _analysis_bundle_cache: AnalysisBundle | None = field(default=None, init=False, repr=False)
+    _analysis_cache: SimulationAnalysis | None = field(default=None, init=False, repr=False)
     _deposition_index_cache: npt.NDArray[np.intp] | None = field(default=None, init=False, repr=False)
-    _strata_cache: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict, init=False, repr=False)
-    _interface_cache: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict, init=False, repr=False)
-    _support_cache: dict[tuple[BuildDirection, float, float], SupportAnalysis] = field(
-        default_factory=dict,
-        init=False,
-        repr=False,
-    )
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "deposits", tuple(self.deposits))
@@ -118,92 +95,23 @@ class SimulationResult:
             )
         return self._deposition_index_cache
 
-    def analysis_bundle(self) -> AnalysisBundle:
-        """Return the canonical analysis bundle derived from density_max."""
+    @property
+    def analysis(self) -> SimulationAnalysis:
+        """Return cached derived-field and geometry queries for this snapshot."""
 
-        if self._analysis_bundle_cache is None:
+        if self._analysis_cache is None:
             object.__setattr__(
                 self,
-                "_analysis_bundle_cache",
-                AnalysisBundle(
+                "_analysis_cache",
+                SimulationAnalysis(
                     self.domain,
                     self.density_max,
-                    deposition_index=self._deposition_index_field(),
+                    self._deposition_index_field(),
+                    self.deposits,
+                    self.default_threshold,
                 ),
             )
-        return self._analysis_bundle_cache
-
-    def layer_ids(self) -> tuple[int, ...]:
-        """Return sorted explicit layer IDs when deposits provide them."""
-
-        values = sorted({deposit.metadata.layer_id for deposit in self.deposits if deposit.metadata.layer_id is not None})
-        return tuple(int(value) for value in values)
-
-    def strata(
-        self,
-        *,
-        mode: Literal["auto", "layer", "order"] = "auto",
-        threshold: float | None = None,
-    ) -> StratumFieldSet:
-        """Return max-density and occupancy fields partitioned by layer or deposit order."""
-
-        threshold_value = self.default_threshold if threshold is None else float(threshold)
-        key = (str(mode), threshold_value)
-        cached = self._strata_cache.get(key)
-        if cached is None:
-            cached = build_strata(self, mode=mode, threshold=threshold_value)
-            self._strata_cache[key] = cached
-        return cached
-
-    def layer_density(self, layer_id: int, *, threshold: float | None = None) -> npt.NDArray[np.float64]:
-        """Return the max-density field for one explicit layer."""
-
-        field_set = self.strata(mode="layer", threshold=threshold)
-        return field_set.density(layer_id)
-
-    def layer_occupancy(self, layer_id: int, *, threshold: float | None = None) -> npt.NDArray[np.bool_]:
-        """Return the occupancy field for one explicit layer."""
-
-        field_set = self.strata(mode="layer", threshold=threshold)
-        return field_set.occupancy(layer_id)
-
-    def interface(
-        self,
-        *,
-        mode: Literal["auto", "layer", "order"] = "auto",
-        threshold: float | None = None,
-    ) -> InterfaceAnalysis:
-        """Return aggregate contact and overlap metrics across consecutive strata."""
-
-        threshold_value = self.default_threshold if threshold is None else float(threshold)
-        key = (str(mode), threshold_value)
-        cached = self._interface_cache.get(key)
-        if cached is None:
-            cached = build_interface(self, mode=mode, threshold=threshold_value)
-            self._interface_cache[key] = cached
-        return cached
-
-    def support(
-        self,
-        *,
-        build_direction: BuildDirection = "+Z",
-        critical_angle_deg: float = 45.0,
-        threshold: float | None = None,
-    ) -> SupportAnalysis:
-        """Return mesh-first support and overhang metrics for the max-based geometry."""
-
-        threshold_value = self.default_threshold if threshold is None else float(threshold)
-        key = (build_direction, float(critical_angle_deg), threshold_value)
-        cached = self._support_cache.get(key)
-        if cached is None:
-            cached = build_support(
-                self,
-                build_direction=build_direction,
-                critical_angle_deg=critical_angle_deg,
-                threshold=threshold_value,
-            )
-            self._support_cache[key] = cached
-        return cached
+        return self._analysis_cache
 
     def field(self, composition: FieldComposition = "max") -> npt.NDArray[np.float64]:
         """Return the geometric envelope or nonphysical coverage field."""
@@ -216,29 +124,6 @@ class SimulationResult:
             return self.coverage
         raise ValueError("composition must be 'max' or 'coverage'.")
 
-    def occupancy(self, *, threshold: float | None = None, normalize: bool = False) -> npt.NDArray[np.bool_]:
-        """Return a max-based occupancy field."""
-
-        return self.analysis_bundle().occupancy_field(
-            threshold=self.default_threshold if threshold is None else threshold,
-            normalize=normalize,
-        )
-
-    def surface_mesh(
-        self,
-        *,
-        threshold: float | None = None,
-        normalize: bool = False,
-        step_size: int = 1,
-    ) -> object:
-        """Return a max-based surface mesh."""
-
-        return self.analysis_bundle().surface_mesh(
-            threshold=self.default_threshold if threshold is None else threshold,
-            normalize=normalize,
-            step_size=step_size,
-        )
-
     def save(self, directory: str | Path, *, metadata: dict[str, object] | None = None) -> dict[str, Path]:
         """Write a standard simulation bundle and any extra density compositions."""
 
@@ -246,8 +131,8 @@ class SimulationResult:
         written = save_simulation_bundle(
             directory,
             domain=self.domain,
-            occupancy=self.occupancy(threshold=threshold),
-            deposition_index=self.analysis_bundle().deposition_index_field(),
+            occupancy=self.analysis.occupancy(threshold=threshold),
+            deposition_index=self.analysis.deposition_index_field(),
             density=self.density_max,
             metadata=metadata,
         )
@@ -294,36 +179,6 @@ class SimulationResult:
         from .io import load_checkpoint
 
         return load_checkpoint(path)
-
-
-def simulation_result(
-    source: SimulationResult | AnalysisBundle | object,
-    *,
-    threshold: float = 0.5,
-) -> SimulationResult:
-    """Resolve a supported source into a SimulationResult."""
-
-    if isinstance(source, SimulationResult):
-        return source
-    if isinstance(source, AnalysisBundle):
-        result = SimulationResult(
-            domain=source.domain,
-            deposits=(),
-            density_max=source.density_field(normalize=False),
-            coverage=None,
-            default_threshold=threshold,
-        )
-        object.__setattr__(result, "_analysis_bundle_cache", source)
-        return result
-    if hasattr(source, "result") and callable(source.result):
-        if "compositions" in inspect.signature(source.result).parameters:
-            return source.result(threshold=threshold, compositions=("max", "coverage"))
-        return source.result(threshold=threshold)
-    if hasattr(source, "analysis_bundle") and callable(source.analysis_bundle):
-        bundle = source.analysis_bundle()
-        return simulation_result(bundle, threshold=threshold)
-    raise TypeError("Expected a SimulationResult, AnalysisBundle, or an object exposing result()/analysis_bundle().")
-
 
 def simulate(
     domain: Domain,

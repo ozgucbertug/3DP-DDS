@@ -255,5 +255,5 @@ def test_simulator_chunked_and_dense_agree_after_mixed_operations() -> None:
 
     np.testing.assert_allclose(
         chunked.to_dense("max"),
-        simulator.sample_field(field="density"),
+        simulator.result().density_max,
     )

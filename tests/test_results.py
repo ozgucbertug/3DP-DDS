@@ -6,7 +6,6 @@ import numpy as np
 import pytest
 
 from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, SimulationResult, Simulator, simulate
-from dds.results import simulation_result
 
 
 def make_domain() -> Domain:
@@ -35,9 +34,8 @@ def test_simulation_result_strata_prefers_real_layers_in_auto_mode() -> None:
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    field_set = result.strata(mode="auto", threshold=0.5)
+    field_set = result.analysis.strata(mode="auto", threshold=0.5)
 
-    assert result.layer_ids() == (0, 1)
     assert field_set.mode == "layer"
     assert field_set.stratum_ids == (0, 1)
     assert field_set.density(0).shape == domain.grid_shape
@@ -54,7 +52,7 @@ def test_simulation_result_strata_falls_back_to_order_without_real_layers() -> N
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    field_set = result.strata(mode="auto", threshold=0.5)
+    field_set = result.analysis.strata(mode="auto", threshold=0.5)
 
     assert field_set.mode == "order"
     assert field_set.stratum_ids == (0, 1)
@@ -69,8 +67,9 @@ def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    density = result.layer_density(3, threshold=0.5)
-    occupancy = result.layer_occupancy(3, threshold=0.5)
+    field_set = result.analysis.strata(mode="layer", threshold=0.5)
+    density = field_set.density(3)
+    occupancy = field_set.occupancy(3)
 
     assert density.shape == domain.grid_shape
     assert occupancy.dtype == np.bool_
@@ -81,10 +80,10 @@ def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
         threshold=0.5,
     )
     with pytest.raises(ValueError):
-        missing_layer_result.layer_density(0, threshold=0.5)
+        missing_layer_result.analysis.strata(mode="layer", threshold=0.5)
 
 
-def test_simulation_result_from_simulator_requests_coverage() -> None:
+def test_simulator_result_requests_coverage() -> None:
     domain = make_domain()
     profile = make_profile()
     simulator = Simulator(
@@ -95,7 +94,7 @@ def test_simulation_result_from_simulator_requests_coverage() -> None:
         ],
     )
 
-    result = simulation_result(simulator, threshold=0.5)
+    result = simulator.result(threshold=0.5, compositions=("max", "coverage"))
 
     assert result.coverage is not None
     assert result.coverage.shape == domain.grid_shape
@@ -109,9 +108,10 @@ def test_simulation_result_is_an_immutable_snapshot() -> None:
         deposits=(),
         density_max=density,
     )
-    result.analysis_bundle()
+    analysis = result.analysis
     density.fill(1.0)
 
+    assert analysis is result.analysis
     assert float(result.density_max.max()) == pytest.approx(0.0)
     with pytest.raises(ValueError):
         result.density_max[0, 0, 0] = 1.0

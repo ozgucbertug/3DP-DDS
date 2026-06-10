@@ -17,10 +17,10 @@ except ImportError as exc:
         'Install them with `pip install -e ".[viz]"`.'
     ) from exc
 
-from .analysis import AnalysisBundle
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals
-from .results import SimulationResult, WorkbenchViewConfig, simulation_result
+from .results import SimulationResult, WorkbenchViewConfig
+from .simulator import Simulator
 
 Representation = Literal["surface", "occupancy", "density"]
 ColorMode = Literal["plain", "normals", "overhang"]
@@ -84,7 +84,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def __init__(
         self,
-        simulator_or_bundle: SimulationResult | AnalysisBundle | Any,
+        simulator_or_result: Simulator | SimulationResult,
         *,
         threshold: float = 0.5,
         build_direction: str | tuple[float, float, float] = "+Z",
@@ -95,8 +95,12 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         super().__init__(parent)
 
-        self.result = simulation_result(simulator_or_bundle, threshold=threshold)
-        self.bundle = self.result.analysis_bundle()
+        self.result = (
+            simulator_or_result
+            if isinstance(simulator_or_result, SimulationResult)
+            else simulator_or_result.result(threshold=threshold, compositions=("max", "coverage"))
+        )
+        self.bundle = self.result.analysis
         self.threshold = float(threshold)
         self.representation: Representation = "surface"
         self.view_opacity: dict[Representation, float] = {
@@ -599,7 +603,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _apply_overhang_surface_coloring(self, mesh: Any, dataset: Any) -> Any:
         dataset.cell_data["overhang_angle_deg"] = np.asarray(
-            self.result.support(
+            self.bundle.support(
                 build_direction=self._build_direction_label(),
                 threshold=self.threshold,
             ).overhang_angles,
@@ -648,7 +652,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return kwargs
 
     def _occupancy_scalar_field(self) -> npt.NDArray[np.uint8]:
-        return self.bundle.occupancy_field(threshold=self.threshold).astype(np.uint8, copy=False)
+        return self.bundle.occupancy(threshold=self.threshold).astype(np.uint8, copy=False)
 
     def _density_scalar_field(self) -> npt.NDArray[np.float64]:
         density = np.asarray(self._active_density_field(), dtype=float)
@@ -671,7 +675,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return view_values
 
     def _deposition_order_scalar_field(self) -> npt.NDArray[np.float64]:
-        return np.asarray(self.result.strata(mode="order", threshold=self.threshold).label_field, dtype=float)
+        return np.asarray(self.bundle.strata(mode="order", threshold=self.threshold).label_field, dtype=float)
 
     def _scalar_field(self, representation: Literal["occupancy", "density"], field_name: str) -> npt.NDArray[Any]:
         try:
@@ -874,7 +878,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if cached is not None:
             return cached
 
-        occupancy = self.bundle.occupancy_field(threshold=self.threshold)
+        occupancy = self.bundle.occupancy(threshold=self.threshold)
         indices = np.argwhere(occupancy)
         if indices.size == 0:
             bounds = self._domain_bounds_for_camera()
@@ -1242,7 +1246,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         )
 
     def _refresh_support_status(self) -> None:
-        stats = self.result.support(
+        stats = self.bundle.support(
             build_direction=self._build_direction_label(),
             threshold=self.threshold,
         )
@@ -1260,7 +1264,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "voxel_index": domain.world_to_index(coordinates, clip=True) if domain.contains_point(coordinates) else None,
             "occupied": self.bundle.contains_point(coordinates, representation="occupancy", threshold=self.threshold),
             "density": self.bundle.sample_density_at(coordinates, interpolation="trilinear"),
-            "deposition_index": self.bundle.sample_deposition_index_at(coordinates),
+            "deposition_index": self.bundle.sample_deposition_index(coordinates),
             "signed_distance": self.bundle.signed_distance_at(coordinates, threshold=self.threshold),
             "surface_normal": self.bundle.surface_normal_at(coordinates, threshold=self.threshold),
         }

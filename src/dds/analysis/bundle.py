@@ -11,8 +11,10 @@ import numpy.typing as npt
 from ..domain import Domain
 from ..geometry.sdf import _coerce_points
 from ..occupancy import occupancy_from_density
-from ..utils import EPSILON, ensure_finite_triplet, normalize_axis, readonly_array
-from .fields import normalize_field
+from ..primitives import Deposit
+from ..utils import EPSILON, ensure_finite_triplet, readonly_array
+from .models import InterfaceAnalysis, StratumFieldSet, SupportAnalysis
+from .support import BuildDirection
 
 InterpolationMode = Literal["nearest", "trilinear"]
 RepresentationMode = Literal["occupancy", "density", "sdf", "mesh"]
@@ -20,13 +22,8 @@ SampleFieldName = Literal["density", "occupancy", "deposition_index", "signed_di
 
 
 
-def _surface_cache_key(
-    threshold: float,
-    *,
-    normalize: bool,
-    step_size: int = 1,
-) -> tuple[float, bool, int]:
-    return (float(threshold), bool(normalize), int(step_size))
+def _surface_cache_key(threshold: float, *, step_size: int = 1) -> tuple[float, int]:
+    return (float(threshold), int(step_size))
 
 
 def _sample_nearest(
@@ -86,29 +83,22 @@ def _sample_scalar_field(
     raise ValueError("interpolation must be 'nearest' or 'trilinear'.")
 
 
-def _resolve_bundle(source: Any) -> "AnalysisBundle":
-    if isinstance(source, AnalysisBundle):
-        return source
-    if hasattr(source, "analysis_bundle") and callable(source.analysis_bundle):
-        return source.analysis_bundle()
-    raise TypeError("Expected an AnalysisBundle or an object exposing analysis_bundle().")
-
-
 @dataclass(slots=True, frozen=True)
-class AnalysisBundle:
+class SimulationAnalysis:
     """Cached query state derived from a dense density field."""
 
     domain: Domain
     density: npt.NDArray[np.float64]
-    deposition_index: npt.NDArray[np.intp] | None = None
-    _normalized_density: npt.NDArray[np.float64] | None = None
-    _occupancy_cache: dict[tuple[float, bool], npt.NDArray[np.bool_]] = field(default_factory=dict)
-    _surface_mesh_cache: dict[tuple[float, bool, int], Any] = field(default_factory=dict)
-    _surface_sdf_cache: dict[tuple[float, bool], Any] = field(default_factory=dict)
-    _mesh_sdf_cache: dict[tuple[float, bool, int], Any | None] = field(default_factory=dict)
-    _mesh_analysis_cache: dict[tuple[float, bool, int, tuple[float, float, float], float], dict[str, Any]] = field(
-        default_factory=dict
-    )
+    deposition_index: npt.NDArray[np.intp]
+    deposits: tuple[Deposit, ...]
+    default_threshold: float = 0.5
+    _occupancy_cache: dict[float, npt.NDArray[np.bool_]] = field(default_factory=dict)
+    _surface_mesh_cache: dict[tuple[float, int], Any] = field(default_factory=dict)
+    _surface_sdf_cache: dict[float, Any] = field(default_factory=dict)
+    _mesh_sdf_cache: dict[tuple[float, int], Any] = field(default_factory=dict)
+    _strata_cache: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict)
+    _interface_cache: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict)
+    _support_cache: dict[tuple[BuildDirection, float, float], SupportAnalysis] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "density", readonly_array(self.density, dtype=float))
@@ -119,56 +109,30 @@ class AnalysisBundle:
 
         if not np.all(np.isfinite(self.density)) or np.any(self.density < 0.0):
             raise ValueError("density must contain only finite, non-negative values.")
-        if self.deposition_index is not None:
-            deposition_index = readonly_array(self.deposition_index, dtype=np.intp)
-            if deposition_index.shape != self.domain.grid_shape:
-                raise ValueError(
-                    "deposition_index shape "
-                    f"{deposition_index.shape} does not match domain grid shape {self.domain.grid_shape}."
-                )
-            object.__setattr__(self, "deposition_index", deposition_index)
-
-    def density_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
-        if not normalize:
-            return self.density
-        if self._normalized_density is None:
-            object.__setattr__(
-                self,
-                "_normalized_density",
-                readonly_array(
-                    normalize_field(self.density),
-                    dtype=float,
-                ),
+        deposition_index = readonly_array(self.deposition_index, dtype=np.intp)
+        if deposition_index.shape != self.domain.grid_shape:
+            raise ValueError(
+                "deposition_index shape "
+                f"{deposition_index.shape} does not match domain grid shape {self.domain.grid_shape}."
             )
-        return self._normalized_density
+        object.__setattr__(self, "deposition_index", deposition_index)
+        object.__setattr__(self, "deposits", tuple(self.deposits))
+
+    def density_field(self) -> npt.NDArray[np.float64]:
+        return self.density
 
     def deposition_index_field(self) -> npt.NDArray[np.intp]:
-        """Return the per-voxel last-deposit-index grid (0-based; -1 = untouched).
-
-        Requires the bundle to have been created with a ``deposition_index`` array.
-        Raises ``ValueError`` when no index is available.
-        """
-        if self.deposition_index is None:
-            raise ValueError(
-                "No deposition index available on this AnalysisBundle. "
-                "Create the bundle via Simulator.analysis_bundle() or "
-                "SimulationResult.analysis_bundle() to populate it."
-            )
         return self.deposition_index
 
-    def occupancy_field(
+    def occupancy(
         self,
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
     ) -> npt.NDArray[np.bool_]:
-        key = (float(threshold), bool(normalize))
+        key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._occupancy_cache:
             self._occupancy_cache[key] = readonly_array(
-                occupancy_from_density(
-                    self.density_field(normalize=normalize),
-                    threshold=threshold,
-                ),
+                occupancy_from_density(self.density, threshold=key),
                 dtype=bool,
             )
         return self._occupancy_cache[key]
@@ -176,18 +140,18 @@ class AnalysisBundle:
     def surface_mesh(
         self,
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
         step_size: int = 1,
     ) -> Any:
-        key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size)
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = _surface_cache_key(threshold_value, step_size=step_size)
         if key not in self._surface_mesh_cache:
             from ..geometry import density_to_mesh
 
             self._surface_mesh_cache[key] = density_to_mesh(
                 self.domain,
-                self.density_field(normalize=normalize),
-                threshold=threshold,
+                self.density,
+                threshold=threshold_value,
                 step_size=step_size,
             )
         return self._surface_mesh_cache[key]
@@ -195,32 +159,31 @@ class AnalysisBundle:
     def surface_sdf(
         self,
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
     ) -> Any:
-        key = (float(threshold), bool(normalize))
+        key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._surface_sdf_cache:
             from ..geometry import density_to_sdf
 
             self._surface_sdf_cache[key] = density_to_sdf(
                 self.domain,
-                self.density_field(normalize=normalize),
-                threshold=threshold,
+                self.density,
+                threshold=key,
             )
         return self._surface_sdf_cache[key]
 
     def mesh_sdf(
         self,
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
         step_size: int = 1,
-    ) -> Any | None:
-        key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size)
+    ) -> Any:
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = _surface_cache_key(threshold_value, step_size=step_size)
         if key not in self._mesh_sdf_cache:
             from ..geometry import MeshSDF3
 
-            mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
+            mesh = self.surface_mesh(threshold=threshold_value, step_size=step_size)
             if mesh.is_empty:
                 raise ValueError("Cannot construct a mesh SDF from an empty analysis surface.")
             self._mesh_sdf_cache[key] = MeshSDF3(
@@ -235,19 +198,18 @@ class AnalysisBundle:
         point: tuple[float, float, float] | npt.ArrayLike,
         *,
         interpolation: InterpolationMode = "nearest",
-        normalize: bool = False,
     ) -> float:
         points, _single = _coerce_points(point)
         values = _sample_scalar_field(
             self.domain,
-            self.density_field(normalize=normalize),
+            self.density,
             points,
             interpolation=interpolation,
             fill_value=0.0,
         )
         return float(values[0])
 
-    def sample_deposition_index_at(
+    def sample_deposition_index(
         self,
         point: tuple[float, float, float] | npt.ArrayLike,
     ) -> int:
@@ -264,16 +226,15 @@ class AnalysisBundle:
         self,
         point: tuple[float, float, float] | npt.ArrayLike,
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
         source: str = "surface_sdf",
         step_size: int = 1,
     ) -> float:
         points, _single = _coerce_points(point)
         if source == "surface_sdf":
-            sdf = self.surface_sdf(threshold=threshold, normalize=normalize)
+            sdf = self.surface_sdf(threshold=threshold)
         elif source == "mesh":
-            sdf = self.mesh_sdf(threshold=threshold, normalize=normalize, step_size=step_size)
+            sdf = self.mesh_sdf(threshold=threshold, step_size=step_size)
         else:
             raise ValueError("source must be 'surface_sdf' or 'mesh'.")
         return float(sdf(points)[0])
@@ -282,15 +243,14 @@ class AnalysisBundle:
         self,
         point: tuple[float, float, float] | npt.ArrayLike,
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
         source: str = "surface_sdf",
         step_size: int = 1,
     ) -> tuple[float, float, float]:
         base_point = np.asarray(ensure_finite_triplet(point, "point"), dtype=float)
-        sdf = self.surface_sdf(threshold=threshold, normalize=normalize) if source == "surface_sdf" else None
+        sdf = self.surface_sdf(threshold=threshold) if source == "surface_sdf" else None
         if source == "mesh":
-            sdf = self.mesh_sdf(threshold=threshold, normalize=normalize, step_size=step_size)
+            sdf = self.mesh_sdf(threshold=threshold, step_size=step_size)
         if sdf is None:
             raise ValueError("source must be 'surface_sdf' or 'mesh'.")
 
@@ -310,32 +270,31 @@ class AnalysisBundle:
         point: tuple[float, float, float] | npt.ArrayLike,
         *,
         representation: RepresentationMode = "occupancy",
-        threshold: float = 0.5,
+        threshold: float | None = None,
         interpolation: InterpolationMode = "nearest",
-        normalize: bool = False,
         step_size: int = 1,
     ) -> bool:
         coordinates = ensure_finite_triplet(point, "point")
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
         if representation == "occupancy":
             if interpolation == "nearest":
                 if not self.domain.contains_point(coordinates):
                     return False
                 return bool(
-                    self.occupancy_field(threshold=threshold, normalize=normalize)[
+                    self.occupancy(threshold=threshold_value)[
                         self.domain.world_to_index(coordinates, clip=True)
                     ]
                 )
-            return self.sample_density_at(coordinates, interpolation=interpolation, normalize=normalize) >= threshold
+            return self.sample_density_at(coordinates, interpolation=interpolation) >= threshold_value
         if representation == "density":
-            return self.sample_density_at(coordinates, interpolation=interpolation, normalize=normalize) >= threshold
+            return self.sample_density_at(coordinates, interpolation=interpolation) >= threshold_value
         if representation == "sdf":
-            return self.signed_distance_at(coordinates, threshold=threshold, normalize=normalize) <= 0.0
+            return self.signed_distance_at(coordinates, threshold=threshold_value) <= 0.0
         if representation == "mesh":
             return (
                 self.signed_distance_at(
                     coordinates,
-                    threshold=threshold,
-                    normalize=normalize,
+                    threshold=threshold_value,
                     source="mesh",
                     step_size=step_size,
                 )
@@ -348,17 +307,17 @@ class AnalysisBundle:
         points: npt.ArrayLike,
         *,
         fields: tuple[SampleFieldName, ...] = ("density", "occupancy", "deposition_index", "signed_distance"),
-        threshold: float = 0.5,
+        threshold: float | None = None,
         interpolation: InterpolationMode = "nearest",
-        normalize: bool = False,
     ) -> dict[str, npt.NDArray[np.generic]]:
         samples, _single = _coerce_points(points)
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
         result: dict[str, npt.NDArray[np.generic]] = {}
         for field_name in fields:
             if field_name == "density":
                 result[field_name] = _sample_scalar_field(
                     self.domain,
-                    self.density_field(normalize=normalize),
+                    self.density,
                     samples,
                     interpolation=interpolation,
                     fill_value=0.0,
@@ -373,14 +332,14 @@ class AnalysisBundle:
             elif field_name == "occupancy":
                 density_samples = _sample_scalar_field(
                     self.domain,
-                    self.density_field(normalize=normalize),
+                    self.density,
                     samples,
                     interpolation=interpolation,
                     fill_value=0.0,
                 )
-                result[field_name] = density_samples >= threshold
+                result[field_name] = density_samples >= threshold_value
             elif field_name == "signed_distance":
-                sdf = self.surface_sdf(threshold=threshold, normalize=normalize)
+                sdf = self.surface_sdf(threshold=threshold_value)
                 result[field_name] = np.asarray(sdf(samples), dtype=float)
             else:
                 raise ValueError(
@@ -392,11 +351,11 @@ class AnalysisBundle:
         self,
         bounds: tuple[tuple[float, float, float], tuple[float, float, float]],
         *,
-        threshold: float = 0.5,
-        normalize: bool = False,
+        threshold: float | None = None,
         step_size: int = 1,
     ) -> dict[str, float]:
         minimum, maximum = bounds
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
         index_bounds = self.domain.index_bounds_for_aabb(minimum, maximum)
         if index_bounds is None:
             return {
@@ -411,17 +370,14 @@ class AnalysisBundle:
             }
 
         slices = tuple(slice(start, stop) for start, stop in index_bounds)
-        density = self.density_field(normalize=normalize)[slices]
-        try:
-            deposition_index = self.deposition_index_field().astype(float, copy=False)[slices]
-        except ValueError:
-            deposition_index = np.zeros_like(density)
-        occupancy = self.occupancy_field(threshold=threshold, normalize=normalize)[slices]
+        density = self.density[slices]
+        deposition_index = self.deposition_index.astype(float, copy=False)[slices]
+        occupancy = self.occupancy(threshold=threshold_value)[slices]
         voxel_count = float(np.prod(density.shape))
         occupied_voxel_count = float(np.count_nonzero(occupancy))
 
         mesh_area = 0.0
-        mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
+        mesh = self.surface_mesh(threshold=threshold_value, step_size=step_size)
         if not mesh.is_empty:
             from ..mesh_analysis import face_areas, face_centroids
 
@@ -443,86 +399,50 @@ class AnalysisBundle:
             "mesh_area": mesh_area,
         }
 
-    def mesh_analysis(
+    def strata(
         self,
         *,
-        build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+        mode: Literal["auto", "layer", "order"] = "auto",
+        threshold: float | None = None,
+    ) -> StratumFieldSet:
+        from .strata import strata
+
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = (mode, threshold_value)
+        if key not in self._strata_cache:
+            self._strata_cache[key] = strata(self, mode=mode, threshold=threshold_value)
+        return self._strata_cache[key]
+
+    def interface(
+        self,
+        *,
+        mode: Literal["auto", "layer", "order"] = "auto",
+        threshold: float | None = None,
+    ) -> InterfaceAnalysis:
+        from .interface import interface
+
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = (mode, threshold_value)
+        if key not in self._interface_cache:
+            self._interface_cache[key] = interface(self, mode=mode, threshold=threshold_value)
+        return self._interface_cache[key]
+
+    def support(
+        self,
+        *,
+        build_direction: BuildDirection = "+Z",
         critical_angle_deg: float = 45.0,
-        threshold: float = 0.5,
-        normalize: bool = False,
-        step_size: int = 1,
-    ) -> dict[str, Any]:
-        build_dir = normalize_axis(build_direction, "build_direction")
-        key = _surface_cache_key(threshold, normalize=normalize, step_size=step_size) + (
-            build_dir,
-            float(critical_angle_deg),
-        )
-        if key not in self._mesh_analysis_cache:
-            from ..mesh_analysis import (
-                downfacing_mask,
-                face_areas,
-                face_centroids,
-                face_normals,
-                overhang_angles,
-                support_risk_mask,
+        threshold: float | None = None,
+    ) -> SupportAnalysis:
+        from .support import support
+
+        threshold_value = self.default_threshold if threshold is None else float(threshold)
+        key = (build_direction, float(critical_angle_deg), threshold_value)
+        if key not in self._support_cache:
+            self._support_cache[key] = support(
+                self,
+                build_direction=build_direction,
+                critical_angle_deg=critical_angle_deg,
+                threshold=threshold_value,
             )
-
-            mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
-            self._mesh_analysis_cache[key] = {
-                "mesh": mesh,
-                "face_normals": face_normals(mesh),
-                "face_centroids": face_centroids(mesh),
-                "face_areas": face_areas(mesh),
-                "overhang_angles": overhang_angles(mesh, build_direction=build_dir),
-                "downfacing_mask": downfacing_mask(mesh, build_direction=build_dir),
-                "support_risk_mask": support_risk_mask(
-                    mesh,
-                    build_direction=build_dir,
-                    critical_angle_deg=critical_angle_deg,
-                ),
-            }
-        return self._mesh_analysis_cache[key]
-
-
-def analysis_bundle(source: Any) -> AnalysisBundle:
-    return _resolve_bundle(source)
-
-
-def contains_point(source: Any, point: tuple[float, float, float] | npt.ArrayLike, **kwargs: Any) -> bool:
-    return _resolve_bundle(source).contains_point(point, **kwargs)
-
-
-def sample_density_at(source: Any, point: tuple[float, float, float] | npt.ArrayLike, **kwargs: Any) -> float:
-    return _resolve_bundle(source).sample_density_at(point, **kwargs)
-
-
-def sample_deposition_index_at(
-    source: Any,
-    point: tuple[float, float, float] | npt.ArrayLike,
-    **kwargs: Any,
-) -> int:
-    return _resolve_bundle(source).sample_deposition_index_at(point, **kwargs)
-
-
-def signed_distance_at(source: Any, point: tuple[float, float, float] | npt.ArrayLike, **kwargs: Any) -> float:
-    return _resolve_bundle(source).signed_distance_at(point, **kwargs)
-
-
-def surface_normal_at(
-    source: Any,
-    point: tuple[float, float, float] | npt.ArrayLike,
-    **kwargs: Any,
-) -> tuple[float, float, float]:
-    return _resolve_bundle(source).surface_normal_at(point, **kwargs)
-
-
-def sample_points(source: Any, points: npt.ArrayLike, **kwargs: Any) -> dict[str, npt.NDArray[np.generic]]:
-    return _resolve_bundle(source).sample_points(points, **kwargs)
-
-
-def subvolume_stats(
-    source: Any,
-    bounds: tuple[tuple[float, float, float], tuple[float, float, float]],
-    **kwargs: Any,
-) -> dict[str, float]:
-    return _resolve_bundle(source).subvolume_stats(bounds, **kwargs)
+        return self._support_cache[key]

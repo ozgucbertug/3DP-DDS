@@ -3,7 +3,6 @@
 from typing import TYPE_CHECKING, Any
 
 from . import formats, geometry, targets, viz
-from .analysis import AnalysisBundle, analysis_bundle
 from .attributes import BeadProfile, DepositionMetadata
 from .chunked import ChunkedField
 from .cli import run_cli
@@ -29,7 +28,6 @@ if TYPE_CHECKING:
     from .workbench import SimulationWorkbench
 
 __all__ = [
-    "AnalysisBundle",
     "BeadProfile",
     "Deposit",
     "DepositInput",
@@ -50,7 +48,6 @@ __all__ = [
     "ChunkedField",
     "WorkbenchViewConfig",
     "accumulate_chunked_field",
-    "analysis_bundle",
     "apply_deposit_to_field",
     "apply_deposit_to_index_field",
     "formats",

@@ -70,8 +70,8 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
     )
     result = simulator.result(compositions=compositions, threshold=config.threshold)
 
-    occupancy = result.occupancy(threshold=config.threshold)
-    deposition_index = result.analysis_bundle().deposition_index_field()
+    occupancy = result.analysis.occupancy(threshold=config.threshold)
+    deposition_index = result.analysis.deposition_index_field()
 
     print(f"Loaded targets: {len(targets)}")
     print(f"Created point deposits: {len(deposits)}")
@@ -87,7 +87,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         print(f"Max nonphysical coverage: {float(result.coverage.max()):.4f}")
 
     if config.analysis in {"interface", "all"}:
-        interface_analysis = result.interface(mode=config.stratification, threshold=config.threshold)
+        interface_analysis = result.analysis.interface(mode=config.stratification, threshold=config.threshold)
         print(f"Interface stratification: {interface_analysis.stratification_mode}")
         print(f"Interface strata: {interface_analysis.stratum_ids}")
         print(f"Contact area: {interface_analysis.contact_area:.4f}")
@@ -97,7 +97,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         print(f"Unsupported next voxels: {int(interface_analysis.unsupported_next_mask.sum())}")
 
     if config.analysis in {"support", "all"}:
-        support_analysis = result.support(
+        support_analysis = result.analysis.support(
             build_direction=config.build_direction,
             threshold=config.threshold,
         )
@@ -125,7 +125,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
     for label, path in written.items():
         print(f"Saved {label}: {path}")
     if config.write_mesh_output:
-        mesh = result.surface_mesh(
+        mesh = result.analysis.surface_mesh(
             threshold=config.threshold,
             step_size=config.mesh_step_size,
         )

@@ -118,20 +118,12 @@ def test_mesh_volume_estimate_returns_none_for_non_watertight_mesh() -> None:
     assert mesh_volume_estimate(mesh) is None
 
 
-def test_analysis_bundle_subvolume_stats_and_mesh_analysis_are_headless() -> None:
+def test_simulation_analysis_subvolume_stats_are_headless() -> None:
     simulator = make_simulator()
-    bundle = simulator.analysis_bundle()
+    analysis = simulator.result().analysis
 
-    stats = bundle.subvolume_stats(((0.0, 0.0, 0.0), (5.0, 5.0, 2.0)), threshold=0.5)
-    analysis = bundle.mesh_analysis(build_direction=(0.0, 0.0, 1.0), critical_angle_deg=45.0)
+    stats = analysis.subvolume_stats(((0.0, 0.0, 0.0), (5.0, 5.0, 2.0)), threshold=0.5)
 
     assert stats["voxel_count"] > 0.0
     assert stats["occupied_voxel_count"] > 0.0
     assert stats["mesh_area"] > 0.0
-    assert analysis["mesh"].n_faces > 0
-    assert analysis["face_normals"].shape[1] == 3
-    assert analysis["face_centroids"].shape[1] == 3
-    assert analysis["face_areas"].ndim == 1
-    assert analysis["support_risk_mask"].dtype == np.bool_
-    assert simulator.mesh_analysis(build_direction=(0.0, 0.0, 1.0), critical_angle_deg=45.0) is analysis
-    assert simulator.subvolume_stats(((0.0, 0.0, 0.0), (5.0, 5.0, 2.0)), threshold=0.5) == stats

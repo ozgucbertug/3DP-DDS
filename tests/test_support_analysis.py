@@ -32,7 +32,7 @@ def _cantilever_result():
 
 def test_support_analysis_builds_shadow_for_axis_aligned_direction() -> None:
     result = _cantilever_result()
-    analysis = result.support(build_direction="+Z", threshold=0.5)
+    analysis = result.analysis.support(build_direction="+Z", threshold=0.5)
 
     assert analysis.overhang_angles.shape == analysis.face_areas.shape
     assert analysis.downfacing_mask.shape == analysis.face_areas.shape
@@ -47,7 +47,7 @@ def test_support_analysis_rejects_non_axis_aligned_direction() -> None:
     result = _cantilever_result()
 
     with pytest.raises(ValueError, match="build_direction"):
-        result.support(build_direction="diagonal", threshold=0.5)  # type: ignore[arg-type]
+        result.analysis.support(build_direction="diagonal", threshold=0.5)  # type: ignore[arg-type]
 
 
 def test_support_span_uses_longest_contiguous_shadow_run() -> None:

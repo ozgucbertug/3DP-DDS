@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
@@ -10,6 +10,9 @@ from .models import InterfaceAnalysis, InterfacePairSummary
 from .strata import strata as build_strata
 
 StrataMode = Literal["auto", "layer", "order"]
+
+if TYPE_CHECKING:
+    from .bundle import SimulationAnalysis
 
 
 def _contact_for_pair(
@@ -57,7 +60,7 @@ def _contact_for_pair(
 
 
 def interface(
-    source: Any,
+    source: SimulationAnalysis,
     *,
     mode: StrataMode = "auto",
     threshold: float = 0.5,

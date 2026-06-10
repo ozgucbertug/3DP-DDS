@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 
 from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, simulate
-from dds.analysis import interface
 
 
 def make_domain() -> Domain:
@@ -31,7 +30,7 @@ def test_interface_analysis_uses_real_layers_when_available() -> None:
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    analysis = result.interface(mode="auto", threshold=0.5)
+    analysis = result.analysis.interface(mode="auto", threshold=0.5)
 
     assert analysis.stratification_mode == "layer"
     assert analysis.stratum_ids == (0, 1)
@@ -50,7 +49,7 @@ def test_interface_analysis_falls_back_to_deposit_order() -> None:
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    analysis = interface(result, mode="auto", threshold=0.5)
+    analysis = result.analysis.interface(mode="auto", threshold=0.5)
 
     assert analysis.stratification_mode == "order"
     assert analysis.stratum_ids == (0, 1, 2)

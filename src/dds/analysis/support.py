@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
 import numpy.typing as npt
 
 from ..mesh_analysis import downfacing_mask, face_areas, face_centroids, overhang_angles, support_risk_mask
 from .models import SupportAnalysis
+
+if TYPE_CHECKING:
+    from .bundle import SimulationAnalysis
 
 BuildDirection = Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
 _BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
@@ -19,12 +22,6 @@ _BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
     "+Z": (0.0, 0.0, 1.0),
     "-Z": (0.0, 0.0, -1.0),
 }
-
-
-def _resolve_result(source: Any, *, threshold: float) -> Any:
-    from ..results import simulation_result
-
-    return simulation_result(source, threshold=threshold)
 
 
 def _axis_aligned_projection_axis(
@@ -106,7 +103,7 @@ def _support_shadow_field(
 
 
 def support(
-    source: Any,
+    source: SimulationAnalysis,
     *,
     build_direction: BuildDirection = "+Z",
     critical_angle_deg: float = 45.0,
@@ -114,11 +111,10 @@ def support(
 ) -> SupportAnalysis:
     """Return typed support and overhang metrics for the max-based geometry."""
 
-    result = _resolve_result(source, threshold=threshold)
     if build_direction not in _BUILD_DIRECTIONS:
         raise ValueError(f"build_direction must be one of {sorted(_BUILD_DIRECTIONS)}.")
     build_dir = _BUILD_DIRECTIONS[build_direction]
-    mesh = result.surface_mesh(threshold=threshold)
+    mesh = source.surface_mesh(threshold=threshold)
     angles = np.asarray(overhang_angles(mesh, build_direction=build_dir), dtype=float)
     downfacing = np.asarray(downfacing_mask(mesh, build_direction=build_dir), dtype=bool)
     risk = np.asarray(
@@ -127,16 +123,16 @@ def support(
     )
     areas = np.asarray(face_areas(mesh), dtype=float)
     centroids = np.asarray(face_centroids(mesh), dtype=float)
-    occupancy = result.occupancy(threshold=threshold)
+    occupancy = source.occupancy(threshold=threshold)
     risky_centroids = centroids[risk] if centroids.size else np.empty((0, 3), dtype=float)
     shadow_field, max_span = _support_shadow_field(
         occupancy,
         risky_centroids,
-        domain=result.domain,
+        domain=source.domain,
         build_direction=build_direction,
     )
     shadow_voxel_count = int(np.count_nonzero(shadow_field))
-    shadow_volume = shadow_voxel_count * float(np.prod(result.domain.voxel_size))
+    shadow_volume = shadow_voxel_count * float(np.prod(source.domain.voxel_size))
     return SupportAnalysis(
         mesh=mesh,
         build_direction=build_dir,

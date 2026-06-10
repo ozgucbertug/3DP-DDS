@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
@@ -13,13 +13,10 @@ from ..occupancy import occupancy_from_density
 from ..primitives import Deposit, iter_deposits
 from .models import StratificationMode, StratumFieldSet
 
+if TYPE_CHECKING:
+    from .bundle import SimulationAnalysis
+
 StrataMode = Literal["auto", "layer", "order"]
-
-
-def _resolve_result(source: Any, *, threshold: float) -> Any:
-    from ..results import simulation_result
-
-    return simulation_result(source, threshold=threshold)
 
 
 def _real_layer_ids(deposits: Iterable[Deposit]) -> tuple[int, ...]:
@@ -27,7 +24,7 @@ def _real_layer_ids(deposits: Iterable[Deposit]) -> tuple[int, ...]:
     return tuple(int(value) for value in values)
 
 
-def _resolve_mode(result: Any, mode: StrataMode) -> StratificationMode:
+def _resolve_mode(result: SimulationAnalysis, mode: StrataMode) -> StratificationMode:
     if mode == "auto":
         return "layer" if len(_real_layer_ids(result.deposits)) >= 2 else "order"
     if mode not in {"layer", "order"}:
@@ -54,25 +51,24 @@ def _group_deposits(
 
 
 def strata(
-    source: Any,
+    source: SimulationAnalysis,
     *,
     mode: StrataMode = "auto",
     threshold: float = 0.5,
 ) -> StratumFieldSet:
     """Build max-density and occupancy fields for each layer or ordered deposit stratum."""
 
-    result = _resolve_result(source, threshold=threshold)
-    resolved_mode = _resolve_mode(result, mode)
-    deposit_tuple = tuple(iter_deposits(result.deposits))
+    resolved_mode = _resolve_mode(source, mode)
+    deposit_tuple = tuple(iter_deposits(source.deposits))
     groups = _group_deposits(deposit_tuple, mode=resolved_mode)
-    label_field = np.zeros(result.domain.grid_shape, dtype=float)
+    label_field = np.zeros(source.domain.grid_shape, dtype=float)
     density_fields: list[np.ndarray] = []
     occupancy_fields: list[np.ndarray] = []
     stratum_ids: list[int] = []
 
     for position, (stratum_id, grouped_deposits) in enumerate(groups, start=1):
         density = accumulate_fields(
-            result.domain,
+            source.domain,
             grouped_deposits,
             compositions=("max",),
         )["max"]
@@ -83,7 +79,7 @@ def strata(
         stratum_ids.append(int(stratum_id))
 
     return StratumFieldSet(
-        domain=result.domain,
+        domain=source.domain,
         mode=resolved_mode,
         threshold=float(threshold),
         stratum_ids=tuple(stratum_ids),

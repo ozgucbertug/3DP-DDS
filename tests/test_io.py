@@ -85,7 +85,7 @@ def test_write_read_mesh_round_trip(tmp_path: Path) -> None:
         [PointDeposit(x=2.0, y=2.0, z=2.0, profile=BeadProfile(width=1.5, height=1.5))],
         threshold=0.5,
     )
-    mesh = result.surface_mesh()
+    mesh = result.analysis.surface_mesh()
     assert not mesh.is_empty
 
     path = write_mesh(tmp_path / "mesh.stl", mesh)

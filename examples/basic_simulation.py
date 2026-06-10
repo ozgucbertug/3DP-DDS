@@ -71,8 +71,8 @@ def main(args: Args) -> None:
     simulator = Simulator(domain, deposits)
     result = simulator.result(compositions=("max", "coverage"), threshold=args.threshold)
 
-    occupancy = result.occupancy(threshold=args.threshold)
-    deposition_index = result.analysis_bundle().deposition_index_field()
+    occupancy = result.analysis.occupancy(threshold=args.threshold)
+    deposition_index = result.analysis.deposition_index_field()
 
     print(f"Grid shape: {occupancy.shape}")
     print(f"Occupied voxels: {int(occupancy.sum())}")

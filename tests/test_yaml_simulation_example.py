@@ -100,8 +100,8 @@ targets:
     )
 
     assert isinstance(result, SimulationResult)
-    assert result.occupancy(threshold=0.5).any()
-    assert result.analysis_bundle().deposition_index_field().max() >= 0  # at least one deposit has index ≥ 0
+    assert result.analysis.occupancy(threshold=0.5).any()
+    assert result.analysis.deposition_index_field().max() >= 0  # at least one deposit has index ≥ 0
     assert result.density_max.max() >= 0.5
     assert result.coverage is not None
     assert result.coverage.shape == result.domain.grid_shape
@@ -172,5 +172,5 @@ targets:
         )
     )
 
-    support = result.support(build_direction="+Z", threshold=0.5)
+    support = result.analysis.support(build_direction="+Z", threshold=0.5)
     assert support.support_shadow_field.shape == result.domain.grid_shape
