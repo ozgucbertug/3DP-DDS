@@ -121,6 +121,19 @@ simulator.add_deposit(deposit)
 result = simulator.result()
 ```
 
+For a live view, keep one workbench open and refresh it after each batch:
+
+```python
+import dds.viz
+
+workbench = dds.viz.show(simulator)
+simulator.add_deposits(next_batch)
+workbench.refresh(simulator)
+workbench.app.exec()
+```
+
+See `examples/live_simulation.py` for a timer-driven example.
+
 Chunked storage is a separate workflow under `dds.fields`. It allocates only
 requested compositions and defaults to max-only storage:
 

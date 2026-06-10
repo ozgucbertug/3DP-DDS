@@ -217,3 +217,22 @@ def test_initial_view_config_applies_without_example_side_mutation(qtbot: object
     assert workbench.view_opacity["density"] == pytest.approx(1.0)
 
     workbench.close()
+
+
+def test_refresh_updates_live_simulator_state(qtbot: object) -> None:
+    simulator = Simulator(make_domain())
+    workbench = SimulationWorkbench(simulator, off_screen=True)
+    qtbot.addWidget(workbench)
+
+    simulator.add_deposit(
+        PointDeposit(
+            target=(2.25, 2.25, 0.65),
+            profile=BeadProfile(width=1.2, height=0.8),
+        )
+    )
+    workbench.refresh(simulator)
+
+    assert len(workbench.result.deposits) == 1
+    assert int(workbench.bundle.occupancy(threshold=0.5).sum()) > 0
+
+    workbench.close()

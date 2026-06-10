@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, ClassVar, Literal
 
 if TYPE_CHECKING:
     from .results import SimulationResult
+    from .simulator import Simulator
     from .workbench import SimulationWorkbench
 
 ViewMode = Literal["surface", "occupancy", "density"]
@@ -38,22 +39,29 @@ class ViewConfig:
 
 
 def show(
-    result: "SimulationResult",
+    simulator_or_result: "Simulator | SimulationResult",
     *,
     view_mode: "ViewMode" = "surface",
     initial_view: ViewConfig | None = None,
+    threshold: float | None = None,
     off_screen: bool = False,
 ) -> "SimulationWorkbench":
-    """Open the interactive workbench for a SimulationResult.
+    """Open the interactive workbench for a simulator or result snapshot.
 
     Requires ``pip install -e "[viz]"``.
     """
 
+    from .results import SimulationResult
     from .workbench import SimulationWorkbench
 
+    resolved_threshold = (
+        simulator_or_result.default_threshold
+        if threshold is None and isinstance(simulator_or_result, SimulationResult)
+        else 0.5 if threshold is None else float(threshold)
+    )
     workbench = SimulationWorkbench(
-        result,
-        threshold=result.default_threshold,
+        simulator_or_result,
+        threshold=resolved_threshold,
         off_screen=off_screen,
         initial_view=initial_view or ViewConfig(view_mode=view_mode),
     )

@@ -1349,6 +1349,32 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._restore_camera_state(camera_state)
         self.plotter.render()
 
+    def refresh(self, simulator_or_result: Simulator | SimulationResult) -> None:
+        """Refresh the workbench from the latest simulator state or result snapshot."""
+
+        result = (
+            simulator_or_result
+            if isinstance(simulator_or_result, SimulationResult)
+            else simulator_or_result.result(
+                threshold=self.threshold,
+                compositions=("max", "coverage"),
+            )
+        )
+        if result.domain != self.result.domain:
+            raise ValueError("Cannot refresh a workbench with a different simulation domain.")
+
+        self.result = result
+        self.bundle = result.analysis
+        self._coverage = result.coverage
+        self._surface_polydata_cache.clear()
+        self._occupied_bounds_cache.clear()
+        self.clear_pick()
+        self._sync_scalar_field_options()
+        self._rebuild_scene()
+        self._refresh_roi_stats()
+        if self.point_picking_enabled:
+            self._install_point_picking()
+
     def set_threshold(self, value: float) -> None:
         value = float(value)
         if abs(self.threshold - value) <= 1e-9:
