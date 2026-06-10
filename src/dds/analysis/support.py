@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from .simulation import SimulationAnalysis
 
 BuildDirection = Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
-_BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
+BUILD_DIRECTION_VECTORS: dict[BuildDirection, tuple[float, float, float]] = {
     "+X": (1.0, 0.0, 0.0),
     "-X": (-1.0, 0.0, 0.0),
     "+Y": (0.0, 1.0, 0.0),
@@ -22,6 +22,7 @@ _BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
     "+Z": (0.0, 0.0, 1.0),
     "-Z": (0.0, 0.0, -1.0),
 }
+_BUILD_DIRECTIONS = BUILD_DIRECTION_VECTORS  # internal alias
 
 
 def _axis_aligned_projection_axis(

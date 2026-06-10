@@ -17,7 +17,7 @@ except ImportError as exc:
         'Install them with `pip install -e ".[viz]"`.'
     ) from exc
 
-from .analysis.support import BuildDirection
+from .analysis.support import BUILD_DIRECTION_VECTORS, BuildDirection
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals
 from .results import SimulationResult
@@ -94,14 +94,7 @@ def _triangle_mesh_to_polydata(mesh: Any) -> Any:
 class SimulationWorkbench(QtWidgets.QMainWindow):
     """Minimal Qt workbench for dense-field inspection and mesh analysis."""
 
-    _BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
-        "+X": (1.0, 0.0, 0.0),
-        "-X": (-1.0, 0.0, 0.0),
-        "+Y": (0.0, 1.0, 0.0),
-        "-Y": (0.0, -1.0, 0.0),
-        "+Z": (0.0, 0.0, 1.0),
-        "-Z": (0.0, 0.0, -1.0),
-    }
+    _BUILD_DIRECTIONS = BUILD_DIRECTION_VECTORS
     _SCALAR_BAR_TITLES = ("Density", "Overhang (deg)")
 
     def __init__(

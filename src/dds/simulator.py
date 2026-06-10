@@ -70,9 +70,6 @@ class Simulator:
             )
         return self._density_max_cache
 
-    def _density_max_field(self) -> npt.NDArray[np.float64]:
-        return self._density_field()
-
     def _coverage_field(self) -> npt.NDArray[np.float64]:
         if self._coverage_cache is None:
             self._coverage_cache = accumulate_field(
@@ -131,7 +128,7 @@ class Simulator:
         return SimulationResult(
             domain=self.domain,
             deposits=tuple(self._deposits),
-            density_max=self._density_max_field().copy(),
+            density_max=self._density_field().copy(),
             coverage=coverage,
             default_threshold=threshold,
         )
