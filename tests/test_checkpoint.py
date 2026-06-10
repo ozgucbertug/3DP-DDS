@@ -14,11 +14,9 @@ from dds import (
     PolylineDeposit,
     Pose3D,
     SimulationResult,
-    load_checkpoint,
-    save_checkpoint,
     simulate,
 )
-from dds.io import _deposit_from_dict, _deposit_to_dict
+from dds.io import _deposit_from_dict, _deposit_to_dict, load_checkpoint, save_checkpoint
 
 
 def make_domain() -> Domain:

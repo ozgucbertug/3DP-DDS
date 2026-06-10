@@ -5,22 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 
-import numpy as np
-import numpy.typing as npt
-
 from ..primitives import LineDeposit, PointDeposit, PolylineDeposit, iter_deposits
-
-
-def normalize_field(field: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Normalize a field by its maximum value when possible."""
-
-    arr = np.asarray(field, dtype=float)
-    if arr.size == 0:
-        return arr.copy()
-    maximum = float(arr.max())
-    if maximum > 0.0:
-        return arr / maximum
-    return arr.copy()
 
 
 def summarize_layers(

@@ -91,7 +91,7 @@ class SDF3:
 
         return sdf_to_mesh(domain, self.sample(domain), level=level, step_size=step_size)
 
-    def translate(self, offset: Sequence[float] | npt.ArrayLike) -> "SDF3":
+    def translate(self, offset: Any) -> "SDF3":
         from .transforms import translate
 
         return translate(self, offset)
@@ -101,16 +101,16 @@ class SDF3:
 
         return scale(self, factor)
 
-    def rotate(self, angle: float, axis: Sequence[float] | npt.ArrayLike = (0.0, 0.0, 1.0)) -> "SDF3":
+    def rotate(self, angle: float, axis: Any = (0.0, 0.0, 1.0)) -> "SDF3":
         from .transforms import rotate
 
         return rotate(self, angle, axis)
 
     def orient(
         self,
-        axis: Sequence[float] | npt.ArrayLike,
+        axis: Any,
         *,
-        source_axis: Sequence[float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+        source_axis: Any = (0.0, 0.0, 1.0),
     ) -> "SDF3":
         from .transforms import orient
 

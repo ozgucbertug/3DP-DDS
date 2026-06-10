@@ -12,7 +12,7 @@ from .strata import strata as build_strata
 StrataMode = Literal["auto", "layer", "order"]
 
 if TYPE_CHECKING:
-    from .bundle import SimulationAnalysis
+    from .simulation import SimulationAnalysis
 
 
 def _contact_for_pair(

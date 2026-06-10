@@ -3,7 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, mesh_analysis, simulate
+import dds.mesh_analysis as mesh_analysis
+from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate
 from dds.analysis.support import _support_shadow_field
 
 

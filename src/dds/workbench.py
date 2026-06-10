@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -17,14 +17,29 @@ except ImportError as exc:
         'Install them with `pip install -e ".[viz]"`.'
     ) from exc
 
+from .analysis.support import BuildDirection
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals
-from .results import SimulationResult, WorkbenchViewConfig
+from .results import SimulationResult
 from .simulator import Simulator
+from .viz import ViewConfig
 
 Representation = Literal["surface", "occupancy", "density"]
+ScalarRepresentation = Literal["occupancy", "density"]
 ColorMode = Literal["plain", "normals", "overhang"]
 ScalarFieldName = Literal["occupancy", "density", "coverage", "deposition_order"]
+
+
+def _set_grid_geometry(
+    grid: Any,
+    *,
+    dimensions: npt.ArrayLike,
+    origin: tuple[float, float, float],
+    spacing: tuple[float, float, float],
+) -> None:
+    grid.dimensions = dimensions
+    grid.origin = origin
+    grid.spacing = spacing
 
 
 def _field_to_image_data(
@@ -41,17 +56,24 @@ def _field_to_image_data(
     grid = pv.ImageData()
     spacing = np.asarray(domain.voxel_size, dtype=float)
     if association == "cell":
-        grid.dimensions = np.asarray(domain.grid_shape, dtype=int) + 1
-        grid.origin = domain.min_corner
-        grid.spacing = domain.voxel_size
+        _set_grid_geometry(
+            grid,
+            dimensions=np.asarray(domain.grid_shape, dtype=int) + 1,
+            origin=domain.min_corner,
+            spacing=domain.voxel_size,
+        )
         grid.cell_data[field_name] = np.ascontiguousarray(array).ravel(order="F")
     else:
-        grid.dimensions = np.asarray(domain.grid_shape, dtype=int)
-        grid.origin = tuple(
-            float(domain.min_corner[axis] + 0.5 * spacing[axis])
-            for axis in range(3)
+        _set_grid_geometry(
+            grid,
+            dimensions=np.asarray(domain.grid_shape, dtype=int),
+            origin=(
+                float(domain.min_corner[0] + 0.5 * spacing[0]),
+                float(domain.min_corner[1] + 0.5 * spacing[1]),
+                float(domain.min_corner[2] + 0.5 * spacing[2]),
+            ),
+            spacing=domain.voxel_size,
         )
-        grid.spacing = domain.voxel_size
         grid.point_data[field_name] = np.ascontiguousarray(array).ravel(order="F")
     grid.set_active_scalars(field_name)
     return grid
@@ -72,7 +94,7 @@ def _triangle_mesh_to_polydata(mesh: Any) -> Any:
 class SimulationWorkbench(QtWidgets.QMainWindow):
     """Minimal Qt workbench for dense-field inspection and mesh analysis."""
 
-    _BUILD_DIRECTIONS: dict[str, tuple[float, float, float]] = {
+    _BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
         "+X": (1.0, 0.0, 0.0),
         "-X": (-1.0, 0.0, 0.0),
         "+Y": (0.0, 1.0, 0.0),
@@ -88,7 +110,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         *,
         threshold: float = 0.5,
         build_direction: str | tuple[float, float, float] = "+Z",
-        initial_view: WorkbenchViewConfig | None = None,
+        initial_view: ViewConfig | None = None,
         off_screen: bool = False,
         parent: QtWidgets.QWidget | None = None,
     ) -> None:
@@ -108,8 +130,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "occupancy": 1.0,
             "density": 1.0,
         }
-        self.occupancy_field_name = "occupancy"
-        self.density_field_name = "density"
+        self.occupancy_field_name: ScalarFieldName = "occupancy"
+        self.density_field_name: ScalarFieldName = "density"
         self.color_mode: ColorMode = "plain"
         self.build_direction = self._coerce_build_direction(build_direction)
         self.off_screen = bool(off_screen)
@@ -146,7 +168,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
                 "deposition_order": self._deposition_order_scalar_field,
             },
         }
-        self._scalar_field_labels: dict[str, dict[str, str]] = {
+        self._scalar_field_labels: dict[str, dict[ScalarFieldName, str]] = {
             "occupancy": {
                 "occupancy": "Occupancy",
                 "deposition_order": "Deposition Order",
@@ -178,10 +200,10 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _resolve_initial_view_config(
         self,
-        initial_view: WorkbenchViewConfig | None,
+        initial_view: ViewConfig | None,
         build_direction: str | tuple[float, float, float],
-    ) -> WorkbenchViewConfig:
-        config = initial_view or WorkbenchViewConfig(build_direction=build_direction)
+    ) -> ViewConfig:
+        config = initial_view or ViewConfig(build_direction=build_direction)
         view_mode = config.view_mode
 
         if view_mode == "surface":
@@ -189,14 +211,22 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             scalar_field = None
         elif view_mode == "occupancy":
             labels = self._available_scalar_field_labels("occupancy")
-            scalar_field = config.scalar_field if config.scalar_field in labels else next(iter(labels))
+            scalar_field = (
+                config.scalar_field
+                if config.scalar_field in labels
+                else next(iter(labels))
+            )
             color_mode = config.color_mode or "plain"
         else:
             labels = self._available_scalar_field_labels("density")
-            scalar_field = config.scalar_field if config.scalar_field in labels else next(iter(labels))
+            scalar_field = (
+                config.scalar_field
+                if config.scalar_field in labels
+                else next(iter(labels))
+            )
             color_mode = config.color_mode or "plain"
 
-        return WorkbenchViewConfig(
+        return ViewConfig(
             view_mode=view_mode,
             scalar_field=scalar_field,
             color_mode=color_mode,
@@ -525,16 +555,21 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if isinstance(axis_or_vector, str):
             if axis_or_vector not in self._BUILD_DIRECTIONS:
                 raise ValueError(f"build_direction must be one of {tuple(self._BUILD_DIRECTIONS)}.")
-            return self._BUILD_DIRECTIONS[axis_or_vector]
+            return self._BUILD_DIRECTIONS[cast(BuildDirection, axis_or_vector)]
         vector = np.asarray(axis_or_vector, dtype=float)
         if vector.shape != (3,):
             raise ValueError("build_direction must contain exactly three coordinates.")
         norm = float(np.linalg.norm(vector))
         if norm <= 0.0:
             raise ValueError("build_direction must not be the zero vector.")
-        return tuple(float(value) for value in (vector / norm))
+        normalized = vector / norm
+        return (
+            float(normalized[0]),
+            float(normalized[1]),
+            float(normalized[2]),
+        )
 
-    def _build_direction_label(self) -> str:
+    def _build_direction_label(self) -> BuildDirection:
         for label, vector in self._BUILD_DIRECTIONS.items():
             if np.allclose(vector, self.build_direction):
                 return label
@@ -602,13 +637,10 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return normal_dataset
 
     def _apply_overhang_surface_coloring(self, mesh: Any, dataset: Any) -> Any:
-        dataset.cell_data["overhang_angle_deg"] = np.asarray(
-            self.bundle.support(
-                build_direction=self._build_direction_label(),
-                threshold=self.threshold,
-            ).overhang_angles,
-            dtype=float,
-        )
+        dataset.cell_data["overhang_angle_deg"] = self.bundle.support(
+            build_direction=self._build_direction_label(),
+            threshold=self.threshold,
+        ).overhang_angles
         dataset.set_active_scalars("overhang_angle_deg")
         return dataset
 
@@ -684,16 +716,23 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             raise ValueError(f"Unknown {representation} scalar field {field_name!r}.") from exc
         return producer()
 
-    def _active_scalar_field_name(self, representation: Literal["occupancy", "density"]) -> ScalarFieldName:
+    def _active_scalar_field_name(self, representation: ScalarRepresentation) -> ScalarFieldName:
         return self.occupancy_field_name if representation == "occupancy" else self.density_field_name
 
-    def _set_active_scalar_field_name(self, representation: Literal["occupancy", "density"], field_name: ScalarFieldName) -> None:
+    def _set_active_scalar_field_name(
+        self,
+        representation: ScalarRepresentation,
+        field_name: ScalarFieldName,
+    ) -> None:
         if representation == "occupancy":
             self.occupancy_field_name = field_name
         else:
             self.density_field_name = field_name
 
-    def _available_scalar_field_labels(self, representation: Literal["occupancy", "density"]) -> dict[str, str]:
+    def _available_scalar_field_labels(
+        self,
+        representation: ScalarRepresentation,
+    ) -> dict[ScalarFieldName, str]:
         labels = dict(self._scalar_field_labels[representation])
         if representation == "density" and self._coverage is None:
             labels.pop("coverage", None)
@@ -705,7 +744,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if not is_scalar_representation:
             return
 
-        representation = self.representation
+        representation = cast(ScalarRepresentation, self.representation)
         labels = self._available_scalar_field_labels(representation)
         current = self._active_scalar_field_name(representation)
         if current not in labels:
@@ -1342,15 +1381,16 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def set_scalar_field(self, field_name: ScalarFieldName | None) -> None:
         if self.representation not in {"occupancy", "density"} or field_name is None:
             return
-        if field_name not in self._available_scalar_field_labels(self.representation):
+        representation = cast(ScalarRepresentation, self.representation)
+        if field_name not in self._available_scalar_field_labels(representation):
             raise ValueError(f"Unknown {self.representation} scalar field {field_name!r}.")
-        current = self._active_scalar_field_name(self.representation)
+        current = self._active_scalar_field_name(representation)
         if current == field_name:
             self._sync_scalar_field_options()
             self._sync_surface_controls()
             self._sync_status_controls()
             return
-        self._set_active_scalar_field_name(self.representation, field_name)
+        self._set_active_scalar_field_name(representation, field_name)
         self._sync_scalar_field_options()
         self._sync_surface_controls()
         self._sync_status_controls()

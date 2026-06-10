@@ -13,9 +13,9 @@ from dds import (
     PointDeposit,
     PolylineDeposit,
     Pose3D,
-    accumulate_chunked_field,
     simulate,
 )
+from dds.fields import accumulate_chunked_field
 
 
 def make_domain() -> Domain:

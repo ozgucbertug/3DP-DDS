@@ -38,13 +38,17 @@ def target_point_from_origin(
 
     origin = np.asarray(target.origin, dtype=float)
     if origin_reference == "top":
-        return tuple(float(value) for value in origin)
+        return (float(origin[0]), float(origin[1]), float(origin[2]))
     if origin_reference != "center":
         raise ValueError("origin_reference must be 'top' or 'center'.")
 
     axis = np.asarray(target.z_axis, dtype=float)
     target_point = origin + (profile.height / 2.0) * axis
-    return tuple(float(value) for value in target_point)
+    return (
+        float(target_point[0]),
+        float(target_point[1]),
+        float(target_point[2]),
+    )
 
 
 def point_deposits_from_targets(

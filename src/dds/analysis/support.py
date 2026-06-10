@@ -11,7 +11,7 @@ from ..mesh_analysis import _oriented_face_data, _overhang_angles_from_normals
 from .models import SupportAnalysis
 
 if TYPE_CHECKING:
-    from .bundle import SimulationAnalysis
+    from .simulation import SimulationAnalysis
 
 BuildDirection = Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
 _BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {

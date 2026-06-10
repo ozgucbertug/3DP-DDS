@@ -1,30 +1,42 @@
 # Modeling Assumptions
 
-3DP-DDS currently models deposited geometry, not coupled process physics.
+3DP-DDS models deposited geometry, not coupled process physics.
 
 ## Geometry model
 
 - Deposit targets are top-referenced nozzle positions.
-- `BeadProfile.width` and `BeadProfile.height` define a nominal compact bead.
+- `BeadProfile.width` and `BeadProfile.height` define explicit world-space bead
+  geometry and are required for every deposit.
 - A point is one bead target, a line is a swept bead, and a polyline is one
   ordered multi-segment fabrication event.
 - Endpoint bead axes are normalized and interpolated along line segments.
-- Antiparallel endpoint axes are rejected because their interpolation is not
-  unique without an intermediate orientation.
-- The `"max"` field is the union-like geometric envelope used for occupancy,
-  surface extraction, and analysis.
+- Antiparallel endpoint axes are rejected because interpolation is ambiguous
+  without an intermediate orientation.
+- The max-envelope field is the union-like fabricated geometry used for
+  occupancy, surface extraction, SDF construction, and support analysis.
+- Changing voxel size changes discretization, not the specified bead support
+  bounds or other world-space geometry.
 
 ## Coverage diagnostic
 
-The `"coverage"` field adds anti-aliased kernel values. It is useful for
-locating path overlap, but it is not mass, volume fraction, material density,
-or deposited flow. Its values depend on voxel resolution and path
-segmentation, so it should not be compared across discretizations without a
-separate calibration model.
+Coverage adds anti-aliased kernel values. It can locate path overlap, but it is
+not mass, volume fraction, material density, or deposited flow. Coverage may
+depend on discretization and path segmentation and should not be compared
+across resolutions without a separate calibration model.
+
+## Units and provenance
+
+`Domain.length_unit` is either `"mm"` or `"m"` and documents the unit used by
+world coordinates, bead dimensions, and voxel size. The library does not
+convert units.
+
+`DepositionMetadata.user_data` stores immutable JSON-like provenance such as
+material identifiers, feedrate records, or experiment labels. The simulator
+does not interpret those values.
 
 ## Current exclusions
 
-The simulator does not yet model:
+The simulator does not model:
 
 - material flow conservation or extrusion transients;
 - gravity, sagging, curing, cooling, or thermal history;
@@ -32,12 +44,9 @@ The simulator does not yet model:
 - bead deformation caused by substrate contact or previous layers;
 - uncertainty propagation or experimental parameter calibration.
 
-`ProcessState` records process inputs for provenance and future models. Those
-values do not currently modify the geometric kernel.
-
 ## Numerical interpretation
 
-Occupancy is obtained by thresholding the max-envelope field. Results should
-include the domain, voxel size, threshold, bead profile, and path definition
-when reported. Convergence studies across voxel sizes are recommended for
-quantitative research use.
+Occupancy is obtained by thresholding the max-envelope field. Research results
+should report the domain, `length_unit`, voxel size, threshold, bead profile,
+and path definition. Convergence studies across voxel sizes are recommended
+for quantitative use.

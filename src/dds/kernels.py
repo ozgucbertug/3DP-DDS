@@ -117,7 +117,7 @@ def validate_tile_shape(tile_shape: Sequence[int]) -> TileShape:
     resolved = tuple(int(value) for value in tile_shape)
     if any(value <= 0 for value in resolved):
         raise ValueError("tile_shape values must all be positive.")
-    return resolved
+    return (resolved[0], resolved[1], resolved[2])
 
 
 def _iter_index_tiles(
@@ -156,7 +156,11 @@ def _sample_point_on_bounds(
     )
     values = density_from_signed_distance(signed_distance, profile.transition_width)
     return SampledKernel(
-        slices=tuple(slice(*bounds) for bounds in index_bounds),
+        slices=(
+            slice(*index_bounds[0]),
+            slice(*index_bounds[1]),
+            slice(*index_bounds[2]),
+        ),
         values=values.astype(float, copy=False),
     )
 
@@ -167,8 +171,8 @@ def _sample_line_on_bounds(
     profile: ResolvedBeadProfile,
     index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
 ) -> SampledKernel:
-    start = deposit.start.to_array()
-    end = deposit.end.to_array()
+    start = deposit.segment.start.to_array()
+    end = deposit.segment.end.to_array()
     if np.allclose(start, end):
         point_deposit = PointDeposit(
             x=float(start[0]),
@@ -198,7 +202,11 @@ def _sample_line_on_bounds(
     ).reshape(xs.shape)
     values = density_from_signed_distance(signed_distance, profile.transition_width)
     return SampledKernel(
-        slices=tuple(slice(*bounds) for bounds in index_bounds),
+        slices=(
+            slice(*index_bounds[0]),
+            slice(*index_bounds[1]),
+            slice(*index_bounds[2]),
+        ),
         values=values.astype(float, copy=False),
     )
 
@@ -216,7 +224,10 @@ def _iter_point_kernels(
         height=profile.height,
         padding=profile.support_padding,
     )
-    index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
+    index_bounds = domain.index_bounds_for_aabb(
+        support_min.tolist(),
+        support_max.tolist(),
+    )
     if index_bounds is None:
         return
     for tile_bounds in _iter_index_tiles(index_bounds, tile_shape, domain.grid_shape):
@@ -277,7 +288,11 @@ def _iter_polyline_kernels(
                 )
 
         yield SampledKernel(
-            slices=tuple(slice(*axis_bounds) for axis_bounds in bounds),
+            slices=(
+                slice(*bounds[0]),
+                slice(*bounds[1]),
+                slice(*bounds[2]),
+            ),
             values=merged,
         )
 

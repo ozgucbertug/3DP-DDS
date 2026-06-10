@@ -1,11 +1,39 @@
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from dataclasses import FrozenInstanceError
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, SimulationResult, Simulator, simulate
+
+
+def test_root_import_does_not_load_optional_visualization_modules() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import sys; import dds; "
+                "assert 'dds.viz' not in sys.modules; "
+                "assert 'dds.workbench' not in sys.modules; "
+                "assert 'pyvista' not in sys.modules"
+            ),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src"),
+        },
+    )
+
+    assert completed.returncode == 0, completed.stderr
 
 
 def make_domain() -> Domain:

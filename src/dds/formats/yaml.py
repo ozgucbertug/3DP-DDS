@@ -15,7 +15,7 @@ def _parse_vector(text: str, *, name: str) -> tuple[float, float, float]:
     parts = [part.strip() for part in text.split(",")]
     if len(parts) != 3:
         raise ValueError(f"{name} must contain exactly three comma-separated numbers.")
-    values = tuple(float(part) for part in parts)
+    values = (float(parts[0]), float(parts[1]), float(parts[2]))
     if not all(float("-inf") < value < float("inf") for value in values):
         raise ValueError(f"{name} must contain finite values.")
     return values
@@ -42,7 +42,7 @@ def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
     """Load ordered target points from a YAML file."""
 
     try:
-        import yaml
+        import yaml  # type: ignore[import-untyped]
     except ImportError as exc:
         raise ImportError(
             'pyyaml is required for YAML target loading. Install it with `pip install -e ".[formats]"`.',

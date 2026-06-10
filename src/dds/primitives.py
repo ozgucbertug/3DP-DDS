@@ -5,9 +5,10 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import TypeAlias
+from typing import Any, TypeAlias, cast
 
 import numpy as np
+import numpy.typing as npt
 
 from .attributes import BeadProfile, DepositionMetadata
 from .utils import (
@@ -30,7 +31,7 @@ def _validate_deposit_attributes(
         raise TypeError("metadata must be DepositionMetadata.")
 
 def _bead_half_extents(
-    axis: "Point3D | Sequence[float]",
+    axis: Any,
     *,
     width: float,
     height: float,
@@ -45,8 +46,8 @@ def _bead_half_extents(
 
 
 def _point_target_support_bounds(
-    target: "Point3D | Sequence[float]",
-    axis: "Point3D | Sequence[float]",
+    target: Any,
+    axis: Any,
     *,
     width: float,
     height: float,
@@ -74,7 +75,7 @@ class Point3D:
         ensure_finite_triplet((self.x, self.y, self.z), "Point3D")
 
     @classmethod
-    def from_value(cls, value: "Point3D | Sequence[float]") -> "Point3D":
+    def from_value(cls, value: Any) -> "Point3D":
         """Coerce a point-like value into a Point3D instance."""
 
         if isinstance(value, cls):
@@ -87,7 +88,7 @@ class Point3D:
 
         return (self.x, self.y, self.z)
 
-    def to_array(self) -> np.ndarray:
+    def to_array(self) -> npt.NDArray[np.float64]:
         """Return the point as a NumPy array."""
 
         return np.asarray(self.to_tuple(), dtype=float)
@@ -118,7 +119,7 @@ class Pose3D:
         """Return a JSON-compatible representation."""
 
         return {
-            "position": list(self.position.to_tuple()),
+            "position": list(cast(Point3D, self.position).to_tuple()),
             "z_axis": list(self.axis.to_tuple()),
         }
 
@@ -317,7 +318,10 @@ class LineDeposit:
     def segment(self) -> LineSegment3D:
         """Return the deposited segment."""
 
-        return LineSegment3D(start=self.start, end=self.end)
+        return LineSegment3D(
+            start=cast(Point3D, self.start),
+            end=cast(Point3D, self.end),
+        )
 
     @property
     def start_axis(self) -> Point3D:
@@ -334,7 +338,7 @@ class LineDeposit:
         inheriting ``start_z_axis`` at the end of the segment.
         """
 
-        return Point3D.from_value(self.end_z_axis)
+        return Point3D.from_value(cast(Point3D, self.end_z_axis))
 
     @property
     def start_pose(self) -> Pose3D:
@@ -377,7 +381,13 @@ class LineDeposit:
         support_radius = math.sqrt(
             (self.profile.width / 2.0) ** 2 + self.profile.height**2
         ) + padding_value
-        endpoints = np.stack((self.start.to_array(), self.end.to_array()), axis=0)
+        endpoints = np.stack(
+            (
+                cast(Point3D, self.start).to_array(),
+                cast(Point3D, self.end).to_array(),
+            ),
+            axis=0,
+        )
         minimum = endpoints.min(axis=0) - support_radius
         maximum = endpoints.max(axis=0) + support_radius
         return Point3D.from_value(minimum), Point3D.from_value(maximum)
@@ -398,10 +408,7 @@ class PolylineDeposit:
 
     def __post_init__(self) -> None:
         _validate_deposit_attributes(self.profile, self.metadata)
-        poses = tuple(
-            pose if isinstance(pose, Pose3D) else Pose3D(pose)
-            for pose in self.poses
-        )
+        poses = tuple(self.poses)
         if len(poses) < 2:
             raise ValueError("PolylineDeposit requires at least two poses.")
         for start, end in zip(poses[:-1], poses[1:], strict=True):
@@ -422,7 +429,9 @@ class PolylineDeposit:
         """Create a polyline deposit from geometric points and target axes."""
 
         if target_z_axes is None:
-            axes = (DEFAULT_Z_AXIS,) * len(polyline.points)
+            axes: Sequence[Point3D | Sequence[float]] = (
+                DEFAULT_Z_AXIS,
+            ) * len(polyline.points)
         else:
             axes = tuple(target_z_axes)
             if len(axes) != len(polyline.points):
@@ -454,8 +463,8 @@ class PolylineDeposit:
 
         points: list[tuple[float, float, float]] = []
         for deposit in self.segments():
-            minimum, maximum = deposit.support_bounds(padding=padding)
-            points.extend((minimum.to_tuple(), maximum.to_tuple()))
+            lower, upper = deposit.support_bounds(padding=padding)
+            points.extend((lower.to_tuple(), upper.to_tuple()))
         minimum, maximum = bounding_box_from_points(points)
         return Point3D.from_value(minimum), Point3D.from_value(maximum)
 

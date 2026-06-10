@@ -13,12 +13,11 @@ from dds import (
     Pose3D,
     SimulationResult,
     Simulator,
-    WorkbenchViewConfig,
-    apply_deposit_to_field,
-    apply_deposit_to_index_field,
     simulate,
 )
 from dds.analysis import summarize_layers
+from dds.fields import apply_deposit_to_field, apply_deposit_to_index_field
+from dds.viz import ViewConfig
 
 
 def make_domain() -> Domain:
@@ -351,18 +350,18 @@ def test_domain_from_deposits_anisotropic_voxel_size() -> None:
         ))
 
 
-def test_workbench_view_config_rejects_non_canonical_build_direction_string() -> None:
+def test_view_config_rejects_non_canonical_build_direction_string() -> None:
     import pytest
     with pytest.raises(ValueError, match="build_direction"):
-        WorkbenchViewConfig(build_direction="Z+")  # canonical form is "+Z"
+        ViewConfig(build_direction="Z+")  # canonical form is "+Z"
 
     # Valid canonical strings must not raise.
     for direction in ("+X", "-X", "+Y", "-Y", "+Z", "-Z"):
-        cfg = WorkbenchViewConfig(build_direction=direction)
+        cfg = ViewConfig(build_direction=direction)
         assert cfg.build_direction == direction
 
     # Tuple form must also be accepted without error.
-    cfg = WorkbenchViewConfig(build_direction=(0.0, 0.0, 1.0))
+    cfg = ViewConfig(build_direction=(0.0, 0.0, 1.0))
     assert cfg.build_direction == (0.0, 0.0, 1.0)
 
 

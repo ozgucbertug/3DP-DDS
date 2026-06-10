@@ -28,7 +28,7 @@ def _surface_cache_key(threshold: float, *, step_size: int = 1) -> tuple[float, 
 
 def _sample_nearest(
     domain: Domain,
-    values: npt.NDArray[np.float64],
+    values: npt.NDArray[np.generic],
     points: npt.NDArray[np.float64],
     *,
     fill_value: float,
@@ -263,7 +263,12 @@ class SimulationAnalysis:
         norm = float(np.linalg.norm(gradient))
         if norm <= EPSILON:
             return (0.0, 0.0, 0.0)
-        return tuple(float(value) for value in (gradient / norm))
+        normalized = gradient / norm
+        return (
+            float(normalized[0]),
+            float(normalized[1]),
+            float(normalized[2]),
+        )
 
     def contains_point(
         self,

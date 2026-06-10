@@ -18,8 +18,8 @@ from dds import (  # noqa: E402
     LineDeposit,
     PointDeposit,
     Simulator,
-    WorkbenchViewConfig,
 )
+from dds.viz import ViewConfig  # noqa: E402
 from dds.workbench import SimulationWorkbench  # noqa: E402
 
 
@@ -200,7 +200,7 @@ def test_initial_view_config_applies_without_example_side_mutation(qtbot: object
     result = simulator.result(compositions=("max", "coverage"))
     workbench = SimulationWorkbench(
         result,
-        initial_view=WorkbenchViewConfig(
+        initial_view=ViewConfig(
             view_mode="density",
             scalar_field="coverage",
             build_direction="+Y",

@@ -26,7 +26,10 @@ def maximum(a: npt.NDArray[np.float64], b: npt.NDArray[np.float64], radius: floa
     if radius > 0.0:
         delta = b - a
         blend = np.clip(0.5 - 0.5 * delta / radius, 0.0, 1.0)
-        return b - delta * blend + radius * blend * (1.0 - blend)
+        return np.asarray(
+            b - delta * blend + radius * blend * (1.0 - blend),
+            dtype=float,
+        )
     return np.maximum(a, b)
 
 

@@ -68,6 +68,7 @@ def test_yaml_simulation_config_is_ide_friendly() -> None:
     assert config.build_direction == "+Z"
     assert config.bead_width == pytest.approx(18.0)
     assert config.bead_height == pytest.approx(12.0)
+    assert config.output_dir is None
     assert config.write_mesh_output is False
     assert config.view is False
 

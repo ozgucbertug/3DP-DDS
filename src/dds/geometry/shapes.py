@@ -50,7 +50,11 @@ def _radius_value(
 ) -> float:
     if (radius is None) == (diameter is None):
         raise ValueError(f"Specify exactly one of {name}=... or diameter=....")
-    result = float(radius) if radius is not None else float(diameter) / 2.0
+    if radius is not None:
+        result = float(radius)
+    else:
+        assert diameter is not None
+        result = float(diameter) / 2.0
     if allow_zero:
         if result < 0.0:
             raise ValueError(f"{name} must be non-negative.")

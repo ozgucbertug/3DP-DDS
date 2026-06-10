@@ -85,14 +85,16 @@ class Domain:
         if any(lower >= upper for lower, upper in zip(minimum, maximum, strict=True)):
             raise ValueError("Domain bounds must be strictly increasing on every axis.")
 
-        shape = tuple(
+        shape_values = tuple(
             int(math.ceil((upper - lower) / step))
             for lower, upper, step in zip(minimum, maximum, voxel_triplet, strict=True)
         )
-        aligned_maximum = tuple(
+        shape = (shape_values[0], shape_values[1], shape_values[2])
+        aligned_values = tuple(
             lower + count * step
             for lower, count, step in zip(minimum, shape, voxel_triplet, strict=True)
         )
+        aligned_maximum = (aligned_values[0], aligned_values[1], aligned_values[2])
         return cls(
             min_corner=minimum,
             max_corner=aligned_maximum,
@@ -185,10 +187,10 @@ class Domain:
         shape = np.asarray(self.grid_shape, dtype=int)
         if clip:
             clipped = np.clip(raw, 0, shape - 1)
-            return tuple(int(value) for value in clipped)
+            return (int(clipped[0]), int(clipped[1]), int(clipped[2]))
         if np.any(raw < 0) or np.any(raw >= shape):
             raise ValueError("Point lies outside the domain.")
-        return tuple(int(value) for value in raw)
+        return (int(raw[0]), int(raw[1]), int(raw[2]))
 
     def index_to_world(self, index: Sequence[int]) -> Point3D:
         """Convert voxel indices to the voxel-center world coordinate."""
@@ -237,7 +239,8 @@ class Domain:
         xs = self.axis_centers(0, *x_bounds)
         ys = self.axis_centers(1, *y_bounds)
         zs = self.axis_centers(2, *z_bounds)
-        return np.meshgrid(xs, ys, zs, indexing="ij")
+        x_grid, y_grid, z_grid = np.meshgrid(xs, ys, zs, indexing="ij")
+        return x_grid, y_grid, z_grid
 
     def index_bounds_for_aabb(
         self,

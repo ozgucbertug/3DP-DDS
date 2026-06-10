@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import ClassVar, Literal
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
@@ -17,30 +17,6 @@ from .io import save_array, save_simulation_bundle
 from .primitives import Deposit, DepositInput, iter_deposits
 from .types import FieldComposition
 from .utils import ensure_finite_scalar, readonly_array
-
-ViewMode = Literal["surface", "occupancy", "density"]
-ViewColorMode = Literal["plain", "normals", "overhang"]
-ViewScalarField = Literal["occupancy", "density", "coverage", "deposition_order"]
-
-
-@dataclass(slots=True, frozen=True)
-class WorkbenchViewConfig:
-    """Initial viewer state for SimulationWorkbench / SimulationResult.show()."""
-
-    view_mode: ViewMode = "surface"
-    scalar_field: ViewScalarField | None = None
-    color_mode: ViewColorMode | None = None
-    build_direction: str | tuple[float, float, float] = "+Z"
-    _VALID_DIRECTION_STRINGS: ClassVar[frozenset[str]] = frozenset(
-        {"+X", "-X", "+Y", "-Y", "+Z", "-Z"}
-    )
-
-    def __post_init__(self) -> None:
-        if isinstance(self.build_direction, str) and self.build_direction not in self._VALID_DIRECTION_STRINGS:
-            raise ValueError(
-                f"build_direction string {self.build_direction!r} is not valid. "
-                f"Must be one of {sorted(self._VALID_DIRECTION_STRINGS)}."
-            )
 
 
 @dataclass(slots=True, frozen=True)
@@ -93,6 +69,7 @@ class SimulationResult:
                     dtype=np.intp,
                 ),
             )
+        assert self._deposition_index_cache is not None
         return self._deposition_index_cache
 
     @property
@@ -111,6 +88,7 @@ class SimulationResult:
                     self.default_threshold,
                 ),
             )
+        assert self._analysis_cache is not None
         return self._analysis_cache
 
     def field(self, composition: FieldComposition = "max") -> npt.NDArray[np.float64]:
@@ -189,13 +167,19 @@ def simulate(
 ) -> SimulationResult:
     """Run a high-level simulation and return a reusable SimulationResult."""
 
-    requested = tuple(dict.fromkeys(compositions))
+    requested = cast(
+        tuple[FieldComposition, ...],
+        tuple(dict.fromkeys(compositions)),
+    )
     if not requested:
         raise ValueError("compositions must contain at least one density composition.")
     if any(v not in {"max", "coverage"} for v in requested):
         raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
     deposit_tuple = tuple(iter_deposits(deposits))
-    needed = ("max",) if "coverage" not in requested else ("max", "coverage")
+    needed = cast(
+        tuple[FieldComposition, ...],
+        ("max",) if "coverage" not in requested else ("max", "coverage"),
+    )
     fields = accumulate_fields(domain, deposit_tuple, compositions=needed)
     return SimulationResult(
         domain=domain,

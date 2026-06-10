@@ -89,17 +89,17 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "x": deposit.x,
             "y": deposit.y,
             "z": deposit.z,
-            "z_axis": list(deposit.z_axis.to_tuple()),
+            "z_axis": list(deposit.axis.to_tuple()),
             "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
     if isinstance(deposit, LineDeposit):
         return {
             "type": "LineDeposit",
-            "start": list(deposit.start.to_tuple()),
-            "end": list(deposit.end.to_tuple()),
-            "start_z_axis": list(deposit.start_z_axis.to_tuple()),
-            "end_z_axis": list(deposit.end_z_axis.to_tuple()),
+            "start": list(deposit.segment.start.to_tuple()),
+            "end": list(deposit.segment.end.to_tuple()),
+            "start_z_axis": list(deposit.start_axis.to_tuple()),
+            "end_z_axis": list(deposit.end_axis.to_tuple()),
             "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }

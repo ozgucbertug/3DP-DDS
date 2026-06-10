@@ -1,39 +1,55 @@
 # Architecture
 
-3DP-DDS separates the deposition event model from field accumulation,
-analysis, serialization, and optional visualization.
+3DP-DDS separates deposition events, numerical accumulation, immutable
+results, derived analysis, persistence, and optional integrations.
 
 ## Data flow
 
-1. `Pose3D`, `PointDeposit`, `LineDeposit`, and `PolylineDeposit` describe
-   ordered fabrication events.
-2. `Domain` maps world coordinates to an aligned voxel grid and records units.
-3. Kernel iterators sample compact bead support in bounded tiles.
-4. Dense helpers, `Simulator`, or `ChunkedField` accumulate the geometric
-   envelope and optional coverage diagnostic.
-5. `SimulationResult` provides immutable field snapshots and creates cached
-   analysis products.
-6. Checkpoints preserve the domain, events, process state, and computed fields.
-7. `dds.viz` lazily loads the optional interactive workbench.
+1. `Point3D`, `Pose3D`, and geometric wrappers describe world-space geometry.
+2. Point, line, and polyline deposits combine geometry with an explicit
+   `BeadProfile` and immutable `DepositionMetadata`.
+3. `Domain` maps world coordinates to an aligned voxel grid and records a
+   `length_unit`.
+4. Private kernel iterators sample bounded, globally aligned tiles.
+5. Dense accumulation or standalone `ChunkedField` storage composes those
+   tiles into a max envelope and optional coverage diagnostic.
+6. `SimulationResult` freezes the deposits and computed arrays.
+7. `SimulationAnalysis`, reached through `result.analysis`, caches derived
+   occupancy, index, SDF, mesh, strata, interface, and support products.
 
 ## Module boundaries
 
-- `attributes.py`: bead geometry, units, process state, and provenance.
-- `primitives.py`: geometric points, poses, and deposition events.
+- `attributes.py`: bead profile and immutable metadata.
+- `primitives.py`: geometric wrappers and deposition events.
 - `domain.py`: aligned grid geometry and coordinate transforms.
-- `kernels.py`: tiled field sampling for each event type.
-- `fields.py` and `chunked.py`: storage-specific accumulation.
-- `simulator.py`: mutable orchestration and incremental cache updates.
-- `results.py`: isolated result snapshots and high-level queries.
-- `analysis/`: derived fields, interfaces, support, and point queries.
-- `geometry/`: analytic SDFs, mesh conversion, and mesh metrics.
-- `formats/`: optional external format adapters.
+- `kernels.py`: private tiled sampling implementation.
+- `fields.py`: dense, chunked, and low-level in-place accumulation.
+- `chunked.py`: standalone sparse chunk storage.
+- `simulator.py`: mutable deposit collection and dense incremental caches.
+- `results.py`: immutable result snapshots and `simulate`.
+- `analysis/`: typed derived queries and result models.
+- `geometry/`: supported analytic SDF, CAD, mesh, and metric APIs.
+- `targets.py` and `formats/`: external path/format adapters.
 - `io.py`: array bundles and typed checkpoint round trips.
+- `viz.py` and `workbench.py`: optional visualization entry points.
 
-## Extension rules
+The root `dds` namespace contains only core deposition and simulation types.
+Specialized capabilities remain in their owning namespace so importing the
+core library does not load visualization, mesh, format, or CLI dependencies.
 
-New deposition primitives should define conservative support bounds and tiled
-kernel iteration before being exposed through `Deposit`. New storage backends
-should consume `SampledKernel` tiles so numerical behavior remains consistent.
-Analysis should depend on `SimulationResult` or `AnalysisBundle`, not mutable
-simulator internals.
+## Ownership rules
+
+`Simulator` owns mutable construction. `SimulationResult` owns raw immutable
+fields and persistence entry points. `SimulationAnalysis` owns derived
+queries. Storage backends consume the same sampled kernel tiles so dense and
+chunked numerical behavior remains consistent.
+
+New deposition primitives must provide conservative world-space support bounds
+and a tiled kernel iterator. New analysis must consume an immutable result
+snapshot rather than mutable simulator internals.
+
+## Checkpoint schema
+
+The current schema stores `length_unit` and omits inactive process/material
+state. Schema compatibility is strict: unsupported versions raise an error and
+there is no pre-release migration layer.

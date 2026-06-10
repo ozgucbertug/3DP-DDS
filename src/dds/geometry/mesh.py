@@ -47,8 +47,8 @@ def _validate_field_shape(
 class TriangleMesh:
     """A simple triangle mesh container."""
 
-    vertices: npt.ArrayLike
-    faces: npt.ArrayLike
+    vertices: npt.NDArray[np.float64]
+    faces: npt.NDArray[np.int64]
     metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -103,7 +103,12 @@ class TriangleMesh:
         return trimesh.Trimesh(vertices=self.vertices.copy(), faces=self.faces.copy(), process=False)
 
     @classmethod
-    def from_trimesh(cls, mesh: Any, *, metadata: dict[str, Any] | None = None) -> "TriangleMesh":
+    def from_trimesh(
+        cls,
+        mesh: Any,
+        *,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> "TriangleMesh":
         """Build a TriangleMesh from a trimesh.Trimesh object."""
 
         return cls(vertices=np.asarray(mesh.vertices, dtype=float), faces=np.asarray(mesh.faces, dtype=np.int64), metadata=metadata or {})

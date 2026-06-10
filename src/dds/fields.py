@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain
-from .kernels import iter_deposit_kernels
+from .kernels import iter_deposit_kernels, validate_tile_shape
 from .primitives import Deposit, DepositInput, iter_deposits
 from .types import FieldComposition
 
@@ -168,7 +168,7 @@ def accumulate_chunked_field(
 
     chunked = ChunkedField(
         domain,
-        chunk_shape=tuple(chunk_shape),
+        chunk_shape=validate_tile_shape(chunk_shape),
         compositions=compositions,
     )
     for deposit in iter_deposits(deposits):

@@ -11,13 +11,13 @@ from dds import (
     Domain,
     SimulationResult,
     Simulator,
-    WorkbenchViewConfig,
-    run_cli,
 )
 from dds.analysis import occupancy_fraction
+from dds.cli import run_cli
 from dds.formats.yaml import load_targets
 from dds.geometry import write_mesh
 from dds.targets import point_deposits_from_targets
+from dds.viz import ViewConfig
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -27,7 +27,7 @@ class YamlSimulationConfig:
     """Configuration for running a target-driven YAML deposition simulation."""
 
     yaml_path: Path = ROOT / "example_wall.yaml"
-    output_dir: Path = ROOT / "outputs" / "yaml_example_wall"
+    output_dir: Path | None = None
     voxel_size: float = 1.0
     bead_width: float = 18.0
     bead_height: float = 12.0
@@ -108,23 +108,26 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         print(f"Shadow volume: {support_analysis.shadow_volume:.4f}")
         print(f"Max unsupported span: {support_analysis.max_unsupported_span:.4f}")
 
-    written = result.save(
-        config.output_dir,
-        metadata={
-            "example": "yaml_simulation",
-            "yaml_path": config.yaml_path,
-            "target_count": len(targets),
-            "deposit_count": len(deposits),
-            "bead_width": config.bead_width,
-            "bead_height": config.bead_height,
-            "origin_reference": config.origin_reference,
-            "threshold": config.threshold,
-            "field_composition": config.field_composition,
-        },
-    )
-    for label, path in written.items():
-        print(f"Saved {label}: {path}")
+    if config.output_dir is not None:
+        written = result.save(
+            config.output_dir,
+            metadata={
+                "example": "yaml_simulation",
+                "yaml_path": config.yaml_path,
+                "target_count": len(targets),
+                "deposit_count": len(deposits),
+                "bead_width": config.bead_width,
+                "bead_height": config.bead_height,
+                "origin_reference": config.origin_reference,
+                "threshold": config.threshold,
+                "field_composition": config.field_composition,
+            },
+        )
+        for label, path in written.items():
+            print(f"Saved {label}: {path}")
     if config.write_mesh_output:
+        if config.output_dir is None:
+            raise ValueError("output_dir is required when write_mesh_output is enabled.")
         mesh = result.analysis.surface_mesh(
             threshold=config.threshold,
             step_size=config.mesh_step_size,
@@ -147,7 +150,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
 
         workbench = dds.viz.show(
             result,
-            initial_view=WorkbenchViewConfig(
+            initial_view=ViewConfig(
                 view_mode=config.view_mode,
                 scalar_field=initial_scalar_field,
                 color_mode=initial_color_mode,

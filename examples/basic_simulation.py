@@ -12,9 +12,9 @@ from dds import (
     LineDeposit,
     PointDeposit,
     Simulator,
-    run_cli,
 )
 from dds.analysis import occupancy_fraction, summarize_layers
+from dds.cli import run_cli
 
 
 def build_example_domain() -> Domain:

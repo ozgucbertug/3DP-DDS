@@ -80,8 +80,8 @@ def orient(
     """Rotate an SDF so that `source_axis` aligns with `axis`."""
 
     sdf = as_sdf3(other)
-    source = normalize_axis(source_axis, name="source_axis")
-    target = normalize_axis(axis, name="axis")
+    source = np.asarray(normalize_axis(source_axis, name="source_axis"), dtype=float)
+    target = np.asarray(normalize_axis(axis, name="axis"), dtype=float)
     dot = float(np.clip(np.dot(source, target), -1.0, 1.0))
     if np.isclose(dot, 1.0):
         return sdf

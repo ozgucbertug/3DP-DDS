@@ -14,7 +14,7 @@ from ..primitives import Deposit, iter_deposits
 from .models import StratificationMode, StratumFieldSet
 
 if TYPE_CHECKING:
-    from .bundle import SimulationAnalysis
+    from .simulation import SimulationAnalysis
 
 StrataMode = Literal["auto", "layer", "order"]
 

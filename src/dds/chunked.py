@@ -53,11 +53,19 @@ class ChunkedField:
             min(lower[axis] + self.chunk_shape[axis], self.domain.grid_shape[axis])
             for axis in range(3)
         )
-        return tuple((lower[axis], upper[axis]) for axis in range(3))
+        return (
+            (lower[0], upper[0]),
+            (lower[1], upper[1]),
+            (lower[2], upper[2]),
+        )
 
     def _chunk_array_shape(self, index: ChunkIndex) -> TileShape:
         bounds = self._chunk_bounds(index)
-        return tuple(stop - start for start, stop in bounds)
+        return (
+            bounds[0][1] - bounds[0][0],
+            bounds[1][1] - bounds[1][0],
+            bounds[2][1] - bounds[2][0],
+        )
 
     def _get_or_create_chunk(self, index: ChunkIndex) -> _Chunk:
         chunk = self._chunks.get(index)
@@ -191,7 +199,11 @@ class ChunkedField:
 
     def _validate_index_bounds(self, index_bounds: IndexBounds | None) -> IndexBounds:
         if index_bounds is None:
-            return tuple((0, size) for size in self.domain.grid_shape)
+            return (
+                (0, self.domain.grid_shape[0]),
+                (0, self.domain.grid_shape[1]),
+                (0, self.domain.grid_shape[2]),
+            )
         if len(index_bounds) != 3:
             raise ValueError("index_bounds must contain bounds for three axes.")
         if any(
@@ -206,7 +218,7 @@ class ChunkedField:
                 raise ValueError(
                     "index_bounds must satisfy 0 <= start < stop <= axis size."
                 )
-        return resolved
+        return (resolved[0], resolved[1], resolved[2])
 
     def to_dense(
         self,
