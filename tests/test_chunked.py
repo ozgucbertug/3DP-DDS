@@ -217,3 +217,29 @@ def test_max_only_chunked_field_uses_half_the_dual_composition_memory() -> None:
 
     assert both.nbytes == 2 * max_only.nbytes
     np.testing.assert_allclose(max_only.to_dense("max"), both.to_dense("max"))
+
+
+def test_chunked_field_to_result_matches_simulate() -> None:
+    """ChunkedField.to_result() should yield the same density as simulate()."""
+
+    domain = make_domain()
+    deposits = make_deposits()
+    chunked = accumulate_chunked_field(domain, deposits)
+    result_chunked = chunked.to_result(deposits)
+    result_direct = simulate(domain, deposits)
+
+    np.testing.assert_allclose(result_chunked.density_max, result_direct.density_max)
+    assert result_chunked.coverage is None
+    assert result_chunked.analysis.occupancy().any()
+
+
+def test_chunked_field_to_result_includes_coverage_when_tracked() -> None:
+    """to_result() forwards coverage when it was requested."""
+
+    domain = make_domain()
+    deposits = make_deposits()
+    chunked = accumulate_chunked_field(domain, deposits, compositions=("max", "coverage"))
+    result = chunked.to_result(deposits)
+
+    assert result.coverage is not None
+    np.testing.assert_allclose(chunked.to_dense("coverage"), result.coverage)

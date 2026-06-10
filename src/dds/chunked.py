@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
@@ -13,6 +14,9 @@ from .domain import Domain, IndexBounds
 from .kernels import SampledKernel, TileShape, iter_deposit_kernels, validate_tile_shape
 from .primitives import DepositInput, iter_deposits
 from .types import FieldComposition
+
+if TYPE_CHECKING:
+    from .results import SimulationResult
 
 ChunkIndex = tuple[int, int, int]
 
@@ -324,6 +328,46 @@ class ChunkedField:
             return chunk.maximum
         assert chunk.coverage is not None
         return chunk.coverage
+
+    def to_result(
+        self,
+        deposits: Iterable[DepositInput] | DepositInput,
+        *,
+        threshold: float = 0.5,
+    ) -> "SimulationResult":
+        """Construct a :class:`~dds.results.SimulationResult` from this chunked field.
+
+        Materializes the dense arrays and wraps them in a ``SimulationResult``
+        without re-running the simulation.  Useful when the chunked field was
+        built via :func:`accumulate_chunked_field` and the caller wants access
+        to the full analysis interface.
+
+        Parameters
+        ----------
+        deposits:
+            The same deposit sequence that was used to build this field.
+        threshold:
+            Occupancy threshold forwarded to the result's ``default_threshold``.
+
+        Returns
+        -------
+        SimulationResult
+        """
+
+        # Lazy import to avoid a circular dependency (results imports chunked
+        # only under TYPE_CHECKING).
+        from .results import SimulationResult
+
+        density_max = self.materialize("max")
+        coverage = self.materialize("coverage") if "coverage" in self.compositions else None
+        deposit_tuple = tuple(iter_deposits(deposits))
+        return SimulationResult(
+            domain=self.domain,
+            deposits=deposit_tuple,
+            density_max=density_max,
+            coverage=coverage,
+            default_threshold=threshold,
+        )
 
 
 # ---------------------------------------------------------------------------
