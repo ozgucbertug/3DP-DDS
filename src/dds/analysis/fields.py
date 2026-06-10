@@ -29,10 +29,8 @@ def summarize_layers(
             summary[layer_id]["point_deposits"] += 1
         elif isinstance(deposit, LineDeposit):
             summary[layer_id]["line_deposits"] += 1
-            summary[layer_id]["total_line_length"] += deposit.segment.length
+            summary[layer_id]["total_line_length"] += deposit.line.length
         else:
             summary[layer_id]["polyline_deposits"] += 1
-            summary[layer_id]["total_line_length"] += sum(
-                segment.segment.length for segment in deposit.segments()
-            )
+            summary[layer_id]["total_line_length"] += deposit.polyline.length
     return dict(summary)

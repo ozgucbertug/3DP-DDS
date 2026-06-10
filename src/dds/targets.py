@@ -1,127 +1,105 @@
-"""Generic target-driven deposition workflow helpers."""
+"""Helpers for converting ordered poses into deposition inputs."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
 from typing import Literal
 
-import numpy as np
-
 from .attributes import BeadProfile, DepositionMetadata
-from .primitives import DEFAULT_Z_AXIS, LineDeposit, PointDeposit, PolylineDeposit, Pose3D
-from .utils import ensure_finite_triplet, normalize_axis
+from .primitives import LineDeposit, Point3D, PointDeposit, PolylineDeposit, Pose3D
 
 OriginReference = Literal["top", "center"]
 
 
-@dataclass(frozen=True, slots=True)
-class TargetPoint:
-    """One ordered nozzle target with an optional local bead axis."""
-
-    index: int
-    origin: tuple[float, float, float]
-    z_axis: tuple[float, float, float] = DEFAULT_Z_AXIS
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "origin", ensure_finite_triplet(self.origin, "TargetPoint.origin"))
-        object.__setattr__(self, "z_axis", normalize_axis(self.z_axis, name="TargetPoint.z_axis"))
-
-
-def target_point_from_origin(
-    target: TargetPoint,
+def target_pose_from_origin(
+    pose: Pose3D,
     *,
     profile: BeadProfile,
     origin_reference: OriginReference = "top",
-) -> tuple[float, float, float]:
-    """Return the PointDeposit target implied by the stored origin reference."""
+) -> Pose3D:
+    """Convert a top- or center-referenced pose to a top-referenced target."""
 
-    origin = np.asarray(target.origin, dtype=float)
     if origin_reference == "top":
-        return (float(origin[0]), float(origin[1]), float(origin[2]))
+        return pose
     if origin_reference != "center":
-        raise ValueError("origin_reference must be 'top' or 'center'.")
+        raise ValueError("origin_reference must be 'top' or 'center'")
 
-    axis = np.asarray(target.z_axis, dtype=float)
-    target_point = origin + (profile.height / 2.0) * axis
-    return (
-        float(target_point[0]),
-        float(target_point[1]),
-        float(target_point[2]),
-    )
+    position = pose.position.to_array() + (profile.height / 2.0) * pose.axis.to_array()
+    return Pose3D(position=Point3D.from_value(position), axis=pose.axis)
 
 
 def point_deposits_from_targets(
-    targets: Sequence[TargetPoint],
+    targets: Sequence[Pose3D],
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[PointDeposit, ...]:
-    """Convert ordered targets into top-referenced point deposits."""
+    """Convert ordered target poses into point deposits."""
 
     metadata_value = metadata or DepositionMetadata()
-    deposits = []
-    for target in targets:
-        pt = target_point_from_origin(target, profile=profile, origin_reference=origin_reference)
-        deposits.append(
-            PointDeposit(
-                x=pt[0],
-                y=pt[1],
-                z=pt[2],
+    return tuple(
+        PointDeposit(
+            target=target_pose_from_origin(
+                target,
                 profile=profile,
-                metadata=metadata_value,
-                z_axis=target.z_axis,
-            )
+                origin_reference=origin_reference,
+            ),
+            profile=profile,
+            metadata=metadata_value,
         )
-    return tuple(deposits)
+        for target in targets
+    )
 
 
 def line_deposits_from_targets(
-    targets: Sequence[TargetPoint],
+    targets: Sequence[Pose3D],
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[LineDeposit, ...]:
-    """Convert ordered targets into top-referenced line deposits."""
+    """Convert ordered target poses into consecutive line deposits."""
 
     if len(targets) < 2:
-        raise ValueError("line_deposits_from_targets requires at least two targets.")
+        raise ValueError("line_deposits_from_targets requires at least two targets")
     metadata_value = metadata or DepositionMetadata()
+    poses = tuple(
+        target_pose_from_origin(
+            target,
+            profile=profile,
+            origin_reference=origin_reference,
+        )
+        for target in targets
+    )
     return tuple(
         LineDeposit(
-            start=target_point_from_origin(targets[index], profile=profile, origin_reference=origin_reference),
-            end=target_point_from_origin(targets[index + 1], profile=profile, origin_reference=origin_reference),
+            start=start,
+            end=end,
             profile=profile,
             metadata=metadata_value,
-            start_z_axis=targets[index].z_axis,
-            end_z_axis=targets[index + 1].z_axis,
         )
-        for index in range(len(targets) - 1)
+        for start, end in zip(poses[:-1], poses[1:], strict=True)
     )
 
 
 def toolpath_from_targets(
-    targets: Sequence[TargetPoint],
+    targets: Sequence[Pose3D],
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> PolylineDeposit:
-    """Convert ordered targets into one first-class polyline deposit."""
+    """Convert ordered target poses into one polyline deposit."""
 
     if len(targets) < 2:
-        raise ValueError("toolpath_from_targets requires at least two targets.")
+        raise ValueError("toolpath_from_targets requires at least two targets")
     return PolylineDeposit(
         poses=tuple(
-            Pose3D(
-                position=target_point_from_origin(
-                    target,
-                    profile=profile,
-                    origin_reference=origin_reference,
-                ),
-                z_axis=target.z_axis,
+            target_pose_from_origin(
+                target,
+                profile=profile,
+                origin_reference=origin_reference,
             )
             for target in targets
         ),

@@ -1,4 +1,4 @@
-"""YAML format adapter for ordered target-point workflows."""
+"""YAML format adapter for ordered target-pose workflows."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from ..targets import TargetPoint
+from ..primitives import Pose3D
 
 PLANE_COMPONENT_RE = re.compile(r"([A-Za-z])\(([^)]*)\)")
 
@@ -38,8 +38,8 @@ def _parse_origin_value(value: Any, *, name: str) -> tuple[float, float, float]:
     return _parse_vector(",".join(str(component) for component in value), name=name)
 
 
-def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
-    """Load ordered target points from a YAML file."""
+def load_targets(path: str | Path) -> tuple[Pose3D, ...]:
+    """Load ordered target poses from a YAML file."""
 
     try:
         import yaml  # type: ignore[import-untyped]
@@ -54,7 +54,7 @@ def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
     if not isinstance(payload, dict) or not isinstance(payload.get("targets"), list):
         raise ValueError("YAML file must contain a top-level `targets` list.")
 
-    targets: list[TargetPoint] = []
+    indexed_targets: list[tuple[int, Pose3D]] = []
     for ordinal, item in enumerate(payload["targets"]):
         if not isinstance(item, dict):
             raise ValueError(f"Target entry {ordinal} must be a mapping.")
@@ -62,20 +62,24 @@ def load_targets(path: str | Path) -> tuple[TargetPoint, ...]:
 
         if "origin" in item:
             origin = _parse_origin_value(item["origin"], name=f"target {index} origin")
-            z_axis = _parse_origin_value(
-                item.get("z_axis", (0.0, 0.0, 1.0)),
-                name=f"target {index} z_axis",
+            axis = _parse_origin_value(
+                item.get("axis", (0.0, 0.0, 1.0)),
+                name=f"target {index} axis",
             )
         elif "plane" in item:
             components = parse_plane_string(str(item["plane"]))
             origin = components["O"]
-            z_axis = components.get("Z", (0.0, 0.0, 1.0))
+            axis = components.get("Z", (0.0, 0.0, 1.0))
         else:
             raise ValueError(f"Target {index} must contain either `plane` or `origin`.")
 
-        targets.append(TargetPoint(index=index, origin=origin, z_axis=z_axis))
+        indexed_targets.append(
+            (index, Pose3D(position=origin, axis=axis))
+        )
 
-    indices = [target.index for target in targets]
+    indices = [index for index, _ in indexed_targets]
     if len(indices) != len(set(indices)):
         raise ValueError("Target indices must be unique.")
-    return tuple(sorted(targets, key=lambda target: target.index))
+    return tuple(
+        pose for _, pose in sorted(indexed_targets, key=lambda item: item[0])
+    )

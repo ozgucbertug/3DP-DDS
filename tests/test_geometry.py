@@ -287,7 +287,7 @@ def test_deposition_occupancy_to_sdf_and_mesh_is_nonempty() -> None:
     profile = BeadProfile(width=1.2, height=0.8)
     metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(x=2.25, y=2.25, z=0.65, profile=profile, metadata=metadata),
+        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile, metadata=metadata),
         LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile, metadata=metadata),
     ]
 
@@ -367,7 +367,7 @@ def test_density_to_sdf_field_matches_occupancy_to_sdf_field_at_threshold() -> N
 
     domain = Domain.from_bounds(xmin=0.0, xmax=10.0, ymin=0.0, ymax=10.0, zmin=0.0, zmax=10.0, voxel_size=0.5)
     profile = BeadProfile(width=2.0, height=2.0)
-    result = simulate(domain, [PointDeposit(x=5.0, y=5.0, z=5.0, profile=profile)], threshold=0.5)
+    result = simulate(domain, [PointDeposit(target=(5.0, 5.0, 5.0), profile=profile)], threshold=0.5)
     density = result.field("max")
     threshold = 0.5
     sdf_from_density = density_to_sdf_field(domain, density, threshold=threshold)

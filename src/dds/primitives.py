@@ -1,457 +1,328 @@
-"""Geometric primitives and deposition event containers."""
+"""Geometry primitives and deposition inputs."""
 
 from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import Any, TypeAlias, cast
+from typing import TypeAlias, cast
 
 import numpy as np
-import numpy.typing as npt
 
 from .attributes import BeadProfile, DepositionMetadata
-from .utils import (
-    bounding_box_from_points,
-    ensure_finite_scalar,
-    ensure_finite_triplet,
-    normalize_axis,
-)
-
-DEFAULT_Z_AXIS = (0.0, 0.0, 1.0)
+from .utils import ensure_finite_scalar
 
 
-def _validate_deposit_attributes(
-    profile: BeadProfile,
-    metadata: DepositionMetadata,
-) -> None:
-    if not isinstance(profile, BeadProfile):
-        raise TypeError("profile must be a BeadProfile.")
-    if not isinstance(metadata, DepositionMetadata):
-        raise TypeError("metadata must be DepositionMetadata.")
+Coordinate3D: TypeAlias = Sequence[float]
+PointLike: TypeAlias = "Point3D | Coordinate3D"
+VectorLike: TypeAlias = "Vector3D | Coordinate3D"
+PoseLike: TypeAlias = "Pose3D | Point3D | Coordinate3D"
 
-def _bead_half_extents(
-    axis: Any,
-    *,
-    width: float,
-    height: float,
-    padding: float = 0.0,
-) -> np.ndarray:
-    axis_array = np.abs(np.asarray(ensure_finite_triplet(axis, "axis"), dtype=float))
-    radius = width / 2.0
-    half_height = height / 2.0
-    radial_extent = radius * np.sqrt(np.maximum(0.0, 1.0 - axis_array * axis_array))
-    axial_extent = half_height * axis_array
-    return radial_extent + axial_extent + float(padding)
+DEFAULT_AXIS = (0.0, 0.0, 1.0)
 
 
-def _point_target_support_bounds(
-    target: Any,
-    axis: Any,
-    *,
-    width: float,
-    height: float,
-    padding: float = 0.0,
-) -> tuple[np.ndarray, np.ndarray]:
-    padding = ensure_finite_scalar(padding, "padding")
-    if padding < 0.0:
-        raise ValueError("padding must be non-negative.")
-    target_array = np.asarray(ensure_finite_triplet(target, "target"), dtype=float)
-    axis_array = np.asarray(ensure_finite_triplet(axis, "axis"), dtype=float)
-    center = target_array - axis_array * (height / 2.0)
-    extent = _bead_half_extents(axis_array, width=width, height=height, padding=padding)
-    return center - extent, center + extent
+def _coerce_xyz(value: object, *, name: str) -> tuple[float, float, float]:
+    if isinstance(value, (Point3D, Vector3D)):
+        xyz = value.to_tuple()
+    else:
+        try:
+            xyz = tuple(float(component) for component in value)  # type: ignore[arg-type]
+        except (TypeError, ValueError) as exc:
+            raise TypeError(f"{name} must contain exactly three numeric values") from exc
+    if len(xyz) != 3:
+        raise ValueError(f"{name} must contain exactly three values")
+    if not np.all(np.isfinite(xyz)):
+        raise ValueError(f"{name} values must be finite")
+    return xyz
 
 
 @dataclass(frozen=True, slots=True)
 class Point3D:
-    """A 3D Cartesian point."""
+    """A position in three-dimensional Cartesian space."""
 
     x: float
     y: float
     z: float
 
     def __post_init__(self) -> None:
-        ensure_finite_triplet((self.x, self.y, self.z), "Point3D")
+        values = (float(self.x), float(self.y), float(self.z))
+        if not np.all(np.isfinite(values)):
+            raise ValueError("point coordinates must be finite")
+        object.__setattr__(self, "x", values[0])
+        object.__setattr__(self, "y", values[1])
+        object.__setattr__(self, "z", values[2])
 
     @classmethod
-    def from_value(cls, value: Any) -> "Point3D":
-        """Coerce a point-like value into a Point3D instance."""
-
+    def from_value(cls, value: PointLike) -> Point3D:
         if isinstance(value, cls):
             return value
-        x, y, z = ensure_finite_triplet(value, "point")
-        return cls(x=x, y=y, z=z)
+        return cls(*_coerce_xyz(value, name="point"))
 
     def to_tuple(self) -> tuple[float, float, float]:
-        """Return the point as a tuple."""
+        return self.x, self.y, self.z
 
-        return (self.x, self.y, self.z)
+    def to_array(self) -> np.ndarray:
+        return np.asarray(self.to_tuple(), dtype=np.float64)
 
-    def to_array(self) -> npt.NDArray[np.float64]:
-        """Return the point as a NumPy array."""
 
-        return np.asarray(self.to_tuple(), dtype=float)
+@dataclass(frozen=True, slots=True)
+class Vector3D:
+    """A direction or displacement in three-dimensional Cartesian space."""
+
+    x: float
+    y: float
+    z: float
+
+    def __post_init__(self) -> None:
+        values = (float(self.x), float(self.y), float(self.z))
+        if not np.all(np.isfinite(values)):
+            raise ValueError("vector components must be finite")
+        object.__setattr__(self, "x", values[0])
+        object.__setattr__(self, "y", values[1])
+        object.__setattr__(self, "z", values[2])
+
+    @classmethod
+    def from_value(cls, value: VectorLike) -> Vector3D:
+        if isinstance(value, cls):
+            return value
+        return cls(*_coerce_xyz(value, name="vector"))
+
+    @property
+    def length(self) -> float:
+        return float(np.linalg.norm(self.to_array()))
+
+    def normalized(self) -> Vector3D:
+        length = self.length
+        if length == 0.0:
+            raise ValueError("vector must be non-zero")
+        return Vector3D(self.x / length, self.y / length, self.z / length)
+
+    def to_tuple(self) -> tuple[float, float, float]:
+        return self.x, self.y, self.z
+
+    def to_array(self) -> np.ndarray:
+        return np.asarray(self.to_tuple(), dtype=np.float64)
 
 
 @dataclass(frozen=True, slots=True)
 class Pose3D:
-    """A nozzle position and local bead-axis orientation."""
+    """A target point and normalized axis defining its target plane."""
 
-    position: Point3D | Sequence[float]
-    z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
+    position: PointLike
+    axis: VectorLike = DEFAULT_AXIS
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "position", Point3D.from_value(self.position))
         object.__setattr__(
             self,
-            "z_axis",
-            Point3D.from_value(normalize_axis(self.z_axis, name="Pose3D.z_axis")),
+            "axis",
+            Vector3D.from_value(self.axis).normalized(),
         )
 
-    @property
-    def axis(self) -> Point3D:
-        """Return the normalized local bead axis."""
-
-        return Point3D.from_value(self.z_axis)
+    @classmethod
+    def from_value(cls, value: PoseLike) -> Pose3D:
+        if isinstance(value, cls):
+            return value
+        return cls(position=Point3D.from_value(value))
 
     def to_dict(self) -> dict[str, list[float]]:
-        """Return a JSON-compatible representation."""
-
         return {
-            "position": list(cast(Point3D, self.position).to_tuple()),
-            "z_axis": list(self.axis.to_tuple()),
+            "position": list(self.position.to_tuple()),  # type: ignore[union-attr]
+            "axis": list(self.axis.to_tuple()),  # type: ignore[union-attr]
         }
 
 
 @dataclass(frozen=True, slots=True)
-class LineSegment3D:
-    """A line segment between two 3D points."""
+class Line3D:
+    """A finite line defined by start and end points."""
 
-    start: Point3D
-    end: Point3D
+    start: PointLike
+    end: PointLike
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "start", Point3D.from_value(self.start))
         object.__setattr__(self, "end", Point3D.from_value(self.end))
 
     @property
+    def direction(self) -> Vector3D:
+        start = self.start.to_array()  # type: ignore[union-attr]
+        end = self.end.to_array()  # type: ignore[union-attr]
+        return Vector3D.from_value(end - start)
+
+    @property
     def length(self) -> float:
-        """Return the segment length."""
+        start = self.start.to_array()  # type: ignore[union-attr]
+        end = self.end.to_array()  # type: ignore[union-attr]
+        return float(np.linalg.norm(end - start))
 
-        return float(np.linalg.norm(self.end.to_array() - self.start.to_array()))
-
+    @property
     def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return geometric bounds for the segment."""
-
-        minimum, maximum = bounding_box_from_points((self.start.to_tuple(), self.end.to_tuple()))
-        return Point3D.from_value(minimum), Point3D.from_value(maximum)
+        start = self.start.to_array()  # type: ignore[union-attr]
+        end = self.end.to_array()  # type: ignore[union-attr]
+        return Point3D.from_value(np.minimum(start, end)), Point3D.from_value(
+            np.maximum(start, end)
+        )
 
 
 @dataclass(frozen=True, slots=True)
 class Polyline3D:
-    """An ordered list of 3D points."""
+    """A connected sequence of points."""
 
-    points: tuple[Point3D, ...]
+    points: tuple[PointLike, ...]
 
     def __post_init__(self) -> None:
-        coerced = tuple(Point3D.from_value(point) for point in self.points)
-        if len(coerced) < 2:
-            raise ValueError("Polyline3D requires at least two points.")
-        object.__setattr__(self, "points", coerced)
+        points = tuple(Point3D.from_value(point) for point in self.points)
+        if len(points) < 2:
+            raise ValueError("polyline requires at least two points")
+        object.__setattr__(self, "points", points)
 
-    def segments(self) -> tuple[LineSegment3D, ...]:
-        """Return line segments connecting consecutive points."""
-
+    @property
+    def segments(self) -> tuple[Line3D, ...]:
         return tuple(
-            LineSegment3D(start=start, end=end)
+            Line3D(start, end)
             for start, end in zip(self.points[:-1], self.points[1:], strict=True)
         )
 
-    def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return the axis-aligned bounds of the polyline."""
+    @property
+    def length(self) -> float:
+        return sum(segment.length for segment in self.segments)
 
-        minimum, maximum = bounding_box_from_points(point.to_tuple() for point in self.points)
-        return Point3D.from_value(minimum), Point3D.from_value(maximum)
+    @property
+    def bounds(self) -> tuple[Point3D, Point3D]:
+        coordinates = np.asarray(
+            [point.to_tuple() for point in self.points],
+            dtype=np.float64,
+        )
+        return Point3D.from_value(coordinates.min(axis=0)), Point3D.from_value(
+            coordinates.max(axis=0)
+        )
+
+
+def _point_target_support_bounds(
+    target: PointLike,
+    axis: VectorLike,
+    *,
+    width: float,
+    height: float,
+    padding: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return conservative bounds for a top-referenced oriented bead."""
+
+    padding_value = ensure_finite_scalar(padding, "padding")
+    if padding_value < 0.0:
+        raise ValueError("padding must be non-negative")
+    target_array = Point3D.from_value(target).to_array()
+    axis_array = Vector3D.from_value(axis).normalized().to_array()
+    center = target_array - axis_array * (height / 2.0)
+    radius = width / 2.0
+    radial_extent = radius * np.sqrt(np.maximum(0.0, 1.0 - axis_array**2))
+    axial_extent = (height / 2.0) * np.abs(axis_array)
+    extent = radial_extent + axial_extent + padding_value
+    return center - extent, center + extent
 
 
 @dataclass(frozen=True, slots=True)
 class PointDeposit:
-    """A material deposition target whose point lies at the top of the bead."""
+    """A bead deposited at one pose."""
 
-    x: float
-    y: float
-    z: float
+    target: PoseLike
     profile: BeadProfile
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
-    z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
 
     def __post_init__(self) -> None:
-        _validate_deposit_attributes(self.profile, self.metadata)
-        ensure_finite_triplet((self.x, self.y, self.z), "PointDeposit coordinates")
-        object.__setattr__(self, "z_axis", Point3D.from_value(normalize_axis(self.z_axis, name="PointDeposit.z_axis")))
-
-    @property
-    def point(self) -> Point3D:
-        """Return the nozzle-tip target point as a Point3D."""
-
-        return Point3D(x=self.x, y=self.y, z=self.z)
-
-    @property
-    def target(self) -> Point3D:
-        """Alias for the nozzle-tip target point."""
-
-        return self.point
-
-    @property
-    def pose(self) -> Pose3D:
-        """Return the target position and local bead axis as a pose."""
-
-        return Pose3D(position=self.point, z_axis=self.axis)
-
-    @property
-    def axis(self) -> Point3D:
-        """Return the normalized local bead axis."""
-
-        return Point3D.from_value(self.z_axis)
+        object.__setattr__(self, "target", Pose3D.from_value(self.target))
+        if not isinstance(self.profile, BeadProfile):
+            raise TypeError("profile must be a BeadProfile")
+        if not isinstance(self.metadata, DepositionMetadata):
+            raise TypeError("metadata must be DepositionMetadata")
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
-        """Return explicit bead bounds when dimensions are available."""
-
         minimum, maximum = _point_target_support_bounds(
-            self.point,
-            self.axis,
+            self.target.position,
+            self.target.axis,
             width=self.profile.width,
             height=self.profile.height,
             padding=padding,
         )
         return Point3D.from_value(minimum), Point3D.from_value(maximum)
 
-    def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return geometric bounds for the point deposit."""
-
-        return self.support_bounds()
-
-    @classmethod
-    def from_point(
-        cls,
-        point: "Point3D | Sequence[float]",
-        *,
-        profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
-        z_axis: "Point3D | Sequence[float]" = DEFAULT_Z_AXIS,
-    ) -> "PointDeposit":
-        """Create a PointDeposit from a point-like value.
-
-        Parameters
-        ----------
-        point:
-            The nozzle-tip target position. Accepts a :class:`Point3D` or any
-            three-element sequence ``(x, y, z)``.
-        profile:
-            Bead dimensions for this deposit.
-        metadata:
-            Optional deposition metadata. Defaults to an empty
-            :class:`DepositionMetadata`.
-        z_axis:
-            Local bead axis direction. Defaults to ``(0, 0, 1)``.
-        """
-
-        p = Point3D.from_value(point)
-        return cls(
-            x=p.x,
-            y=p.y,
-            z=p.z,
-            profile=profile,
-            metadata=metadata if metadata is not None else DepositionMetadata(),
-            z_axis=z_axis,
-        )
-
-    @classmethod
-    def from_pose(
-        cls,
-        pose: Pose3D,
-        *,
-        profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
-    ) -> "PointDeposit":
-        """Create a point deposit from a nozzle pose."""
-
-        return cls.from_point(
-            pose.position,
-            profile=profile,
-            metadata=metadata,
-            z_axis=pose.axis,
-        )
-
 
 @dataclass(frozen=True, slots=True)
 class LineDeposit:
-    """A material deposition path whose endpoints are nozzle-tip targets."""
+    """A bead swept between two poses."""
 
-    start: Point3D | Sequence[float]
-    end: Point3D | Sequence[float]
+    start: PoseLike
+    end: PoseLike
     profile: BeadProfile
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
-    start_z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
-    end_z_axis: Point3D | Sequence[float] | None = None
 
     def __post_init__(self) -> None:
-        _validate_deposit_attributes(self.profile, self.metadata)
-        object.__setattr__(self, "start", Point3D.from_value(self.start))
-        object.__setattr__(self, "end", Point3D.from_value(self.end))
-        start_z_axis = normalize_axis(self.start_z_axis, name="LineDeposit.start_z_axis")
-        end_z_axis = (
-            start_z_axis
-            if self.end_z_axis is None
-            else normalize_axis(self.end_z_axis, name="LineDeposit.end_z_axis")
-        )
-        object.__setattr__(self, "start_z_axis", Point3D.from_value(start_z_axis))
-        object.__setattr__(self, "end_z_axis", Point3D.from_value(end_z_axis))
-        if float(np.dot(self.start_axis.to_array(), self.end_axis.to_array())) <= -1.0 + 1e-8:
-            raise ValueError(
-                "LineDeposit endpoint axes must not be antiparallel. "
-                "Subdivide the path with an intermediate orientation."
-            )
+        start = Pose3D.from_value(self.start)
+        end = Pose3D.from_value(self.end)
+        object.__setattr__(self, "start", start)
+        object.__setattr__(self, "end", end)
+        if float(np.dot(start.axis.to_array(), end.axis.to_array())) <= -1.0 + 1e-12:
+            raise ValueError("line endpoint axes cannot be antiparallel")
+        if not isinstance(self.profile, BeadProfile):
+            raise TypeError("profile must be a BeadProfile")
+        if not isinstance(self.metadata, DepositionMetadata):
+            raise TypeError("metadata must be DepositionMetadata")
 
     @property
-    def segment(self) -> LineSegment3D:
-        """Return the deposited segment."""
-
-        return LineSegment3D(
-            start=cast(Point3D, self.start),
-            end=cast(Point3D, self.end),
-        )
-
-    @property
-    def start_axis(self) -> Point3D:
-        """Return the normalized local bead axis at the segment start."""
-
-        return Point3D.from_value(self.start_z_axis)
-
-    @property
-    def end_axis(self) -> Point3D:
-        """Return the normalized local bead axis at the segment end.
-
-        Always a normalized :class:`Point3D` after construction.
-        Passing ``end_z_axis=None`` at construction time is shorthand for
-        inheriting ``start_z_axis`` at the end of the segment.
-        """
-
-        return Point3D.from_value(cast(Point3D, self.end_z_axis))
-
-    @property
-    def start_pose(self) -> Pose3D:
-        """Return the segment-start nozzle pose."""
-
-        return Pose3D(position=self.start, z_axis=self.start_axis)
-
-    @property
-    def end_pose(self) -> Pose3D:
-        """Return the segment-end nozzle pose."""
-
-        return Pose3D(position=self.end, z_axis=self.end_axis)
-
-    @classmethod
-    def from_poses(
-        cls,
-        start_pose: Pose3D,
-        end_pose: Pose3D,
-        *,
-        profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
-    ) -> "LineDeposit":
-        """Create a line deposit from start and end nozzle poses."""
-
-        return cls(
-            start=start_pose.position,
-            end=end_pose.position,
-            profile=profile,
-            metadata=metadata or DepositionMetadata(),
-            start_z_axis=start_pose.axis,
-            end_z_axis=end_pose.axis,
-        )
+    def line(self) -> Line3D:
+        return Line3D(self.start.position, self.end.position)  # type: ignore[union-attr]
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
-        """Return explicit swept-bead bounds when dimensions are available."""
-
         padding_value = ensure_finite_scalar(padding, "padding")
         if padding_value < 0.0:
-            raise ValueError("padding must be non-negative.")
+            raise ValueError("padding must be non-negative")
         support_radius = math.sqrt(
             (self.profile.width / 2.0) ** 2 + self.profile.height**2
         ) + padding_value
         endpoints = np.stack(
-            (
-                cast(Point3D, self.start).to_array(),
-                cast(Point3D, self.end).to_array(),
-            ),
+            (self.start.position.to_array(), self.end.position.to_array()),
             axis=0,
         )
-        minimum = endpoints.min(axis=0) - support_radius
-        maximum = endpoints.max(axis=0) + support_radius
-        return Point3D.from_value(minimum), Point3D.from_value(maximum)
-
-    def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return geometric bounds for the line deposit."""
-
-        return self.support_bounds()
+        return Point3D.from_value(
+            endpoints.min(axis=0) - support_radius
+        ), Point3D.from_value(endpoints.max(axis=0) + support_radius)
 
 
 @dataclass(frozen=True, slots=True)
 class PolylineDeposit:
-    """One deposition event swept through an ordered sequence of nozzle poses."""
+    """A bead swept through a connected sequence of poses."""
 
-    poses: tuple[Pose3D, ...]
+    poses: tuple[PoseLike, ...]
     profile: BeadProfile
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
 
     def __post_init__(self) -> None:
-        _validate_deposit_attributes(self.profile, self.metadata)
-        poses = tuple(self.poses)
+        poses = tuple(Pose3D.from_value(pose) for pose in self.poses)
         if len(poses) < 2:
-            raise ValueError("PolylineDeposit requires at least two poses.")
+            raise ValueError("polyline deposit requires at least two poses")
         for start, end in zip(poses[:-1], poses[1:], strict=True):
-            if float(np.dot(start.axis.to_array(), end.axis.to_array())) <= -1.0 + 1e-8:
-                raise ValueError(
-                    "Consecutive PolylineDeposit axes must not be antiparallel."
-                )
+            if (
+                float(np.dot(start.axis.to_array(), end.axis.to_array()))
+                <= -1.0 + 1e-12
+            ):
+                raise ValueError("consecutive polyline axes cannot be antiparallel")
         object.__setattr__(self, "poses", poses)
+        if not isinstance(self.profile, BeadProfile):
+            raise TypeError("profile must be a BeadProfile")
+        if not isinstance(self.metadata, DepositionMetadata):
+            raise TypeError("metadata must be DepositionMetadata")
 
-    @classmethod
-    def from_polyline(
-        cls,
-        polyline: Polyline3D,
-        profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
-        target_z_axes: Sequence[Point3D | Sequence[float]] | None = None,
-    ) -> "PolylineDeposit":
-        """Create a polyline deposit from geometric points and target axes."""
-
-        if target_z_axes is None:
-            axes: Sequence[Point3D | Sequence[float]] = (
-                DEFAULT_Z_AXIS,
-            ) * len(polyline.points)
-        else:
-            axes = tuple(target_z_axes)
-            if len(axes) != len(polyline.points):
-                raise ValueError("target_z_axes must match the number of polyline points.")
-        return cls(
-            poses=tuple(
-                Pose3D(position=point, z_axis=axis)
-                for point, axis in zip(polyline.points, axes, strict=True)
-            ),
-            profile=profile,
-            metadata=metadata or DepositionMetadata(),
+    @property
+    def polyline(self) -> Polyline3D:
+        return Polyline3D(
+            tuple(pose.position for pose in self.poses)  # type: ignore[union-attr]
         )
 
     def segments(self) -> tuple[LineDeposit, ...]:
-        """Return line deposits used to evaluate the polyline envelope."""
-
         return tuple(
-            LineDeposit.from_poses(
-                start,
-                end,
+            LineDeposit(
+                start=start,
+                end=end,
                 profile=self.profile,
                 metadata=self.metadata,
             )
@@ -459,37 +330,33 @@ class PolylineDeposit:
         )
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
-        """Return aggregate swept-bead bounds for the polyline."""
-
-        points: list[tuple[float, float, float]] = []
-        for deposit in self.segments():
-            lower, upper = deposit.support_bounds(padding=padding)
-            points.extend((lower.to_tuple(), upper.to_tuple()))
-        minimum, maximum = bounding_box_from_points(points)
-        return Point3D.from_value(minimum), Point3D.from_value(maximum)
-
-    def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return aggregate bounds for the polyline deposit."""
-
-        return self.support_bounds()
+        segment_bounds = [
+            segment.support_bounds(padding=padding) for segment in self.segments()
+        ]
+        lower = np.min([bound[0].to_array() for bound in segment_bounds], axis=0)
+        upper = np.max([bound[1].to_array() for bound in segment_bounds], axis=0)
+        return Point3D.from_value(lower), Point3D.from_value(upper)
 
 
 Deposit: TypeAlias = PointDeposit | LineDeposit | PolylineDeposit
-
 DepositInput: TypeAlias = Deposit
 
 
-def iter_deposits(deposits: Iterable[DepositInput] | DepositInput) -> Iterator[Deposit]:
-    """Yield validated deposition events without changing event boundaries."""
+def iter_deposits(deposits: DepositInput | Iterable[DepositInput]) -> Iterator[Deposit]:
+    """Yield deposition events from one deposit or an iterable of deposits."""
 
     if isinstance(deposits, (PointDeposit, LineDeposit, PolylineDeposit)):
         yield deposits
         return
-
-    for item in deposits:
-        if isinstance(item, (PointDeposit, LineDeposit, PolylineDeposit)):
-            yield item
-        else:
+    if isinstance(deposits, (str, bytes)):
+        raise TypeError("deposits must contain deposition primitives")
+    try:
+        iterator = iter(deposits)
+    except TypeError as exc:
+        raise TypeError("deposits must be a deposit or iterable of deposits") from exc
+    for deposit in iterator:
+        if not isinstance(deposit, (PointDeposit, LineDeposit, PolylineDeposit)):
             raise TypeError(
-                "Deposits must be PointDeposit, LineDeposit, or PolylineDeposit instances."
+                "deposits must contain PointDeposit, LineDeposit, or PolylineDeposit"
             )
+        yield cast(Deposit, deposit)

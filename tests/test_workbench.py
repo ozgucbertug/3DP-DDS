@@ -39,7 +39,7 @@ def make_simulator() -> Simulator:
     profile = BeadProfile(width=1.2, height=0.8)
     metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(x=2.25, y=2.25, z=0.65, profile=profile, metadata=metadata),
+        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile, metadata=metadata),
         LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile, metadata=metadata),
         LineDeposit(start=(6.25, 2.25, 0.65), end=(6.25, 6.25, 0.65), profile=profile, metadata=metadata),
     ]

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .primitives import Deposit
     from .results import SimulationResult
 
-_CHECKPOINT_VERSION = 4
+_CHECKPOINT_VERSION = 5
 
 
 def _json_default(value: Any) -> Any:
@@ -86,20 +86,15 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
     if isinstance(deposit, PointDeposit):
         return {
             "type": "PointDeposit",
-            "x": deposit.x,
-            "y": deposit.y,
-            "z": deposit.z,
-            "z_axis": list(deposit.axis.to_tuple()),
+            "target": deposit.target.to_dict(),
             "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
     if isinstance(deposit, LineDeposit):
         return {
             "type": "LineDeposit",
-            "start": list(deposit.segment.start.to_tuple()),
-            "end": list(deposit.segment.end.to_tuple()),
-            "start_z_axis": list(deposit.start_axis.to_tuple()),
-            "end_z_axis": list(deposit.end_axis.to_tuple()),
+            "start": deposit.start.to_dict(),
+            "end": deposit.end.to_dict(),
             "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
@@ -128,19 +123,23 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
 
     if deposit_type == "PointDeposit":
         return PointDeposit(
-            x=d["x"],
-            y=d["y"],
-            z=d["z"],
-            z_axis=tuple(d["z_axis"]),
+            target=Pose3D(
+                position=tuple(d["target"]["position"]),
+                axis=tuple(d["target"]["axis"]),
+            ),
             profile=profile,
             metadata=metadata,
         )
     if deposit_type == "LineDeposit":
         return LineDeposit(
-            start=tuple(d["start"]),
-            end=tuple(d["end"]),
-            start_z_axis=tuple(d["start_z_axis"]),
-            end_z_axis=tuple(d["end_z_axis"]),
+            start=Pose3D(
+                position=tuple(d["start"]["position"]),
+                axis=tuple(d["start"]["axis"]),
+            ),
+            end=Pose3D(
+                position=tuple(d["end"]["position"]),
+                axis=tuple(d["end"]["axis"]),
+            ),
             profile=profile,
             metadata=metadata,
         )
@@ -149,7 +148,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
             poses=tuple(
                 Pose3D(
                     position=tuple(pose["position"]),
-                    z_axis=tuple(pose["z_axis"]),
+                    axis=tuple(pose["axis"]),
                 )
                 for pose in d["poses"]
             ),

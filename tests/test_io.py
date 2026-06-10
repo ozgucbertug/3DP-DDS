@@ -82,7 +82,7 @@ def test_write_read_mesh_round_trip(tmp_path: Path) -> None:
     )
     result = simulate(
         domain,
-        [PointDeposit(x=2.0, y=2.0, z=2.0, profile=BeadProfile(width=1.5, height=1.5))],
+        [PointDeposit(target=(2.0, 2.0, 2.0), profile=BeadProfile(width=1.5, height=1.5))],
         threshold=0.5,
     )
     mesh = result.analysis.surface_mesh()

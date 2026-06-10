@@ -6,13 +6,14 @@ from .domain import Domain
 from .primitives import (
     Deposit,
     DepositInput,
+    Line3D,
     LineDeposit,
-    LineSegment3D,
     Point3D,
     PointDeposit,
     Polyline3D,
     PolylineDeposit,
     Pose3D,
+    Vector3D,
 )
 from .results import SimulationResult, simulate
 from .simulator import Simulator
@@ -25,13 +26,14 @@ __all__ = [
     "DepositionMetadata",
     "Domain",
     "FieldComposition",
+    "Line3D",
     "LineDeposit",
-    "LineSegment3D",
     "Point3D",
     "PointDeposit",
     "Polyline3D",
     "PolylineDeposit",
     "Pose3D",
+    "Vector3D",
     "SimulationResult",
     "Simulator",
     "ChunkedField",

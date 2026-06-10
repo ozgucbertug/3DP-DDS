@@ -25,7 +25,7 @@ def make_result():
     profile = BeadProfile(width=1.2, height=0.8)
     metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(x=2.25, y=2.25, z=0.65, profile=profile, metadata=metadata),
+        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile, metadata=metadata),
         LineDeposit(
             start=(2.25, 2.25, 0.65),
             end=(6.25, 2.25, 0.65),
@@ -102,13 +102,13 @@ def test_analysis_owns_read_only_snapshots() -> None:
 def test_result_analysis_is_cached_and_simulator_results_are_isolated() -> None:
     simulator = Simulator(make_domain())
     simulator.add_deposit(
-        PointDeposit(x=2.25, y=2.25, z=0.65, profile=BeadProfile(width=1.2, height=0.8))
+        PointDeposit(target=(2.25, 2.25, 0.65), profile=BeadProfile(width=1.2, height=0.8))
     )
     before = simulator.result()
     assert before.analysis is before.analysis
 
     simulator.add_deposit(
-        PointDeposit(x=4.25, y=4.25, z=0.65, profile=BeadProfile(width=1.2, height=0.8))
+        PointDeposit(target=(4.25, 4.25, 0.65), profile=BeadProfile(width=1.2, height=0.8))
     )
     after = simulator.result()
 

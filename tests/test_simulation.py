@@ -7,12 +7,15 @@ from dds import (
     BeadProfile,
     DepositionMetadata,
     Domain,
+    Line3D,
     LineDeposit,
+    Point3D,
     PointDeposit,
     PolylineDeposit,
     Pose3D,
     SimulationResult,
     Simulator,
+    Vector3D,
     simulate,
 )
 from dds.analysis import summarize_layers
@@ -38,6 +41,17 @@ def make_profile(width: float = 1.2, height: float = 1.2) -> BeadProfile:
 
 def make_metadata() -> DepositionMetadata:
     return DepositionMetadata(layer_id=0)
+
+
+def test_geometry_primitives_have_distinct_roles() -> None:
+    point = Point3D(1.0, 2.0, 3.0)
+    pose = Pose3D(point, Vector3D(0.0, 0.0, 2.0))
+    line = Line3D(point, Point3D(4.0, 6.0, 3.0))
+
+    assert pose.position == point
+    assert pose.axis == Vector3D(0.0, 0.0, 1.0)
+    assert line.direction == Vector3D(3.0, 4.0, 0.0)
+    assert line.length == pytest.approx(5.0)
 
 
 def test_domain_shape_matches_bounds() -> None:
@@ -106,7 +120,7 @@ def test_coordinate_conversion_round_trip_for_voxel_centers() -> None:
 
 def test_point_deposit_contributes_locally() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
+    deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     density = Simulator(domain, [deposit]).result().density_max
 
     assert density[2, 2, 2] > 0.0
@@ -115,7 +129,7 @@ def test_point_deposit_contributes_locally() -> None:
 
 def test_point_deposit_target_marks_the_top_of_the_bead() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
+    deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     density = Simulator(domain, [deposit]).result().density_max
 
     assert density[2, 2, 2] > density[2, 2, 3]
@@ -124,7 +138,7 @@ def test_point_deposit_target_marks_the_top_of_the_bead() -> None:
 
 def test_point_deposit_uses_rounded_bead_geometry_not_ellipsoidal_falloff() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=4.0, height=2.0), metadata=make_metadata())
+    deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=4.0, height=2.0), metadata=make_metadata())
     occupancy = Simulator(domain, [deposit]).result().analysis.occupancy(threshold=0.5)
 
     assert occupancy[2, 2, 2]
@@ -156,11 +170,15 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
         voxel_size=0.25,
     )
     deposit = LineDeposit(
-        start=(0.0, 0.0, 1.0),
-        end=(2.0, 0.0, 1.0),
+        start=Pose3D(
+            (0.0, 0.0, 1.0),
+            (-0.58861627, -0.45646528, -0.66721087),
+        ),
+        end=Pose3D(
+            (2.0, 0.0, 1.0),
+            (0.68238459, -0.07779286, -0.72684217),
+        ),
         profile=BeadProfile(width=1.0, height=2.0),
-        start_z_axis=(-0.58861627, -0.45646528, -0.66721087),
-        end_z_axis=(0.68238459, -0.07779286, -0.72684217),
     )
 
     density = Simulator(domain, [deposit]).result().density_max
@@ -171,17 +189,15 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
 def test_line_deposit_rejects_antiparallel_endpoint_axes() -> None:
     with pytest.raises(ValueError, match="antiparallel"):
             LineDeposit(
-                start=(0.0, 0.0, 0.0),
-                end=(1.0, 0.0, 0.0),
+                start=Pose3D((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+                end=Pose3D((1.0, 0.0, 0.0), (0.0, 0.0, -1.0)),
                 profile=make_profile(),
-                start_z_axis=(0.0, 0.0, 1.0),
-                end_z_axis=(0.0, 0.0, -1.0),
             )
 
 
 def test_explicit_profile_geometry_is_independent_of_voxel_size() -> None:
     profile = BeadProfile(width=2.0, height=1.0)
-    deposit = PointDeposit(x=4.0, y=5.0, z=6.0, profile=profile)
+    deposit = PointDeposit(target=(4.0, 5.0, 6.0), profile=profile)
 
     coarse = Domain.from_deposits(deposit, voxel_size=1.0, padding=0.0)
     fine = Domain.from_deposits(deposit, voxel_size=0.25, padding=0.0)
@@ -195,7 +211,7 @@ def test_explicit_profile_geometry_is_independent_of_voxel_size() -> None:
 
 def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
+    deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     single = Simulator(domain, [deposit]).result().analysis.deposition_index_field()
     overlap = Simulator(domain, [deposit, deposit]).result().analysis.deposition_index_field()
 
@@ -207,7 +223,7 @@ def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
 
 def test_thresholding_changes_occupied_voxel_count() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=4.0, profile=make_profile(width=3.0, height=3.0), metadata=make_metadata())
+    deposit = PointDeposit(target=(2.5, 2.5, 4.0), profile=make_profile(width=3.0, height=3.0), metadata=make_metadata())
 
     low_threshold = Simulator(domain, [deposit]).result().analysis.occupancy(threshold=0.1)
     high_threshold = Simulator(domain, [deposit]).result().analysis.occupancy(threshold=0.8)
@@ -217,7 +233,7 @@ def test_thresholding_changes_occupied_voxel_count() -> None:
 
 def test_deposits_outside_bounds_are_skipped_and_partial_overlap_is_kept() -> None:
     domain = make_domain()
-    outside = PointDeposit(x=-5.0, y=-5.0, z=-5.0, profile=make_profile(), metadata=make_metadata())
+    outside = PointDeposit(target=(-5.0, -5.0, -5.0), profile=make_profile(), metadata=make_metadata())
     partial = LineDeposit(
         start=(-0.5, 2.5, 3.5),
         end=(2.5, 2.5, 3.5),
@@ -237,7 +253,7 @@ def test_zero_length_line_matches_point_deposit() -> None:
     domain = make_domain()
     profile = make_profile(width=2.0, height=2.0)
     metadata = make_metadata()
-    point = PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata)
+    point = PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=metadata)
     zero_length_line = LineDeposit(start=(2.5, 2.5, 3.5), end=(2.5, 2.5, 3.5), profile=profile, metadata=metadata)
 
     point_field = Simulator(domain, [point]).result().analysis.deposition_index_field()
@@ -248,7 +264,7 @@ def test_zero_length_line_matches_point_deposit() -> None:
 
 def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
+    deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
     simulator = Simulator(domain, [deposit])
 
     analysis = simulator.result().analysis
@@ -261,9 +277,7 @@ def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
 def test_simulator_deposition_index_is_a_snapshot() -> None:
     domain = make_domain()
     deposit = PointDeposit(
-        x=2.5,
-        y=2.5,
-        z=3.5,
+        target=(2.5, 2.5, 3.5),
         profile=make_profile(width=2.0, height=2.0),
     )
     simulator = Simulator(domain, [deposit])
@@ -279,8 +293,8 @@ def test_simulator_deposition_index_is_a_snapshot() -> None:
 def test_simulate_returns_rich_result_with_max_based_geometry() -> None:
     domain = make_domain()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
     ]
 
     result = simulate(domain, deposits, threshold=0.5)
@@ -317,8 +331,8 @@ def test_simulate_can_produce_max_and_coverage_fields() -> None:
     profile = make_profile(width=2.0, height=2.0)
     metadata = make_metadata()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata),
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=metadata),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=metadata),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=metadata),
     ]
 
     result = simulate(domain, deposits, compositions=("max", "coverage"), threshold=0.5)
@@ -331,8 +345,8 @@ def test_simulate_can_produce_max_and_coverage_fields() -> None:
 def test_domain_from_deposits_anisotropic_voxel_size() -> None:
     profile = make_profile(width=2.0, height=1.0)
     deposits = [
-        PointDeposit(x=2.0, y=3.0, z=1.0, profile=profile),
-        PointDeposit(x=6.0, y=7.0, z=3.0, profile=profile),
+        PointDeposit(target=(2.0, 3.0, 1.0), profile=profile),
+        PointDeposit(target=(6.0, 7.0, 3.0), profile=profile),
     ]
     domain = Domain.from_deposits(deposits, voxel_size=(0.5, 0.25, 1.0))
 
@@ -398,17 +412,16 @@ def test_pose_based_deposits_and_polyline_event() -> None:
     corner = Pose3D((4.5, 2.5, 3.5), (0.0, 1.0, 1.0))
     end = Pose3D((4.5, 5.5, 3.5))
 
-    point = PointDeposit.from_pose(start, profile=profile)
-    line = LineDeposit.from_poses(start, corner, profile=profile)
+    point = PointDeposit(target=start, profile=profile)
+    line = LineDeposit(start=start, end=corner, profile=profile)
     polyline = PolylineDeposit(
         poses=(start, corner, end),
         profile=profile,
     )
 
-    assert point.pose == start
-    assert line.start_pose == start
-    assert line.end_pose.position == corner.position
-    assert line.end_pose.axis.to_tuple() == pytest.approx(corner.axis.to_tuple())
+    assert point.target == start
+    assert line.start == start
+    assert line.end == corner
     assert len(polyline.segments()) == 2
 
     result = simulate(
@@ -429,8 +442,8 @@ def test_pose_based_deposits_and_polyline_event() -> None:
 def _two_deposits() -> list[PointDeposit]:
     profile = make_profile(width=2.0, height=2.0)
     return [
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=make_metadata()),
-        PointDeposit(x=5.5, y=5.5, z=3.5, profile=profile, metadata=DepositionMetadata(layer_id=1)),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=make_metadata()),
+        PointDeposit(target=(5.5, 5.5, 3.5), profile=profile, metadata=DepositionMetadata(layer_id=1)),
     ]
 
 
@@ -498,7 +511,7 @@ def test_incremental_deposition_index_matches_batch() -> None:
 def test_apply_deposit_to_field_accumulates_in_place() -> None:
     """apply_deposit_to_field applies one kernel to a pre-allocated grid."""
     domain = make_domain()
-    deposit = PointDeposit(x=5.0, y=5.0, z=5.0, profile=make_profile(width=2.0, height=2.0))
+    deposit = PointDeposit(target=(5.0, 5.0, 5.0), profile=make_profile(width=2.0, height=2.0))
     grid = np.zeros(domain.grid_shape, dtype=float)
 
     hit = apply_deposit_to_field(domain, grid, deposit, composition="coverage")
@@ -510,9 +523,7 @@ def test_apply_deposit_to_field_accumulates_in_place() -> None:
 def test_density_is_geometric_envelope_and_coverage_is_additive() -> None:
     domain = make_domain()
     deposit = PointDeposit(
-        x=5.0,
-        y=5.0,
-        z=5.0,
+        target=(5.0, 5.0, 5.0),
         profile=make_profile(width=2.0, height=2.0),
     )
     simulator = Simulator(domain, [deposit, deposit])
@@ -528,7 +539,7 @@ def test_density_is_geometric_envelope_and_coverage_is_additive() -> None:
 
 def test_apply_deposit_to_field_returns_false_for_out_of_bounds_deposit() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=-50.0, y=-50.0, z=-50.0, profile=make_profile())
+    deposit = PointDeposit(target=(-50.0, -50.0, -50.0), profile=make_profile())
     grid = np.zeros(domain.grid_shape, dtype=float)
 
     hit = apply_deposit_to_field(domain, grid, deposit)
@@ -540,9 +551,7 @@ def test_apply_deposit_to_field_returns_false_for_out_of_bounds_deposit() -> Non
 def test_apply_deposit_to_field_rejects_invalid_composition_before_sampling() -> None:
     domain = make_domain()
     deposit = PointDeposit(
-        x=-50.0,
-        y=-50.0,
-        z=-50.0,
+        target=(-50.0, -50.0, -50.0),
         profile=make_profile(),
     )
     grid = np.zeros(domain.grid_shape, dtype=float)
@@ -558,7 +567,7 @@ def test_apply_deposit_to_field_rejects_invalid_composition_before_sampling() ->
 
 def test_apply_deposit_to_index_field_marks_touched_voxels() -> None:
     domain = make_domain()
-    deposit = PointDeposit(x=5.0, y=5.0, z=5.0, profile=make_profile(width=2.0, height=2.0))
+    deposit = PointDeposit(target=(5.0, 5.0, 5.0), profile=make_profile(width=2.0, height=2.0))
     index_field = np.full(domain.grid_shape, -1, dtype=np.intp)
 
     hit = apply_deposit_to_index_field(domain, index_field, deposit, deposit_index=7)

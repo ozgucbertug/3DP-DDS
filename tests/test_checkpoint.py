@@ -29,7 +29,7 @@ def make_result(*, include_coverage: bool = False) -> SimulationResult:
     domain = make_domain()
     deposits = [
         PointDeposit(
-            x=2.5, y=2.5, z=3.5,
+            target=(2.5, 2.5, 3.5),
             profile=BeadProfile(width=2.0, height=2.0),
             metadata=DepositionMetadata(layer_id=0, user_data={"material_id": "PLA"}),
         ),
@@ -51,16 +51,14 @@ def make_result(*, include_coverage: bool = False) -> SimulationResult:
 
 def test_point_deposit_serialization_round_trip() -> None:
     original = PointDeposit(
-        x=1.0, y=2.0, z=3.0,
+        target=Pose3D((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
         profile=BeadProfile(width=1.5, height=0.8),
         metadata=DepositionMetadata(layer_id=5, user_data={"tag": "A"}),
-        z_axis=(0.0, 0.0, 1.0),
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert isinstance(restored, PointDeposit)
-    assert restored.x == pytest.approx(original.x)
-    assert restored.y == pytest.approx(original.y)
-    assert restored.z == pytest.approx(original.z)
+    assert restored.target.position == original.target.position
+    assert restored.target.axis == original.target.axis
     assert restored.profile == original.profile
     assert restored.metadata.layer_id == original.metadata.layer_id
     assert restored.metadata.user_data == {"tag": "A"}
@@ -68,18 +66,15 @@ def test_point_deposit_serialization_round_trip() -> None:
 
 def test_line_deposit_serialization_round_trip() -> None:
     original = LineDeposit(
-        start=(1.0, 2.0, 3.0),
-        end=(4.0, 5.0, 6.0),
+        start=Pose3D((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
+        end=Pose3D((4.0, 5.0, 6.0), (0.0, 1.0, 1.0)),
         profile=BeadProfile(width=2.0, height=1.0),
-        start_z_axis=(0.0, 0.0, 1.0),
-        end_z_axis=(0.0, 0.0, 1.0),
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert isinstance(restored, LineDeposit)
-    assert restored.start.to_tuple() == pytest.approx(original.start.to_tuple())
-    assert restored.end.to_tuple() == pytest.approx(original.end.to_tuple())
-    assert restored.start_z_axis.to_tuple() == pytest.approx(original.start_z_axis.to_tuple())
-    assert restored.end_z_axis.to_tuple() == pytest.approx(original.end_z_axis.to_tuple())
+    assert restored.start == original.start
+    assert restored.end.position == original.end.position
+    assert restored.end.axis.to_tuple() == pytest.approx(original.end.axis.to_tuple())
 
 
 def test_polyline_deposit_serialization_round_trip() -> None:
@@ -106,16 +101,15 @@ def test_polyline_deposit_serialization_round_trip() -> None:
     assert restored.metadata.user_data["material_id"] == "clay"
 
 
-def test_line_deposit_inherited_end_z_axis_round_trip() -> None:
-    """end_z_axis=None at construction → stored as a copy of start_z_axis; must survive a round-trip."""
+def test_line_deposit_default_poses_round_trip() -> None:
     original = LineDeposit(
         start=(0.0, 0.0, 0.0),
         end=(1.0, 0.0, 0.0),
         profile=BeadProfile(width=1.0, height=0.5),
-        end_z_axis=None,
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
-    assert restored.end_z_axis.to_tuple() == pytest.approx(original.end_z_axis.to_tuple())
+    assert restored.start == original.start
+    assert restored.end == original.end
 
 
 def test_deposit_to_dict_raises_for_unknown_type() -> None:
@@ -196,7 +190,7 @@ def test_checkpoint_round_trip_deposits(tmp_path) -> None:
     point_orig = result.deposits[0]
     point_loaded = loaded.deposits[0]
     assert isinstance(point_loaded, PointDeposit)
-    assert point_loaded.x == pytest.approx(point_orig.x)
+    assert point_loaded.target == point_orig.target
     assert point_loaded.profile == point_orig.profile
     assert point_loaded.metadata.layer_id == point_orig.metadata.layer_id
     assert point_loaded.metadata.user_data == point_orig.metadata.user_data

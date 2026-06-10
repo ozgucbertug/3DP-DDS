@@ -56,9 +56,9 @@ def test_simulation_result_strata_prefers_real_layers_in_auto_mode() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata(layer_id=0)),
-        PointDeposit(x=4.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata(layer_id=0)),
-        PointDeposit(x=2.5, y=2.5, z=4.5, profile=profile, metadata=DepositionMetadata(layer_id=1)),
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata(layer_id=0)),
+        PointDeposit(target=(4.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata(layer_id=0)),
+        PointDeposit(target=(2.5, 2.5, 4.5), profile=profile, metadata=DepositionMetadata(layer_id=1)),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
@@ -75,8 +75,8 @@ def test_simulation_result_strata_falls_back_to_order_without_real_layers() -> N
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata()),
-        PointDeposit(x=4.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(4.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
@@ -91,7 +91,7 @@ def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata(layer_id=3)),
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata(layer_id=3)),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
@@ -104,7 +104,7 @@ def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
 
     missing_layer_result = simulate(
         domain,
-        [PointDeposit(x=2.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata())],
+        [PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata())],
         threshold=0.5,
     )
     with pytest.raises(ValueError):
@@ -117,8 +117,8 @@ def test_simulator_result_requests_coverage() -> None:
     simulator = Simulator(
         domain,
         [
-            PointDeposit(x=2.5, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata()),
-            PointDeposit(x=3.0, y=2.5, z=2.5, profile=profile, metadata=DepositionMetadata()),
+            PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
+            PointDeposit(target=(3.0, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
         ],
     )
 

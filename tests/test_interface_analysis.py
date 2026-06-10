@@ -25,8 +25,8 @@ def test_interface_analysis_uses_real_layers_when_available() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=DepositionMetadata(layer_id=0)),
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=DepositionMetadata(layer_id=1)),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata(layer_id=0)),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata(layer_id=1)),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
@@ -43,9 +43,9 @@ def test_interface_analysis_falls_back_to_deposit_order() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=DepositionMetadata()),
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile, metadata=DepositionMetadata()),
-        PointDeposit(x=4.5, y=2.5, z=3.5, profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(4.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata()),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 

@@ -150,8 +150,8 @@ def _sample_point_on_bounds(
     points = np.stack((xs, ys, zs), axis=-1)
     signed_distance = rounded_cylinder_signed_distance(
         points,
-        target=deposit.target.to_array(),
-        axis=deposit.axis.to_array(),
+        target=deposit.target.position.to_array(),
+        axis=deposit.target.axis.to_array(),
         profile=profile,
     )
     values = density_from_signed_distance(signed_distance, profile.transition_width)
@@ -171,16 +171,13 @@ def _sample_line_on_bounds(
     profile: ResolvedBeadProfile,
     index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
 ) -> SampledKernel:
-    start = deposit.segment.start.to_array()
-    end = deposit.segment.end.to_array()
+    start = deposit.start.position.to_array()
+    end = deposit.end.position.to_array()
     if np.allclose(start, end):
         point_deposit = PointDeposit(
-            x=float(start[0]),
-            y=float(start[1]),
-            z=float(start[2]),
+            target=deposit.start,
             profile=deposit.profile,
             metadata=deposit.metadata,
-            z_axis=deposit.start_axis,
         )
         return _sample_point_on_bounds(domain, point_deposit, profile, index_bounds)
 
@@ -190,8 +187,8 @@ def _sample_line_on_bounds(
     parameters = closest_point_parameters(flat_points, start, end)
     closest_targets = start + parameters[:, np.newaxis] * (end - start)
     axes = slerp_unit_vectors(
-        deposit.start_axis.to_array(),
-        deposit.end_axis.to_array(),
+        deposit.start.axis.to_array(),
+        deposit.end.axis.to_array(),
         parameters,
     )
     signed_distance = rounded_cylinder_signed_distance(
@@ -218,8 +215,8 @@ def _iter_point_kernels(
 ) -> Iterator[SampledKernel]:
     profile = resolve_bead_profile(deposit.profile, domain)
     support_min, support_max = _point_target_support_bounds(
-        deposit.target,
-        deposit.axis,
+        deposit.target.position,
+        deposit.target.axis,
         width=profile.width,
         height=profile.height,
         padding=profile.support_padding,

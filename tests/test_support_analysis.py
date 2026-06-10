@@ -11,7 +11,7 @@ from dds.analysis.support import _support_shadow_field
 def _cantilever_result():
     profile = BeadProfile(width=1.2, height=0.8)
     deposits = [
-        PointDeposit(x=2.0, y=2.0, z=1.0, profile=profile, metadata=DepositionMetadata(layer_id=0)),
+        PointDeposit(target=(2.0, 2.0, 1.0), profile=profile, metadata=DepositionMetadata(layer_id=0)),
         LineDeposit(
             start=(2.0, 2.0, 1.0),
             end=(6.0, 2.0, 1.0),

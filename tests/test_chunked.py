@@ -37,8 +37,8 @@ def make_profile(width: float = 2.0, height: float = 2.0) -> BeadProfile:
 def make_deposits() -> list[PointDeposit]:
     profile = make_profile()
     return [
-        PointDeposit(x=2.5, y=2.5, z=3.5, profile=profile),
-        PointDeposit(x=7.5, y=7.5, z=3.5, profile=profile),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile),
+        PointDeposit(target=(7.5, 7.5, 3.5), profile=profile),
     ]
 
 
@@ -125,9 +125,7 @@ def test_chunked_memory_and_activity_diagnostics() -> None:
 def test_chunked_out_of_bounds_deposit_is_skipped() -> None:
     domain = make_domain()
     deposit = PointDeposit(
-        x=-50.0,
-        y=-50.0,
-        z=-50.0,
+        target=(-50.0, -50.0, -50.0),
         profile=make_profile(),
     )
 
