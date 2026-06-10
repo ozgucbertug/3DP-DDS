@@ -1,4 +1,8 @@
-"""Headless manufacturability and geometry metrics for TriangleMesh objects."""
+"""Headless manufacturability and geometry metrics for TriangleMesh objects.
+
+All public functions are also accessible via ``dds.geometry`` (the canonical
+user-facing namespace), which re-exports them from ``geometry/__init__.py``.
+"""
 
 from __future__ import annotations
 
@@ -11,12 +15,26 @@ from .geometry.mesh import TriangleMesh, _load_trimesh
 from .utils import EPSILON, normalize_axis
 
 
+# ---------------------------------------------------------------------------
+# Public batch data-holder and factory
+# ---------------------------------------------------------------------------
+
 @dataclass(frozen=True, slots=True)
-class _OrientedFaceData:
+class FaceData:
+    """Pre-computed per-face geometry for a consistently oriented mesh.
+
+    Build once with :func:`compute_face_data` and pass as ``precomputed=`` to
+    any per-face metric function to avoid re-orienting the mesh multiple times.
+    """
+
     mesh: TriangleMesh
     normals: npt.NDArray[np.float64]
     areas: npt.NDArray[np.float64]
     centroids: npt.NDArray[np.float64]
+
+
+# Private aliases for modules that import the old names directly.
+_OrientedFaceData = FaceData
 
 
 def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
@@ -33,12 +51,16 @@ def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
     return TriangleMesh.from_trimesh(tri_mesh, metadata=mesh.metadata)
 
 
-def _oriented_face_data(mesh: TriangleMesh) -> _OrientedFaceData:
-    """Orient a mesh once and derive its reusable per-face geometry."""
+def compute_face_data(mesh: TriangleMesh) -> FaceData:
+    """Orient *mesh* once and return reusable per-face normals, areas, and centroids.
+
+    Pass the returned :class:`FaceData` as ``precomputed=`` to any per-face
+    metric function to skip the (potentially expensive) mesh-orientation step.
+    """
 
     oriented = _oriented_mesh(mesh)
     if oriented.is_empty:
-        return _OrientedFaceData(
+        return FaceData(
             mesh=oriented,
             normals=np.empty((0, 3), dtype=float),
             areas=np.empty((0,), dtype=float),
@@ -54,12 +76,16 @@ def _oriented_face_data(mesh: TriangleMesh) -> _OrientedFaceData:
     normals = np.zeros_like(cross, dtype=float)
     valid = lengths > EPSILON
     normals[valid] = cross[valid] / lengths[valid, np.newaxis]
-    return _OrientedFaceData(
+    return FaceData(
         mesh=oriented,
         normals=normals,
         areas=0.5 * lengths,
         centroids=np.mean(triangles, axis=1),
     )
+
+
+# Private alias used by internal modules.
+_oriented_face_data = compute_face_data
 
 
 def _overhang_angles_from_normals(
@@ -73,16 +99,29 @@ def _overhang_angles_from_normals(
     return np.degrees(np.arccos(cosine))
 
 
-def face_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
+# ---------------------------------------------------------------------------
+# Public per-face metric functions — all accept an optional precomputed=
+# ---------------------------------------------------------------------------
+
+def face_normals(
+    mesh: TriangleMesh,
+    *,
+    precomputed: FaceData | None = None,
+) -> npt.NDArray[np.float64]:
     """Return one outward-facing normal per face."""
 
-    return _oriented_face_data(mesh).normals
+    data = precomputed if precomputed is not None else compute_face_data(mesh)
+    return data.normals
 
 
-def vertex_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
+def vertex_normals(
+    mesh: TriangleMesh,
+    *,
+    precomputed: FaceData | None = None,
+) -> npt.NDArray[np.float64]:
     """Return area-weighted vertex normals."""
 
-    data = _oriented_face_data(mesh)
+    data = precomputed if precomputed is not None else compute_face_data(mesh)
     if data.mesh.is_empty:
         return np.empty((0, 3), dtype=float)
     normals = np.zeros_like(data.mesh.vertices, dtype=float)
@@ -97,18 +136,30 @@ def vertex_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
     return normals
 
 
-def face_centroids(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
+def face_centroids(
+    mesh: TriangleMesh,
+    *,
+    precomputed: FaceData | None = None,
+) -> npt.NDArray[np.float64]:
     """Return one centroid per face."""
 
+    if precomputed is not None:
+        return precomputed.centroids
     if mesh.is_empty:
         return np.empty((0, 3), dtype=float)
     triangles = mesh.vertices[mesh.faces]
     return np.mean(triangles, axis=1)
 
 
-def face_areas(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
+def face_areas(
+    mesh: TriangleMesh,
+    *,
+    precomputed: FaceData | None = None,
+) -> npt.NDArray[np.float64]:
     """Return one triangle area per face."""
 
+    if precomputed is not None:
+        return precomputed.areas
     if mesh.is_empty:
         return np.empty((0,), dtype=float)
     triangles = mesh.vertices[mesh.faces]
@@ -120,23 +171,23 @@ def overhang_angles(
     mesh: TriangleMesh,
     *,
     build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+    precomputed: FaceData | None = None,
 ) -> npt.NDArray[np.float64]:
     """Measure face overhang angle relative to the downward build direction."""
 
-    return _overhang_angles_from_normals(
-        _oriented_face_data(mesh).normals,
-        build_direction,
-    )
+    data = precomputed if precomputed is not None else compute_face_data(mesh)
+    return _overhang_angles_from_normals(data.normals, build_direction)
 
 
 def downfacing_mask(
     mesh: TriangleMesh,
     *,
     build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+    precomputed: FaceData | None = None,
 ) -> npt.NDArray[np.bool_]:
     """Return faces whose normals have a downward component."""
 
-    angles = overhang_angles(mesh, build_direction=build_direction)
+    angles = overhang_angles(mesh, build_direction=build_direction, precomputed=precomputed)
     return angles < 90.0
 
 
@@ -145,12 +196,13 @@ def support_risk_mask(
     *,
     build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
     critical_angle_deg: float = 45.0,
+    precomputed: FaceData | None = None,
 ) -> npt.NDArray[np.bool_]:
     """Return faces below the chosen overhang critical angle."""
 
     if critical_angle_deg < 0.0:
         raise ValueError("critical_angle_deg must be non-negative.")
-    angles = overhang_angles(mesh, build_direction=build_direction)
+    angles = overhang_angles(mesh, build_direction=build_direction, precomputed=precomputed)
     return angles <= float(critical_angle_deg)
 
 
@@ -209,3 +261,4 @@ def mesh_volume_estimate(mesh: TriangleMesh) -> float | None:
     if not tri_mesh.is_volume:
         tri_mesh.invert()
     return float(abs(tri_mesh.volume))
+

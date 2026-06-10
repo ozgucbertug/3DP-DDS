@@ -1,6 +1,8 @@
 """SDF-, mesh-, and mesh-analysis helpers for dds."""
 
 from ..mesh_analysis import (
+    FaceData,
+    compute_face_data,
     downfacing_mask,
     face_areas,
     face_centroids,
@@ -51,6 +53,7 @@ from .shapes import (
 from .transforms import orient, rotate, rotation_matrix, scale, translate
 
 __all__ = [
+    "FaceData",
     "GridSDF3",
     "MeshSDF3",
     "ORIGIN",
@@ -65,6 +68,7 @@ __all__ = [
     "capped_cylinder",
     "capsule",
     "capsule_chain",
+    "compute_face_data",
     "cone",
     "cylinder",
     "density_to_mesh",
