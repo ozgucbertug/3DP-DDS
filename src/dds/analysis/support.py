@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Literal
 import numpy as np
 import numpy.typing as npt
 
-from ..mesh_analysis import downfacing_mask, face_areas, face_centroids, overhang_angles, support_risk_mask
+from ..mesh_analysis import _oriented_face_data, _overhang_angles_from_normals
 from .models import SupportAnalysis
 
 if TYPE_CHECKING:
@@ -115,14 +115,14 @@ def support(
         raise ValueError(f"build_direction must be one of {sorted(_BUILD_DIRECTIONS)}.")
     build_dir = _BUILD_DIRECTIONS[build_direction]
     mesh = source.surface_mesh(threshold=threshold)
-    angles = np.asarray(overhang_angles(mesh, build_direction=build_dir), dtype=float)
-    downfacing = np.asarray(downfacing_mask(mesh, build_direction=build_dir), dtype=bool)
-    risk = np.asarray(
-        support_risk_mask(mesh, build_direction=build_dir, critical_angle_deg=critical_angle_deg),
-        dtype=bool,
-    )
-    areas = np.asarray(face_areas(mesh), dtype=float)
-    centroids = np.asarray(face_centroids(mesh), dtype=float)
+    if critical_angle_deg < 0.0:
+        raise ValueError("critical_angle_deg must be non-negative.")
+    face_data = _oriented_face_data(mesh)
+    angles = _overhang_angles_from_normals(face_data.normals, build_dir)
+    downfacing = angles < 90.0
+    risk = angles <= float(critical_angle_deg)
+    areas = face_data.areas
+    centroids = face_data.centroids
     occupancy = source.occupancy(threshold=threshold)
     risky_centroids = centroids[risk] if centroids.size else np.empty((0, 3), dtype=float)
     shadow_field, max_span = _support_shadow_field(

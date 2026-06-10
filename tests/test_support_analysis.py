@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate
+from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, mesh_analysis, simulate
 from dds.analysis.support import _support_shadow_field
 
 
@@ -48,6 +48,23 @@ def test_support_analysis_rejects_non_axis_aligned_direction() -> None:
 
     with pytest.raises(ValueError, match="build_direction"):
         result.analysis.support(build_direction="diagonal", threshold=0.5)  # type: ignore[arg-type]
+
+
+def test_support_analysis_orients_surface_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    result = _cantilever_result()
+    calls = 0
+    original = mesh_analysis._oriented_mesh
+
+    def counted(mesh):
+        nonlocal calls
+        calls += 1
+        return original(mesh)
+
+    monkeypatch.setattr(mesh_analysis, "_oriented_mesh", counted)
+
+    result.analysis.support(build_direction="+Z", threshold=0.5)
+
+    assert calls == 1
 
 
 def test_support_span_uses_longest_contiguous_shadow_run() -> None:

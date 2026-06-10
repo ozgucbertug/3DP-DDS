@@ -2,11 +2,21 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 import numpy.typing as npt
 
 from .geometry.mesh import TriangleMesh, _load_trimesh
 from .utils import EPSILON, normalize_axis
+
+
+@dataclass(frozen=True, slots=True)
+class _OrientedFaceData:
+    mesh: TriangleMesh
+    normals: npt.NDArray[np.float64]
+    areas: npt.NDArray[np.float64]
+    centroids: npt.NDArray[np.float64]
 
 
 def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
@@ -23,35 +33,63 @@ def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
     return TriangleMesh.from_trimesh(tri_mesh, metadata=mesh.metadata)
 
 
-def face_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
-    """Return one outward-facing normal per face."""
+def _oriented_face_data(mesh: TriangleMesh) -> _OrientedFaceData:
+    """Orient a mesh once and derive its reusable per-face geometry."""
 
     oriented = _oriented_mesh(mesh)
     if oriented.is_empty:
-        return np.empty((0, 3), dtype=float)
-    vertices = oriented.vertices
-    triangles = vertices[oriented.faces]
-    normals = np.cross(triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0])
-    lengths = np.linalg.norm(normals, axis=1)
+        return _OrientedFaceData(
+            mesh=oriented,
+            normals=np.empty((0, 3), dtype=float),
+            areas=np.empty((0,), dtype=float),
+            centroids=np.empty((0, 3), dtype=float),
+        )
+
+    triangles = oriented.vertices[oriented.faces]
+    cross = np.cross(
+        triangles[:, 1] - triangles[:, 0],
+        triangles[:, 2] - triangles[:, 0],
+    )
+    lengths = np.linalg.norm(cross, axis=1)
+    normals = np.zeros_like(cross, dtype=float)
     valid = lengths > EPSILON
-    normals[valid] /= lengths[valid, np.newaxis]
-    normals[~valid] = 0.0
-    return normals
+    normals[valid] = cross[valid] / lengths[valid, np.newaxis]
+    return _OrientedFaceData(
+        mesh=oriented,
+        normals=normals,
+        areas=0.5 * lengths,
+        centroids=np.mean(triangles, axis=1),
+    )
+
+
+def _overhang_angles_from_normals(
+    normals: npt.NDArray[np.float64],
+    build_direction: tuple[float, float, float] | npt.ArrayLike,
+) -> npt.NDArray[np.float64]:
+    if normals.size == 0:
+        return np.empty((0,), dtype=float)
+    downward = -np.asarray(normalize_axis(build_direction, "build_direction"), dtype=float)
+    cosine = np.clip(normals @ downward, -1.0, 1.0)
+    return np.degrees(np.arccos(cosine))
+
+
+def face_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
+    """Return one outward-facing normal per face."""
+
+    return _oriented_face_data(mesh).normals
 
 
 def vertex_normals(mesh: TriangleMesh) -> npt.NDArray[np.float64]:
     """Return area-weighted vertex normals."""
 
-    oriented = _oriented_mesh(mesh)
-    if oriented.is_empty:
+    data = _oriented_face_data(mesh)
+    if data.mesh.is_empty:
         return np.empty((0, 3), dtype=float)
-    normals = np.zeros_like(oriented.vertices, dtype=float)
-    face_normal_values = face_normals(oriented)
-    face_area_values = face_areas(oriented)
-    weighted = face_normal_values * face_area_values[:, np.newaxis]
-    np.add.at(normals, oriented.faces[:, 0], weighted)
-    np.add.at(normals, oriented.faces[:, 1], weighted)
-    np.add.at(normals, oriented.faces[:, 2], weighted)
+    normals = np.zeros_like(data.mesh.vertices, dtype=float)
+    weighted = data.normals * data.areas[:, np.newaxis]
+    np.add.at(normals, data.mesh.faces[:, 0], weighted)
+    np.add.at(normals, data.mesh.faces[:, 1], weighted)
+    np.add.at(normals, data.mesh.faces[:, 2], weighted)
     lengths = np.linalg.norm(normals, axis=1)
     valid = lengths > EPSILON
     normals[valid] /= lengths[valid, np.newaxis]
@@ -85,12 +123,10 @@ def overhang_angles(
 ) -> npt.NDArray[np.float64]:
     """Measure face overhang angle relative to the downward build direction."""
 
-    normals = face_normals(mesh)
-    if normals.size == 0:
-        return np.empty((0,), dtype=float)
-    downward = -np.asarray(normalize_axis(build_direction, "build_direction"), dtype=float)
-    cosine = np.clip(normals @ downward, -1.0, 1.0)
-    return np.degrees(np.arccos(cosine))
+    return _overhang_angles_from_normals(
+        _oriented_face_data(mesh).normals,
+        build_direction,
+    )
 
 
 def downfacing_mask(
