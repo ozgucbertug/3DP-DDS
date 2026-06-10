@@ -1,21 +1,69 @@
 # 3DP-DDS
 
-3DP-DDS is a geometry-first deposition simulator for robotic additive
-manufacturing. It represents fabrication paths as point, line, and polyline
-events and samples their bead geometry into a reproducible voxel field that can
-serve as a lightweight digital twin.
+`3DP-DDS` is a Python library for geometry-first deposition simulation on a
+3D voxel grid. The import package is `dds`.
+
+It represents robotic additive-manufacturing paths as point, line, and
+polyline deposition events, samples their bead geometry into reproducible
+dense or chunked fields, and provides headless analysis, mesh conversion,
+persistence, and optional interactive visualization.
 
 The current scope is deposited geometry. Material flow, thermal history,
-curing, robot dynamics, and controller behavior are intentionally outside the
-model.
+curing, robot dynamics, controller behavior, and bead deformation are
+intentionally outside the model.
 
-## Core workflow
+## Contents
+
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Simulation domain](#simulation-domain)
+- [Geometry and deposit primitives](#geometry-and-deposit-primitives)
+- [Simulation workflows](#simulation-workflows)
+- [Chunked fields](#chunked-fields)
+- [Results and analysis](#results-and-analysis)
+- [Persistence](#persistence)
+- [Target workflows and YAML](#target-workflows-and-yaml)
+- [Geometry and mesh API](#geometry-and-mesh-api)
+- [Visualization](#visualization)
+- [Example scripts](#example-scripts)
+- [Package layout](#package-layout)
+- [Design conventions](#design-conventions)
+
+## Installation
+
+3DP-DDS requires Python 3.11 or newer. From a local clone, install the core
+library in editable mode:
+
+```bash
+python -m pip install -e .
+```
+
+The core dependencies are NumPy, SciPy, and Tyro.
+
+### Optional extras
+
+| Extra | Adds | Install |
+| --- | --- | --- |
+| `formats` | YAML target loading through PyYAML | `python -m pip install -e ".[formats]"` |
+| `mesh` | Mesh extraction, I/O, containment, and signed-distance operations | `python -m pip install -e ".[mesh]"` |
+| `viz` | PyVistaQt interactive workbench and mesh dependencies | `python -m pip install -e ".[viz]"` |
+| `all` | All `formats`, `mesh`, and `viz` capabilities | `python -m pip install -e ".[all]"` |
+
+Install several selected extras or all optional runtime capabilities:
+
+```bash
+python -m pip install -e ".[formats,mesh]"
+python -m pip install -e ".[all]"
+```
+
+## Quick start
 
 ```python
 from dds import (
     BeadProfile,
     DepositionMetadata,
     Domain,
+    LineDeposit,
     PointDeposit,
     Pose3D,
     simulate,
@@ -23,66 +71,314 @@ from dds import (
 
 domain = Domain.from_bounds(
     xmin=0.0,
-    xmax=10.0,
+    xmax=20.0,
     ymin=0.0,
-    ymax=10.0,
-    zmin=0.0,
+    ymax=20.0,
+    zmin=-1.0,
     zmax=5.0,
+    voxel_size=0.25,
+    length_unit="mm",
+)
+
+profile = BeadProfile(width=1.2, height=0.6)
+metadata = DepositionMetadata(
+    layer_id=0,
+    user_data={"material_id": "clay"},
+)
+
+deposits = [
+    PointDeposit(
+        target=Pose3D(
+            position=(2.0, 2.0, 0.6),
+            axis=(0.0, 0.0, 1.0),
+        ),
+        profile=profile,
+        metadata=metadata,
+    ),
+    LineDeposit(
+        start=(2.0, 2.0, 0.6),
+        end=(10.0, 2.0, 0.6),
+        profile=profile,
+        metadata=metadata,
+    ),
+]
+
+result = simulate(domain, deposits, threshold=0.5)
+
+density = result.field("max")
+occupancy = result.analysis.occupancy()
+deposition_index = result.analysis.deposition_index_field()
+
+print(domain.grid_shape)
+print(int(occupancy.sum()))
+```
+
+Every deposit requires an explicit `BeadProfile`. Deposit targets are
+top-referenced: a target is the nozzle position or top surface of the bead,
+not its center.
+
+## Simulation domain
+
+`Domain` defines an axis-aligned workspace and the voxel-center lattice used
+for sampling.
+
+```python
+from dds import Domain
+
+# Isotropic voxels.
+domain = Domain.from_bounds(
+    xmin=0.0,
+    xmax=50.0,
+    ymin=0.0,
+    ymax=50.0,
+    zmin=0.0,
+    zmax=10.0,
     voxel_size=0.5,
     length_unit="mm",
 )
 
-profile = BeadProfile(width=1.2, height=0.5)
-deposit = PointDeposit(
-    target=Pose3D(
-        position=(1.0, 2.0, 3.0),
-        axis=(0.0, 0.0, 1.0),
-    ),
-    profile=profile,
-    metadata=DepositionMetadata(
-        layer_id=0,
-        user_data={"material_id": "clay"},
-    ),
+# Anisotropic voxels.
+anisotropic = Domain.from_bounds(
+    xmin=0.0,
+    xmax=50.0,
+    ymin=0.0,
+    ymax=50.0,
+    zmin=0.0,
+    zmax=10.0,
+    voxel_size=(0.5, 0.5, 0.25),
 )
 
-result = simulate(domain, [deposit])
-occupancy = result.analysis.occupancy(threshold=0.5)
-index = result.analysis.sample_deposition_index((1.0, 2.0, 3.0))
-support = result.analysis.support(build_direction="+Z")
+print(domain.grid_shape)
+print(domain.voxel_size)
+print(domain.min_corner)
+print(domain.max_corner)
+
+point = domain.index_to_world((5, 10, 2))
+index = domain.world_to_index(point)
 ```
 
-Every deposit requires an explicit `BeadProfile`. `Domain.length_unit` records
-whether world coordinates are expressed in millimeters or meters; it does not
-perform unit conversion.
+`Domain.from_bounds()` aligns the upper bounds to whole voxels. If a requested
+extent is not divisible by the voxel size, the resulting `max_corner` is
+expanded to the next voxel boundary.
 
-## Deposition primitives
-
-- `Point3D` represents a position; `Vector3D` represents a direction or displacement.
-- `Pose3D` combines a target point and normalized axis defining its target plane.
-- `Line3D` and `Polyline3D` describe finite path geometry without deposition data.
-- `PointDeposit` samples a compact bead at one `Pose3D`.
-- `LineDeposit` sweeps a bead between two poses and interpolates its axis.
-- `PolylineDeposit` represents one ordered, multi-segment fabrication event.
-- `DepositionMetadata` stores an optional `layer_id` and immutable JSON-like
-  `user_data` for research provenance.
-
-`Domain.from_deposits(...)` can infer aligned bounds from explicit bead support:
+A domain can also be fitted around bead support:
 
 ```python
-from dds import BeadProfile, Domain, LineDeposit
+from dds import Domain
 
-deposit = LineDeposit(
-    start=(0.0, 0.0, 1.0),
-    end=(20.0, 0.0, 1.0),
-    profile=BeadProfile(width=1.2, height=0.5),
+fitted_domain = Domain.from_deposits(
+    deposits,
+    voxel_size=0.25,
+    padding="auto",
+    length_unit="mm",
 )
-domain = Domain.from_deposits(deposit, voxel_size=0.25, padding="auto")
 ```
+
+Array indexing follows `(x, y, z)` and NumPy `indexing="ij"` conventions.
+`length_unit` records whether world-space values use millimeters or meters;
+the library does not perform unit conversion.
+
+## Geometry and deposit primitives
+
+The core geometry types separate positions, directions, poses, and paths:
+
+- `Point3D`: a Cartesian position.
+- `Vector3D`: a direction or displacement.
+- `Pose3D`: a target position and normalized bead axis.
+- `Line3D`: a finite line between two points.
+- `Polyline3D`: a connected sequence of points.
+
+Deposition types combine that geometry with bead dimensions and metadata:
+
+- `PointDeposit`: one compact bead at a pose.
+- `LineDeposit`: a bead swept between two poses.
+- `PolylineDeposit`: one ordered, multi-segment deposition event.
+- `DepositionMetadata`: an optional layer ID and immutable JSON-like
+  provenance.
+
+```python
+from dds import (
+    BeadProfile,
+    DepositionMetadata,
+    LineDeposit,
+    PointDeposit,
+    PolylineDeposit,
+    Pose3D,
+)
+
+profile = BeadProfile(width=1.5, height=0.6)
+metadata = DepositionMetadata(
+    layer_id=2,
+    user_data={"pass": "contour", "material_id": "clay"},
+)
+
+# A coordinate triplet is interpreted as a +Z pose.
+point = PointDeposit(
+    target=(5.0, 5.0, 0.6),
+    profile=profile,
+    metadata=metadata,
+)
+
+# Explicit poses support non-vertical deposition axes.
+line = LineDeposit(
+    start=Pose3D(
+        position=(5.0, 5.0, 0.6),
+        axis=(0.0, 0.0, 1.0),
+    ),
+    end=Pose3D(
+        position=(15.0, 5.0, 1.6),
+        axis=(0.1, 0.0, 0.995),
+    ),
+    profile=profile,
+    metadata=metadata,
+)
+
+polyline = PolylineDeposit(
+    poses=(
+        (5.0, 5.0, 0.6),
+        (15.0, 5.0, 0.6),
+        (15.0, 15.0, 0.6),
+    ),
+    profile=profile,
+    metadata=metadata,
+)
+```
+
+Axes are normalized automatically. Antiparallel axes on consecutive line
+endpoints are rejected because their interpolation is ambiguous.
+
+## Simulation workflows
+
+### One-shot simulation
+
+Use `simulate()` when all deposits are already available:
+
+```python
+from dds import simulate
+
+result = simulate(
+    domain,
+    deposits,
+    compositions=("max", "coverage"),
+    threshold=0.5,
+)
+
+geometry = result.field("max")
+coverage = result.field("coverage")
+```
+
+The `"max"` composition is the canonical union-like fabricated geometry used
+for occupancy, surfaces, SDFs, and support analysis.
+
+The optional `"coverage"` composition adds kernel contributions. It is useful
+for locating path overlap, but it is not physical density, mass, volume
+fraction, or material flow.
+
+### Stateful and incremental simulation
+
+Use `Simulator` when deposits arrive over time:
+
+```python
+from dds import Simulator
+
+simulator = Simulator(domain)
+
+for deposit in deposits:
+    simulator.add_deposit(deposit)
+
+result = simulator.result(
+    compositions=("max", "coverage"),
+    threshold=0.5,
+)
+```
+
+Several events can be added at once:
+
+```python
+simulator.add_deposits(next_batch)
+print(len(simulator.deposits))
+```
+
+`Simulator` maintains lazily created dense caches. Once a cache is warm, new
+deposits update it incrementally. `clear_deposits()` resets the simulation
+while reusing existing dense allocations where possible.
+
+Each call to `result()` creates an immutable snapshot. Adding deposits later
+does not mutate snapshots that have already been returned.
+
+### Low-level accumulation
+
+For custom loops that own their arrays, use the helpers in `dds.fields`:
+
+```python
+import numpy as np
+
+from dds.fields import apply_deposit_to_field, apply_deposit_to_index_field
+
+density_grid = np.zeros(domain.grid_shape, dtype=float)
+index_grid = np.full(domain.grid_shape, -1, dtype=np.intp)
+
+for deposit_index, deposit in enumerate(deposits):
+    apply_deposit_to_field(
+        domain,
+        density_grid,
+        deposit,
+        composition="max",
+    )
+    apply_deposit_to_index_field(
+        domain,
+        index_grid,
+        deposit,
+        deposit_index,
+    )
+```
+
+## Chunked fields
+
+`ChunkedField` allocates fixed-size dense chunks only where deposition touches
+the domain. This is useful for large workspaces with spatially localized
+toolpaths.
+
+```python
+from dds.fields import accumulate_chunked_field
+
+chunked = accumulate_chunked_field(
+    domain,
+    deposits,
+    chunk_shape=(32, 32, 32),
+    compositions=("max", "coverage"),
+)
+
+dense_max = chunked.to_dense("max")
+dense_coverage = chunked.to_dense("coverage")
+
+roi = chunked.materialize(
+    "max",
+    index_bounds=((0, 32), (0, 32), (0, 16)),
+)
+
+print(chunked.chunk_count)
+print(chunked.event_count)
+print(chunked.active_voxel_count)
+print(chunked.allocation_fraction)
+print(chunked.memory_ratio)
+```
+
+A chunked field can be converted to a normal immutable result without
+re-running deposition:
+
+```python
+result = chunked.to_result(deposits, threshold=0.5)
+occupancy = result.analysis.occupancy()
+```
+
+Chunked storage is a standalone workflow; `Simulator` owns dense incremental
+caches.
 
 ## Results and analysis
 
-`SimulationResult` is an immutable snapshot. Its NumPy arrays are copied and
-read-only. Derived queries live on the cached `result.analysis` object:
+`SimulationResult` stores immutable copies of the computed fields and deposit
+sequence. Derived operations are cached on `result.analysis`.
 
 ```python
 analysis = result.analysis
@@ -90,133 +386,256 @@ analysis = result.analysis
 density = analysis.density_field()
 occupancy = analysis.occupancy(threshold=0.5)
 deposition_index = analysis.deposition_index_field()
-surface = analysis.surface_mesh(threshold=0.5)
+
+density_at_point = analysis.sample_density_at(
+    (5.0, 5.0, 0.3),
+    interpolation="trilinear",
+)
+deposit_at_point = analysis.sample_deposition_index((5.0, 5.0, 0.3))
+inside = analysis.contains_point(
+    (5.0, 5.0, 0.3),
+    representation="occupancy",
+)
+
+samples = analysis.sample_points(
+    [(5.0, 5.0, 0.3), (10.0, 10.0, 1.0)],
+    fields=("density", "occupancy", "deposition_index", "signed_distance"),
+    interpolation="trilinear",
+)
+```
+
+Grid-derived SDF queries are available from the core installation:
+
+```python
 sdf = analysis.surface_sdf(threshold=0.5)
-layers = analysis.strata(mode="layer")
-interfaces = analysis.interface(mode="layer")
-support = analysis.support(build_direction="+Z")
-```
+distance = analysis.signed_distance_at((5.0, 5.0, 0.3))
+normal = analysis.surface_normal_at((5.0, 5.0, 0.3))
 
-The `"max"` composition is the canonical fabricated geometry. Optional
-`"coverage"` adds kernel contributions and is only an overlap diagnostic:
-
-```python
-result = simulate(
-    domain,
-    [deposit],
-    compositions=("max", "coverage"),
+stats = analysis.subvolume_stats(
+    ((0.0, 0.0, -1.0), (10.0, 10.0, 2.0)),
+    threshold=0.5,
 )
-coverage = result.field("coverage")
 ```
 
-## Incremental and sparse workflows
-
-Use `Simulator` when deposits arrive incrementally:
-
-```python
-from dds import Simulator
-
-simulator = Simulator(domain)
-simulator.add_deposit(deposit)
-result = simulator.result()
-```
-
-For a live view, keep one workbench open and refresh it after each batch:
+Surface extraction and mesh-backed signed-distance queries require the `mesh`
+extra:
 
 ```python
-import dds.viz
-
-workbench = dds.viz.show(simulator)
-simulator.add_deposits(next_batch)
-workbench.refresh(simulator)
-workbench.app.exec()
-```
-
-See `examples/live_simulation.py` for a timer-driven example.
-
-Chunked storage is a separate workflow under `dds.fields`. It allocates only
-requested compositions and defaults to max-only storage:
-
-```python
-from dds.fields import accumulate_chunked_field
-
-chunked = accumulate_chunked_field(
-    domain,
-    [deposit],
-    chunk_shape=(32, 32, 32),
-    compositions=("max",),
+surface = analysis.surface_mesh(threshold=0.5)
+mesh_sdf = analysis.mesh_sdf(threshold=0.5)
+inside_mesh = analysis.contains_point(
+    (5.0, 5.0, 0.3),
+    representation="mesh",
 )
-dense = chunked.to_dense("max")
 ```
 
-Low-level in-place accumulation helpers also live in `dds.fields`.
+Layer, interface, and support analysis are also available:
+
+```python
+strata = analysis.strata(mode="layer", threshold=0.5)
+interfaces = analysis.interface(mode="layer", threshold=0.5)
+support = analysis.support(
+    build_direction="+Z",
+    critical_angle_deg=45.0,
+    threshold=0.5,
+)
+
+print(strata.stratum_ids)
+print(interfaces.contact_area)
+print(support.risk_area)
+```
+
+Layer stratification requires deposits with `metadata.layer_id`. Use
+`mode="order"` to stratify by deposit order instead.
 
 ## Persistence
 
-Result bundles write interoperable arrays and JSON metadata:
+### Result bundle
+
+`SimulationResult.save()` writes interoperable arrays and JSON metadata:
 
 ```python
-result.save("outputs/run_01")
+written = result.save(
+    "outputs/run_01",
+    metadata={"experiment": "wall_01"},
+)
+
+print(written)
 ```
 
-Typed checkpoints preserve the domain, `length_unit`, profiles, metadata,
-deposits, threshold, and computed fields:
+The bundle includes occupancy, deposition index, max density, metadata, and
+coverage when it was requested.
+
+### Typed checkpoint
+
+A checkpoint is a compressed `.npz` round trip containing the domain, deposit
+sequence, bead profiles, metadata, threshold, and computed fields:
+
+```python
+from dds import SimulationResult
+
+path = result.checkpoint("outputs/run_01.npz")
+restored = SimulationResult.load(path)
+
+print(restored.domain.grid_shape)
+print(len(restored.deposits))
+```
+
+The same operations are available from `dds.io`:
 
 ```python
 from dds.io import load_checkpoint, save_checkpoint
 
-path = save_checkpoint("outputs/run_01.npz", result)
+path = save_checkpoint("outputs/run_02.npz", result)
 restored = load_checkpoint(path)
 ```
 
-The checkpoint schema is intentionally pre-release and has no migration layer.
-Loading an older or newer schema raises a clear `ValueError`.
+The checkpoint schema is pre-release and strict. Unsupported schema versions
+raise `ValueError`; there is currently no migration layer.
+
+## Target workflows and YAML
+
+`dds.targets` converts ordered poses into point, line, or polyline deposits.
+`dds.formats.yaml` loads target poses from YAML and requires the `formats`
+extra.
+
+```python
+from dds import BeadProfile, Domain, simulate
+from dds.formats.yaml import load_targets
+from dds.targets import (
+    line_deposits_from_targets,
+    point_deposits_from_targets,
+    toolpath_from_targets,
+)
+
+targets = load_targets("example_wall.yaml")
+profile = BeadProfile(width=18.0, height=12.0)
+
+point_deposits = point_deposits_from_targets(
+    targets,
+    profile=profile,
+    origin_reference="top",
+)
+line_deposits = line_deposits_from_targets(
+    targets,
+    profile=profile,
+    origin_reference="top",
+)
+toolpath = toolpath_from_targets(
+    targets,
+    profile=profile,
+    origin_reference="top",
+)
+
+domain = Domain.from_deposits(
+    point_deposits,
+    voxel_size=1.0,
+    padding="auto",
+)
+result = simulate(domain, point_deposits)
+```
+
+Minimal YAML format:
+
+```yaml
+targets:
+  - index: 0
+    origin: [10.0, 10.0, 0.6]
+    axis: [0.0, 0.0, 1.0]
+  - index: 1
+    origin: [20.0, 10.0, 0.6]
+    axis: [0.0, 0.0, 1.0]
+```
+
+Targets may also use compact plane strings such as
+`O(10,10,0.6) Z(0,0,1)`.
 
 ## Geometry and mesh API
 
-Analytic SDF shapes, Boolean operations, transforms, mesh adapters, and mesh
-metrics are available from `dds.geometry`. Mesh-dependent operations require
-the `mesh` optional dependencies.
+`dds.geometry` provides analytic signed-distance shapes, Boolean operations,
+transforms, mesh conversion, mesh I/O, and mesh metrics. Analytic SDF creation
+and sampling use the core dependencies. SDFs use the convention negative
+inside, positive outside, and zero on the surface.
 
 ```python
 from dds import Domain
-from dds.geometry import mesh_surface_area, sphere
+from dds.geometry import box, difference, sphere
 
-shape = sphere(radius=2.0)
 mesh_domain = Domain.from_bounds(
-    xmin=-3.0,
-    xmax=3.0,
-    ymin=-3.0,
-    ymax=3.0,
-    zmin=-3.0,
-    zmax=3.0,
+    xmin=-5.0,
+    xmax=5.0,
+    ymin=-5.0,
+    ymax=5.0,
+    zmin=-5.0,
+    zmax=5.0,
     voxel_size=0.25,
 )
+
+outer = sphere(radius=3.0)
+hole = box(size=(2.0, 2.0, 8.0))
+shape = difference(outer, hole)
+
+sdf_values = shape.sample(mesh_domain)
 mesh = shape.to_mesh(mesh_domain)
-area = mesh_surface_area(mesh)
 ```
 
-## Formats and targets
+Available shape families include spheres, boxes, cylinders, capsules,
+ellipsoids, toruses, cones, rounded primitives, slabs, planes, and capsule
+chains. Shapes support:
 
-External format adapters are isolated from the root package:
+- Boolean operations: `union`, `intersection`, `difference`.
+- Morphology: `dilate`, `erode`, `shell`.
+- Transforms: `translate`, `scale`, `rotate`, `orient`.
+
+Mesh conversion and I/O require the `mesh` extra:
 
 ```python
-from dds.formats.yaml import load_targets
-from dds.targets import point_deposits_from_targets
+from dds.geometry import (
+    density_to_mesh,
+    density_to_sdf,
+    mesh_surface_area,
+    mesh_to_sdf_field,
+    occupancy_to_mesh,
+    read_mesh,
+    write_mesh,
+)
 
-targets = load_targets("example_wall.yaml")
-deposits = point_deposits_from_targets(targets, profile=profile)
+surface = density_to_mesh(domain, result.field("max"), threshold=0.5)
+write_mesh("outputs/surface.ply", surface)
+
+loaded = read_mesh("outputs/surface.ply")
+sdf_field = mesh_to_sdf_field(domain, loaded)
+surface_area = mesh_surface_area(loaded)
+
+occupancy_surface = occupancy_to_mesh(
+    domain,
+    result.analysis.occupancy(),
+)
+density_sdf = density_to_sdf(
+    domain,
+    result.field("max"),
+    threshold=0.5,
+)
 ```
+
+Signed-distance and containment operations on triangle meshes generally
+require watertight input.
 
 ## Visualization
 
-Visualization is optional and is not imported by `import dds`:
+Install the visualization dependencies:
+
+```bash
+python -m pip install -e ".[viz]"
+```
+
+Visualization is optional and is not imported by `import dds`.
 
 ```python
 import dds.viz
 from dds.viz import ViewConfig
 
-dds.viz.show(
+workbench = dds.viz.show(
     result,
     initial_view=ViewConfig(
         view_mode="surface",
@@ -224,31 +643,126 @@ dds.viz.show(
         build_direction="+Z",
     ),
 )
+workbench.app.exec()
 ```
 
-## Examples
+Available view modes are `"surface"`, `"occupancy"`, and `"density"`.
 
-Examples do not write files unless an output directory is supplied:
+### Live incremental view
+
+Keep one workbench open and refresh it after adding each batch:
+
+```python
+import dds.viz
+from dds import Simulator
+
+simulator = Simulator(domain)
+workbench = dds.viz.show(simulator, threshold=0.5)
+
+simulator.add_deposits(next_batch)
+workbench.refresh(simulator)
+
+workbench.app.exec()
+```
+
+See `examples/live_simulation.py` for a Qt timer-driven example that adds a few
+beads at a time.
+
+## Example scripts
+
+The examples use typed Tyro command-line arguments where applicable:
 
 ```bash
+# Basic point and line simulation.
+python examples/basic_simulation.py
 python examples/basic_simulation.py --help
+python examples/basic_simulation.py --view
+python examples/basic_simulation.py --output-dir outputs/basic
+
+# YAML target workflow.
 python examples/yaml_simulation.py --help
+python examples/yaml_simulation.py --field-composition coverage
+python examples/yaml_simulation.py --view
+
+# Live timer-driven visualization.
+python examples/live_simulation.py
 ```
 
-## Development
+Examples do not write files unless an output directory is supplied.
 
-```bash
-pytest
-ruff check src tests examples
-mypy
+## Package layout
+
+```text
+src/dds/
+├── analysis/
+│   ├── fields.py       Layer summaries
+│   ├── interface.py    Inter-stratum contact and overlap analysis
+│   ├── models.py       Typed analysis result models
+│   ├── simulation.py   Cached SimulationAnalysis query API
+│   ├── strata.py       Layer and deposit-order field partitioning
+│   └── support.py      Overhang and support-shadow analysis
+├── formats/
+│   └── yaml.py         YAML target adapter (optional: formats)
+├── geometry/
+│   ├── adapters.py     Dense-field, SDF, and mesh conversions
+│   ├── mesh.py         Triangle mesh extraction and representation
+│   ├── ops.py          SDF Boolean and morphological operations
+│   ├── sdf.py          SDF3, GridSDF3, and MeshSDF3
+│   ├── shapes.py       Analytic SDF primitives
+│   └── transforms.py   SDF spatial transforms
+├── __init__.py         Core public API
+├── attributes.py       BeadProfile and DepositionMetadata
+├── chunked.py          ChunkedField sparse storage
+├── cli.py              Tyro-backed CLI helper
+├── domain.py           Grid definition and coordinate transforms
+├── fields.py           Dense and low-level accumulation helpers
+├── io.py               Array bundles and typed checkpoints
+├── kernels.py          Private tiled bead-kernel sampling
+├── mesh_analysis.py    Triangle-mesh metrics
+├── occupancy.py        Density threshold helpers
+├── primitives.py       Geometry wrappers and deposition events
+├── results.py          SimulationResult and simulate()
+├── simulator.py        Stateful incremental dense simulation
+├── targets.py          Ordered-pose conversion helpers
+├── types.py            Shared public type aliases
+├── viz.py              Lazy visualization entry point
+└── workbench.py        PyVistaQt workbench (optional: viz)
 ```
 
-The optional workbench test is gated by `DDS_RUN_VIZ_TESTS=1`.
+The root `dds` namespace contains the core deposition and simulation types.
+Specialized capabilities live in `dds.analysis`, `dds.geometry`, `dds.fields`,
+`dds.formats`, `dds.io`, `dds.targets`, and `dds.viz`.
 
-## Design documentation
+## Design conventions
+
+- **Names**: distribution `3dp-dds`, import package `dds`, repository
+  `3DP-DDS`.
+- **Axis order**: arrays use `(x, y, z)` and NumPy `indexing="ij"`.
+- **Top-referenced targets**: a pose marks the bead top along its local axis.
+- **Bead dimensions**: width is the full transverse width; height is the full
+  distance along the local axis.
+- **Units**: world coordinates, bead dimensions, and voxel size use the
+  domain's recorded `length_unit`; no conversion is performed.
+- **Max envelope**: `"max"` is the canonical fabricated geometry.
+- **Coverage**: `"coverage"` is a nonphysical overlap diagnostic that may
+  change with voxel resolution and path segmentation.
+- **SDF sign**: negative inside, positive outside, zero on the surface.
+- **Deposition index**: the 0-based index of the last deposit touching each
+  voxel; untouched voxels contain `-1`.
+- **Snapshot isolation**: results and analysis arrays are copied and read-only.
+- **Optional boundaries**: importing `dds` does not import visualization,
+  format, or mesh dependencies.
+
+For quantitative work, report the domain bounds, `length_unit`, voxel size,
+threshold, bead profile, and path definition. Convergence checks across voxel
+sizes are recommended.
+
+Further documentation:
 
 - [Architecture](docs/architecture.md)
 - [Modeling assumptions](docs/modeling-assumptions.md)
+- [Contributing and development setup](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
 
-The project is pre-release. No package release or stable checkpoint/API
+The project is pre-release. No package release or stable API/checkpoint
 compatibility guarantee has been declared.

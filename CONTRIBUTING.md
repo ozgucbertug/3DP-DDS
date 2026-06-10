@@ -7,13 +7,8 @@ assumptions, and reproducible tests.
 ## Development setup
 
 ```bash
-python -m pip install -e ".[dev,formats,mesh]"
-```
-
-Visualization work additionally requires:
-
-```bash
-python -m pip install -e ".[viz]"
+python -m pip install -e ".[all]"
+python -m pip install "mypy>=1.10" "pytest>=8.0" "pytest-qt>=4.4" "ruff>=0.6"
 ```
 
 ## Validation
