@@ -323,6 +323,30 @@ def test_grid_sdf3_sample_different_domain_falls_back_to_interpolation() -> None
     assert np.all(np.isfinite(different))
 
 
+def test_triangle_mesh_and_grid_sdf_own_read_only_arrays() -> None:
+    vertices = np.asarray([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
+    faces = np.asarray([[0, 1, 2]])
+    mesh = TriangleMesh(vertices=vertices, faces=faces, metadata={"source": "test"})
+    vertices[0, 0] = 9.0
+
+    assert mesh.vertices[0, 0] == pytest.approx(0.0)
+    with pytest.raises(ValueError):
+        mesh.vertices[0, 0] = 2.0
+    with pytest.raises(TypeError):
+        mesh.metadata["source"] = "changed"  # type: ignore[index]
+
+    domain = make_domain()
+    values = np.zeros(domain.grid_shape)
+    sdf = GridSDF3(domain, values)
+    values.fill(1.0)
+
+    assert float(sdf.values.max()) == pytest.approx(0.0)
+    with pytest.raises(ValueError):
+        sdf.values[0, 0, 0] = 1.0
+    with pytest.raises(AttributeError):
+        sdf.values = np.ones(domain.grid_shape)  # type: ignore[misc]
+
+
 def test_occupancy_to_sdf_field_is_negative_inside_positive_outside() -> None:
     domain = Domain.from_bounds(xmin=-5.0, xmax=5.0, ymin=-5.0, ymax=5.0, zmin=-5.0, zmax=5.0, voxel_size=0.5)
     occupancy = np.zeros(domain.grid_shape, dtype=bool)

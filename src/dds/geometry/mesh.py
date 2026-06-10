@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from importlib import import_module
+from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -47,11 +49,11 @@ class TriangleMesh:
 
     vertices: npt.ArrayLike
     faces: npt.ArrayLike
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        vertices = np.asarray(self.vertices, dtype=float)
-        faces = np.asarray(self.faces, dtype=np.int64)
+        vertices = np.array(self.vertices, dtype=float, copy=True)
+        faces = np.array(self.faces, dtype=np.int64, copy=True)
         if vertices.ndim != 2 or vertices.shape[1] != 3:
             raise ValueError("TriangleMesh.vertices must have shape `(n, 3)`.")
         if faces.ndim != 2 or faces.shape[1] != 3:
@@ -60,9 +62,11 @@ class TriangleMesh:
             raise ValueError("TriangleMesh.vertices must contain finite values.")
         if faces.size and (faces.min() < 0 or faces.max() >= len(vertices)):
             raise ValueError("TriangleMesh.faces contain invalid vertex indices.")
+        vertices.setflags(write=False)
+        faces.setflags(write=False)
         object.__setattr__(self, "vertices", vertices)
         object.__setattr__(self, "faces", faces)
-        object.__setattr__(self, "metadata", dict(self.metadata))
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
 
     @classmethod
     def empty(cls, *, metadata: dict[str, Any] | None = None) -> "TriangleMesh":

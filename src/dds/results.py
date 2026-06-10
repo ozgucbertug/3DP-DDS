@@ -59,7 +59,7 @@ class WorkbenchViewConfig:
             )
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class SimulationResult:
     """Reusable simulation outputs and derived geometry/query helpers."""
 
@@ -79,14 +79,14 @@ class SimulationResult:
     )
 
     def __post_init__(self) -> None:
-        self.deposits = tuple(self.deposits)
-        self.density_max = readonly_array(self.density_max, dtype=float)
+        object.__setattr__(self, "deposits", tuple(self.deposits))
+        object.__setattr__(self, "density_max", readonly_array(self.density_max, dtype=float))
         if self.density_max.shape != self.domain.grid_shape:
             raise ValueError(
                 f"density_max shape {self.density_max.shape} does not match domain grid shape {self.domain.grid_shape}."
             )
         if self.coverage is not None:
-            self.coverage = readonly_array(self.coverage, dtype=float)
+            object.__setattr__(self, "coverage", readonly_array(self.coverage, dtype=float))
             if self.coverage.shape != self.domain.grid_shape:
                 raise ValueError(
                     f"coverage shape {self.coverage.shape} does not match domain grid shape {self.domain.grid_shape}."
@@ -97,9 +97,10 @@ class SimulationResult:
             not np.all(np.isfinite(self.coverage)) or np.any(self.coverage < 0.0)
         ):
             raise ValueError("coverage must contain only finite, non-negative values.")
-        self.default_threshold = ensure_finite_scalar(
-            self.default_threshold,
+        object.__setattr__(
+            self,
             "default_threshold",
+            ensure_finite_scalar(self.default_threshold, "default_threshold"),
         )
         if not 0.0 <= self.default_threshold <= 1.0:
             raise ValueError("default_threshold must be between 0 and 1.")
@@ -107,9 +108,13 @@ class SimulationResult:
     def _deposition_index_field(self) -> npt.NDArray[np.intp]:
         if self._deposition_index_cache is None:
             from .fields import accumulate_deposition_index
-            self._deposition_index_cache = readonly_array(
-                accumulate_deposition_index(self.domain, self.deposits),
-                dtype=np.intp,
+            object.__setattr__(
+                self,
+                "_deposition_index_cache",
+                readonly_array(
+                    accumulate_deposition_index(self.domain, self.deposits),
+                    dtype=np.intp,
+                ),
             )
         return self._deposition_index_cache
 
@@ -117,10 +122,14 @@ class SimulationResult:
         """Return the canonical analysis bundle derived from density_max."""
 
         if self._analysis_bundle_cache is None:
-            self._analysis_bundle_cache = AnalysisBundle(
-                self.domain,
-                self.density_max,
-                deposition_index=self._deposition_index_field(),
+            object.__setattr__(
+                self,
+                "_analysis_bundle_cache",
+                AnalysisBundle(
+                    self.domain,
+                    self.density_max,
+                    deposition_index=self._deposition_index_field(),
+                ),
             )
         return self._analysis_bundle_cache
 
@@ -304,7 +313,7 @@ def simulation_result(
             coverage=None,
             default_threshold=threshold,
         )
-        result._analysis_bundle_cache = source
+        object.__setattr__(result, "_analysis_bundle_cache", source)
         return result
     if hasattr(source, "result") and callable(source.result):
         if "compositions" in inspect.signature(source.result).parameters:

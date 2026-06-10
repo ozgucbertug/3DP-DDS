@@ -10,11 +10,12 @@ import numpy.typing as npt
 
 from ..domain import Domain
 from ..geometry.mesh import TriangleMesh
+from ..utils import readonly_array
 
 StratificationMode = Literal["layer", "order"]
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class StratumFieldSet:
     """Max-density and occupancy fields partitioned by layer or deposit order."""
 
@@ -27,6 +28,17 @@ class StratumFieldSet:
     label_field: npt.NDArray[np.float64]
 
     def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "density_max_fields",
+            tuple(readonly_array(field, dtype=float) for field in self.density_max_fields),
+        )
+        object.__setattr__(
+            self,
+            "occupancy_fields",
+            tuple(readonly_array(field, dtype=bool) for field in self.occupancy_fields),
+        )
+        object.__setattr__(self, "label_field", readonly_array(self.label_field, dtype=float))
         if len(self.stratum_ids) != len(self.density_max_fields) or len(self.stratum_ids) != len(self.occupancy_fields):
             raise ValueError("stratum_ids, density_max_fields, and occupancy_fields must have the same length.")
         expected_shape = self.domain.grid_shape
@@ -52,7 +64,7 @@ class StratumFieldSet:
         return self.occupancy_fields[self.stratum_index(stratum_id)]
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class InterfacePairSummary:
     """Summary metrics for one adjacent layer or ordered-deposit pair."""
 
@@ -64,7 +76,7 @@ class InterfacePairSummary:
     overlap_fraction: float
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class InterfaceAnalysis:
     """Typed interface/contact analysis result."""
 
@@ -79,8 +91,18 @@ class InterfaceAnalysis:
     overlap_fraction: float
     pair_summaries: tuple[InterfacePairSummary, ...]
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "contact_mask", readonly_array(self.contact_mask, dtype=bool))
+        object.__setattr__(self, "overlap_mask", readonly_array(self.overlap_mask, dtype=bool))
+        object.__setattr__(
+            self,
+            "unsupported_next_mask",
+            readonly_array(self.unsupported_next_mask, dtype=bool),
+        )
+        object.__setattr__(self, "pair_summaries", tuple(self.pair_summaries))
 
-@dataclass(slots=True)
+
+@dataclass(slots=True, frozen=True)
 class SupportAnalysis:
     """Typed support and overhang analysis result."""
 
@@ -97,3 +119,17 @@ class SupportAnalysis:
     shadow_volume: float
     max_unsupported_span: float
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "overhang_angles", readonly_array(self.overhang_angles, dtype=float))
+        object.__setattr__(self, "downfacing_mask", readonly_array(self.downfacing_mask, dtype=bool))
+        object.__setattr__(
+            self,
+            "support_risk_mask",
+            readonly_array(self.support_risk_mask, dtype=bool),
+        )
+        object.__setattr__(self, "face_areas", readonly_array(self.face_areas, dtype=float))
+        object.__setattr__(
+            self,
+            "support_shadow_field",
+            readonly_array(self.support_shadow_field, dtype=float),
+        )

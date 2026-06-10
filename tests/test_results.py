@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, Simulator, simulate
+from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, SimulationResult, Simulator, simulate
 from dds.results import simulation_result
 
 
@@ -98,3 +100,20 @@ def test_simulation_result_from_simulator_requests_coverage() -> None:
     assert result.coverage is not None
     assert result.coverage.shape == domain.grid_shape
     assert np.all(result.coverage >= result.density_max)
+
+
+def test_simulation_result_is_an_immutable_snapshot() -> None:
+    density = np.zeros(make_domain().grid_shape, dtype=float)
+    result = SimulationResult(
+        domain=make_domain(),
+        deposits=(),
+        density_max=density,
+    )
+    result.analysis_bundle()
+    density.fill(1.0)
+
+    assert float(result.density_max.max()) == pytest.approx(0.0)
+    with pytest.raises(ValueError):
+        result.density_max[0, 0, 0] = 1.0
+    with pytest.raises(FrozenInstanceError):
+        result.density_max = np.ones(result.domain.grid_shape)

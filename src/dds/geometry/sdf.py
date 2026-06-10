@@ -156,15 +156,28 @@ class GridSDF3(SDF3):
         fill_value: float | None = None,
         name: str = "grid_sdf",
     ) -> None:
-        self.domain = domain
-        self.values = np.asarray(values, dtype=float)
-        if self.values.shape != domain.grid_shape:
+        self._domain = domain
+        self._values = np.array(values, dtype=float, copy=True)
+        if self._values.shape != domain.grid_shape:
             raise ValueError(
-                f"GridSDF3 values shape {self.values.shape} does not match domain shape {domain.grid_shape}."
+                f"GridSDF3 values shape {self._values.shape} does not match domain shape {domain.grid_shape}."
             )
-        self.fill_value = fill_value if fill_value is not None else self._default_fill_value()
+        self._values.setflags(write=False)
+        self._fill_value = fill_value if fill_value is not None else self._default_fill_value()
         self._interpolator: Any | None = None
         super().__init__(self._evaluate_grid, name=name)
+
+    @property
+    def domain(self) -> Domain:
+        return self._domain
+
+    @property
+    def values(self) -> npt.NDArray[np.float64]:
+        return self._values
+
+    @property
+    def fill_value(self) -> float:
+        return float(self._fill_value)
 
     def _default_fill_value(self) -> float:
         if self.values.size == 0:

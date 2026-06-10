@@ -94,7 +94,7 @@ def _resolve_bundle(source: Any) -> "AnalysisBundle":
     raise TypeError("Expected an AnalysisBundle or an object exposing analysis_bundle().")
 
 
-@dataclass(slots=True)
+@dataclass(slots=True, frozen=True)
 class AnalysisBundle:
     """Cached query state derived from a dense density field."""
 
@@ -111,7 +111,7 @@ class AnalysisBundle:
     )
 
     def __post_init__(self) -> None:
-        self.density = readonly_array(self.density, dtype=float)
+        object.__setattr__(self, "density", readonly_array(self.density, dtype=float))
         if self.density.shape != self.domain.grid_shape:
             raise ValueError(
                 f"density shape {self.density.shape} does not match domain grid shape {self.domain.grid_shape}."
@@ -126,15 +126,19 @@ class AnalysisBundle:
                     "deposition_index shape "
                     f"{deposition_index.shape} does not match domain grid shape {self.domain.grid_shape}."
                 )
-            self.deposition_index = deposition_index
+            object.__setattr__(self, "deposition_index", deposition_index)
 
     def density_field(self, *, normalize: bool = False) -> npt.NDArray[np.float64]:
         if not normalize:
             return self.density
         if self._normalized_density is None:
-            self._normalized_density = readonly_array(
-                normalize_field(self.density),
-                dtype=float,
+            object.__setattr__(
+                self,
+                "_normalized_density",
+                readonly_array(
+                    normalize_field(self.density),
+                    dtype=float,
+                ),
             )
         return self._normalized_density
 
