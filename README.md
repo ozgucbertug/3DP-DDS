@@ -17,6 +17,7 @@ from dds import (
     DepositionMetadata,
     Domain,
     PointDeposit,
+    Pose3D,
     simulate,
 )
 
@@ -33,9 +34,10 @@ domain = Domain.from_bounds(
 
 profile = BeadProfile(width=1.2, height=0.5)
 deposit = PointDeposit(
-    x=1.0,
-    y=2.0,
-    z=3.0,
+    target=Pose3D(
+        position=(1.0, 2.0, 3.0),
+        axis=(0.0, 0.0, 1.0),
+    ),
     profile=profile,
     metadata=DepositionMetadata(
         layer_id=0,
@@ -55,6 +57,9 @@ perform unit conversion.
 
 ## Deposition primitives
 
+- `Point3D` represents a position; `Vector3D` represents a direction or displacement.
+- `Pose3D` combines a target point and normalized axis defining its target plane.
+- `Line3D` and `Polyline3D` describe finite path geometry without deposition data.
 - `PointDeposit` samples a compact bead at one `Pose3D`.
 - `LineDeposit` sweeps a bead between two poses and interpolates its axis.
 - `PolylineDeposit` represents one ordered, multi-segment fabrication event.

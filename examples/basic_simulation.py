@@ -34,9 +34,7 @@ def build_example_deposits() -> list[PointDeposit | LineDeposit]:
     metadata = DepositionMetadata(layer_id=0)
     return [
         PointDeposit(
-            x=2.25,
-            y=2.25,
-            z=0.55,
+            target=(2.25, 2.25, 0.55),
             profile=profile,
             metadata=metadata,
         ),
