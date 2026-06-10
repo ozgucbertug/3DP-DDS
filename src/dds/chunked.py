@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain, IndexBounds
-from .kernels import SampledKernel, TileShape, validate_tile_shape
+from .kernels import SampledKernel, TileShape, iter_deposit_kernels, validate_tile_shape
+from .primitives import DepositInput, iter_deposits
 from .types import FieldComposition
 
 ChunkIndex = tuple[int, int, int]
@@ -322,3 +324,42 @@ class ChunkedField:
             return chunk.maximum
         assert chunk.coverage is not None
         return chunk.coverage
+
+
+# ---------------------------------------------------------------------------
+# Module-level factory — previously lived in fields.py
+# ---------------------------------------------------------------------------
+
+def accumulate_chunked_field(
+    domain: Domain,
+    deposits: Iterable[DepositInput] | DepositInput,
+    *,
+    chunk_shape: Sequence[int] = (32, 32, 32),
+    compositions: tuple[FieldComposition, ...] = ("max",),
+) -> ChunkedField:
+    """Build a chunked field without allocating full-domain dense arrays.
+
+    Parameters
+    ----------
+    domain:
+        Simulation domain.
+    deposits:
+        One or more deposit primitives or sequences thereof.
+    """
+
+    chunked = ChunkedField(
+        domain,
+        chunk_shape=validate_tile_shape(chunk_shape),
+        compositions=compositions,
+    )
+    for deposit in iter_deposits(deposits):
+        hit = False
+        for sampled in iter_deposit_kernels(
+            domain,
+            deposit,
+            tile_shape=chunked.chunk_shape,
+        ):
+            hit = chunked.add_kernel(sampled) or hit
+        if hit:
+            chunked.record_event()
+    return chunked

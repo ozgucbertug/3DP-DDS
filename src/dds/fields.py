@@ -2,20 +2,53 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain
-from .kernels import iter_deposit_kernels, validate_tile_shape
+from .kernels import SampledKernel, iter_deposit_kernels
 from .primitives import Deposit, DepositInput, iter_deposits
 from .types import FieldComposition
 
 if TYPE_CHECKING:
-    from .chunked import ChunkedField
+    pass
 
+
+# ---------------------------------------------------------------------------
+# Private kernel application helpers — shared by all accumulation functions.
+# ---------------------------------------------------------------------------
+
+def _apply_kernel_to_field(
+    fields: dict[FieldComposition, npt.NDArray[np.float64]],
+    sampled: SampledKernel,
+) -> None:
+    """Apply one sampled kernel tile to every requested composition in *fields*."""
+    if "max" in fields:
+        np.maximum(
+            fields["max"][sampled.slices],
+            sampled.values,
+            out=fields["max"][sampled.slices],
+        )
+    if "coverage" in fields:
+        fields["coverage"][sampled.slices] += sampled.values
+
+
+def _apply_kernel_to_index_field(
+    index_field: npt.NDArray[np.intp],
+    sampled: SampledKernel,
+    deposit_index: int,
+) -> None:
+    """Write *deposit_index* to every voxel in *index_field* touched by *sampled*."""
+    touched = sampled.values > 0.0
+    index_field[sampled.slices][touched] = deposit_index
+
+
+# ---------------------------------------------------------------------------
+# Public accumulation API
+# ---------------------------------------------------------------------------
 
 def accumulate_fields(
     domain: Domain,
@@ -38,14 +71,7 @@ def accumulate_fields(
     }
     for deposit in iter_deposits(deposits):
         for sampled in iter_deposit_kernels(domain, deposit):
-            if "max" in fields:
-                np.maximum(
-                    fields["max"][sampled.slices],
-                    sampled.values,
-                    out=fields["max"][sampled.slices],
-                )
-            if "coverage" in fields:
-                fields["coverage"][sampled.slices] += sampled.values
+            _apply_kernel_to_field(fields, sampled)
     return fields
 
 
@@ -73,8 +99,7 @@ def accumulate_deposition_index(
     index_field = np.full(domain.grid_shape, -1, dtype=np.intp)
     for deposit_index, deposit in enumerate(iter_deposits(deposits)):
         for sampled in iter_deposit_kernels(domain, deposit):
-            touched = sampled.values > 0.0
-            index_field[sampled.slices][touched] = deposit_index
+            _apply_kernel_to_index_field(index_field, sampled, deposit_index)
     return index_field
 
 
@@ -106,13 +131,12 @@ def apply_deposit_to_field(
 
     if composition not in {"max", "coverage"}:
         raise ValueError("composition must be 'max' or 'coverage'.")
+    # Wrap the caller's grid in the shared dict form so _apply_kernel_to_field can be reused.
+    fields: dict[FieldComposition, npt.NDArray[np.float64]] = {composition: grid}
     hit = False
     for sampled in iter_deposit_kernels(domain, deposit):
         hit = True
-        if composition == "coverage":
-            grid[sampled.slices] += sampled.values
-        elif composition == "max":
-            np.maximum(grid[sampled.slices], sampled.values, out=grid[sampled.slices])
+        _apply_kernel_to_field(fields, sampled)
     return hit
 
 
@@ -142,43 +166,9 @@ def apply_deposit_to_index_field(
     hit = False
     for sampled in iter_deposit_kernels(domain, deposit):
         hit = True
-        touched = sampled.values > 0.0
-        index_field[sampled.slices][touched] = deposit_index
+        _apply_kernel_to_index_field(index_field, sampled, deposit_index)
     return hit
 
 
-def accumulate_chunked_field(
-    domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
-    *,
-    chunk_shape: Sequence[int] = (32, 32, 32),
-    compositions: tuple[FieldComposition, ...] = ("max",),
-) -> "ChunkedField":
-    """Build a chunked field without allocating full-domain dense arrays.
-
-    Parameters
-    ----------
-    domain:
-        Simulation domain.
-    deposits:
-        One or more deposit primitives or sequences thereof.
-    """
-
-    from .chunked import ChunkedField
-
-    chunked = ChunkedField(
-        domain,
-        chunk_shape=validate_tile_shape(chunk_shape),
-        compositions=compositions,
-    )
-    for deposit in iter_deposits(deposits):
-        hit = False
-        for sampled in iter_deposit_kernels(
-            domain,
-            deposit,
-            tile_shape=chunked.chunk_shape,
-        ):
-            hit = chunked.add_kernel(sampled) or hit
-        if hit:
-            chunked.record_event()
-    return chunked
+# Re-exported for backward compatibility — implementation lives in chunked.py.
+from .chunked import accumulate_chunked_field as accumulate_chunked_field  # noqa: E402
