@@ -57,7 +57,8 @@ def test_analysis_bundle_queries_cover_density_occupancy_sdf_and_points() -> Non
     assert contains_point(simulator, inside, representation="occupancy", threshold=0.5)
     assert contains_point(bundle, inside, representation="density", threshold=0.5, interpolation="trilinear")
     assert contains_point(bundle, inside, representation="sdf", threshold=0.5)
-    assert contains_point(bundle, inside, representation="mesh", threshold=0.5)
+    with pytest.raises(ValueError, match="not watertight"):
+        contains_point(bundle, inside, representation="mesh", threshold=0.5)
     assert not contains_point(bundle, outside, representation="occupancy", threshold=0.5)
     assert signed_distance_at(bundle, inside, threshold=0.5) <= 0.0
     assert signed_distance_at(bundle, outside, threshold=0.5) > 0.0
@@ -66,7 +67,7 @@ def test_analysis_bundle_queries_cover_density_occupancy_sdf_and_points() -> Non
         outside,
         interpolation="nearest",
     )
-    assert sample_deposition_index_at(bundle, inside, interpolation="trilinear") > 0.0
+    assert sample_deposition_index_at(bundle, inside) == 1
 
     sampled = sample_points(
         bundle,
@@ -83,6 +84,25 @@ def test_analysis_bundle_queries_cover_density_occupancy_sdf_and_points() -> Non
     normal = surface_normal_at(bundle, (6.75, 2.25, 0.25), threshold=0.5)
     assert np.isclose(np.linalg.norm(normal), 1.0, atol=0.2)
     assert normal[0] > 0.0
+
+
+def test_deposition_index_sampling_is_nearest_only_and_integer() -> None:
+    domain = Domain.from_bounds(
+        xmin=0.0, xmax=4.0, ymin=0.0, ymax=4.0, zmin=0.0, zmax=4.0, voxel_size=1.0
+    )
+    deposition_index = np.full(domain.grid_shape, -1, dtype=np.intp)
+    deposition_index[1, 1, 1] = 0
+    deposition_index[2, 1, 1] = 1
+    bundle = AnalysisBundle(
+        domain,
+        np.zeros(domain.grid_shape),
+        deposition_index=deposition_index,
+    )
+
+    value = bundle.sample_deposition_index_at((2.0, 1.5, 1.5))
+
+    assert value == 1
+    assert isinstance(value, int)
 
 
 def test_analysis_bundle_cache_invalidates_after_deposit_changes() -> None:

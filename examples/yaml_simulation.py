@@ -97,15 +97,10 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         print(f"Unsupported next voxels: {int(interface_analysis.unsupported_next_mask.sum())}")
 
     if config.analysis in {"support", "all"}:
-        build_direction = {
-            "+X": (1.0, 0.0, 0.0),
-            "-X": (-1.0, 0.0, 0.0),
-            "+Y": (0.0, 1.0, 0.0),
-            "-Y": (0.0, -1.0, 0.0),
-            "+Z": (0.0, 0.0, 1.0),
-            "-Z": (0.0, 0.0, -1.0),
-        }[config.build_direction]
-        support_analysis = result.support(build_direction=build_direction, threshold=config.threshold)
+        support_analysis = result.support(
+            build_direction=config.build_direction,
+            threshold=config.threshold,
+        )
         print(f"Support build direction: {config.build_direction}")
         print(f"Downfacing area: {support_analysis.downfacing_area:.4f}")
         print(f"Risk area: {support_analysis.risk_area:.4f}")

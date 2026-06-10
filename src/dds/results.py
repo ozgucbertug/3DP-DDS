@@ -26,6 +26,7 @@ from .analysis import (
 from .analysis import (
     support as build_support,
 )
+from .analysis.support import BuildDirection
 from .domain import Domain
 from .fields import accumulate_fields
 from .io import save_array, save_simulation_bundle
@@ -71,7 +72,7 @@ class SimulationResult:
     _deposition_index_cache: npt.NDArray[np.intp] | None = field(default=None, init=False, repr=False)
     _strata_cache: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict, init=False, repr=False)
     _interface_cache: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict, init=False, repr=False)
-    _support_cache: dict[tuple[tuple[float, float, float], float, float], SupportAnalysis] = field(
+    _support_cache: dict[tuple[BuildDirection, float, float], SupportAnalysis] = field(
         default_factory=dict,
         init=False,
         repr=False,
@@ -176,20 +177,19 @@ class SimulationResult:
     def support(
         self,
         *,
-        build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+        build_direction: BuildDirection = "+Z",
         critical_angle_deg: float = 45.0,
         threshold: float | None = None,
     ) -> SupportAnalysis:
         """Return mesh-first support and overhang metrics for the max-based geometry."""
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
-        build_dir = tuple(float(value) for value in np.asarray(build_direction, dtype=float).reshape(3))
-        key = (build_dir, float(critical_angle_deg), threshold_value)
+        key = (build_direction, float(critical_angle_deg), threshold_value)
         cached = self._support_cache.get(key)
         if cached is None:
             cached = build_support(
                 self,
-                build_direction=build_dir,
+                build_direction=build_direction,
                 critical_angle_deg=critical_angle_deg,
                 threshold=threshold_value,
             )

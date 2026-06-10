@@ -172,5 +172,5 @@ targets:
         )
     )
 
-    support = result.support(build_direction=(0.0, 0.0, 1.0), threshold=0.5)
+    support = result.support(build_direction="+Z", threshold=0.5)
     assert support.support_shadow_field.shape == result.domain.grid_shape

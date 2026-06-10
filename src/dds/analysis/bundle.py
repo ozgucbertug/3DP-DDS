@@ -218,12 +218,12 @@ class AnalysisBundle:
 
             mesh = self.surface_mesh(threshold=threshold, normalize=normalize, step_size=step_size)
             if mesh.is_empty:
-                self._mesh_sdf_cache[key] = None
-            else:
-                try:
-                    self._mesh_sdf_cache[key] = MeshSDF3(mesh, require_watertight=True, name="analysis_surface_mesh")
-                except Exception:
-                    self._mesh_sdf_cache[key] = None
+                raise ValueError("Cannot construct a mesh SDF from an empty analysis surface.")
+            self._mesh_sdf_cache[key] = MeshSDF3(
+                mesh,
+                require_watertight=True,
+                name="analysis_surface_mesh",
+            )
         return self._mesh_sdf_cache[key]
 
     def sample_density_at(
@@ -246,19 +246,15 @@ class AnalysisBundle:
     def sample_deposition_index_at(
         self,
         point: tuple[float, float, float] | npt.ArrayLike,
-        *,
-        interpolation: InterpolationMode = "nearest",
-    ) -> float:
+    ) -> int:
         points, _single = _coerce_points(point)
-        index_grid = self.deposition_index_field().astype(float, copy=False)
-        values = _sample_scalar_field(
+        values = _sample_nearest(
             self.domain,
-            index_grid,
+            self.deposition_index_field(),
             points,
-            interpolation=interpolation,
-            fill_value=-1.0,
+            fill_value=-1,
         )
-        return float(values[0])
+        return int(values[0])
 
     def signed_distance_at(
         self,
@@ -274,8 +270,6 @@ class AnalysisBundle:
             sdf = self.surface_sdf(threshold=threshold, normalize=normalize)
         elif source == "mesh":
             sdf = self.mesh_sdf(threshold=threshold, normalize=normalize, step_size=step_size)
-            if sdf is None:
-                sdf = self.surface_sdf(threshold=threshold, normalize=normalize)
         else:
             raise ValueError("source must be 'surface_sdf' or 'mesh'.")
         return float(sdf(points)[0])
@@ -293,8 +287,6 @@ class AnalysisBundle:
         sdf = self.surface_sdf(threshold=threshold, normalize=normalize) if source == "surface_sdf" else None
         if source == "mesh":
             sdf = self.mesh_sdf(threshold=threshold, normalize=normalize, step_size=step_size)
-            if sdf is None:
-                sdf = self.surface_sdf(threshold=threshold, normalize=normalize)
         if sdf is None:
             raise ValueError("source must be 'surface_sdf' or 'mesh'.")
 
@@ -368,13 +360,11 @@ class AnalysisBundle:
                     fill_value=0.0,
                 )
             elif field_name == "deposition_index":
-                index_grid = self.deposition_index_field().astype(float, copy=False)
-                result[field_name] = _sample_scalar_field(
+                result[field_name] = _sample_nearest(
                     self.domain,
-                    index_grid,
+                    self.deposition_index_field(),
                     samples,
-                    interpolation=interpolation,
-                    fill_value=-1.0,
+                    fill_value=-1,
                 )
             elif field_name == "occupancy":
                 density_samples = _sample_scalar_field(
@@ -506,7 +496,7 @@ def sample_deposition_index_at(
     source: Any,
     point: tuple[float, float, float] | npt.ArrayLike,
     **kwargs: Any,
-) -> float:
+) -> int:
     return _resolve_bundle(source).sample_deposition_index_at(point, **kwargs)
 
 

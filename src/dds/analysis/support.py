@@ -2,13 +2,23 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
 
 from ..mesh_analysis import downfacing_mask, face_areas, face_centroids, overhang_angles, support_risk_mask
 from .models import SupportAnalysis
+
+BuildDirection = Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
+_BUILD_DIRECTIONS: dict[BuildDirection, tuple[float, float, float]] = {
+    "+X": (1.0, 0.0, 0.0),
+    "-X": (-1.0, 0.0, 0.0),
+    "+Y": (0.0, 1.0, 0.0),
+    "-Y": (0.0, -1.0, 0.0),
+    "+Z": (0.0, 0.0, 1.0),
+    "-Z": (0.0, 0.0, -1.0),
+}
 
 
 def _resolve_result(source: Any, *, threshold: float) -> Any:
@@ -18,13 +28,23 @@ def _resolve_result(source: Any, *, threshold: float) -> Any:
 
 
 def _axis_aligned_projection_axis(
-    build_direction: tuple[float, float, float] | npt.ArrayLike,
+    build_direction: BuildDirection,
 ) -> tuple[int, int]:
-    vector = np.asarray(build_direction, dtype=float).reshape(3)
+    vector = np.asarray(_BUILD_DIRECTIONS[build_direction], dtype=float)
     axis = int(np.argmax(np.abs(vector)))
-    if not np.isclose(abs(vector[axis]), 1.0, atol=1e-6) or not np.allclose(np.delete(vector, axis), 0.0, atol=1e-6):
-        raise ValueError("support shadow is currently defined only for axis-aligned build directions.")
     return axis, int(np.sign(vector[axis]) or 1)
+
+
+def _longest_true_run(values: npt.NDArray[np.bool_]) -> int:
+    padded = np.pad(values, ((0, 0), (1, 1)), constant_values=False)
+    transitions = np.diff(padded.astype(np.int8), axis=1)
+    longest = 0
+    for row in transitions:
+        starts = np.flatnonzero(row == 1)
+        stops = np.flatnonzero(row == -1)
+        if starts.size:
+            longest = max(longest, int(np.max(stops - starts)))
+    return longest
 
 
 def _support_shadow_field(
@@ -32,7 +52,7 @@ def _support_shadow_field(
     centroids: npt.NDArray[np.float64],
     *,
     domain: Any,
-    build_direction: tuple[float, float, float],
+    build_direction: BuildDirection,
 ) -> tuple[npt.NDArray[np.float64], float]:
     shadow = np.zeros(occupancy.shape, dtype=float)
     if centroids.size == 0:
@@ -78,9 +98,9 @@ def _support_shadow_field(
     shadow = np.moveaxis(shd, -1, axis).astype(float)
 
     # max_span: maximum per-column shadow depth.
-    shadow_bool = shadow.astype(bool)
-    column_counts = shadow_bool.sum(axis=axis)
-    max_span = float(column_counts.max()) * voxel_step if shadow_bool.any() else 0.0
+    shadow_bool = np.moveaxis(shadow.astype(bool), axis, -1)
+    columns = shadow_bool.reshape(-1, shadow_bool.shape[-1])
+    max_span = float(_longest_true_run(columns)) * voxel_step
 
     return shadow, max_span
 
@@ -88,14 +108,16 @@ def _support_shadow_field(
 def support(
     source: Any,
     *,
-    build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+    build_direction: BuildDirection = "+Z",
     critical_angle_deg: float = 45.0,
     threshold: float = 0.5,
 ) -> SupportAnalysis:
     """Return typed support and overhang metrics for the max-based geometry."""
 
     result = _resolve_result(source, threshold=threshold)
-    build_dir = tuple(float(value) for value in np.asarray(build_direction, dtype=float).reshape(3))
+    if build_direction not in _BUILD_DIRECTIONS:
+        raise ValueError(f"build_direction must be one of {sorted(_BUILD_DIRECTIONS)}.")
+    build_dir = _BUILD_DIRECTIONS[build_direction]
     mesh = result.surface_mesh(threshold=threshold)
     angles = np.asarray(overhang_angles(mesh, build_direction=build_dir), dtype=float)
     downfacing = np.asarray(downfacing_mask(mesh, build_direction=build_dir), dtype=bool)
@@ -111,7 +133,7 @@ def support(
         occupancy,
         risky_centroids,
         domain=result.domain,
-        build_direction=build_dir,
+        build_direction=build_direction,
     )
     shadow_voxel_count = int(np.count_nonzero(shadow_field))
     shadow_volume = shadow_voxel_count * float(np.prod(result.domain.voxel_size))

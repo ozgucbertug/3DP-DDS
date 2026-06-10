@@ -274,7 +274,7 @@ class Simulator:
     def query_deposition_index(
         self,
         point: tuple[float, float, float],
-    ) -> float:
+    ) -> int:
         """Query the per-voxel last-deposit index at a point (0-based; -1 = untouched)."""
 
         return self.sample_deposition_index_at(point)
@@ -318,15 +318,10 @@ class Simulator:
     def sample_deposition_index_at(
         self,
         point: tuple[float, float, float],
-        *,
-        interpolation: str = "nearest",
-    ) -> float:
+    ) -> int:
         """Sample deposition index at a world-space point (0-based; -1 = untouched)."""
 
-        return self.analysis_bundle().sample_deposition_index_at(
-            point,
-            interpolation=interpolation,
-        )
+        return self.analysis_bundle().sample_deposition_index_at(point)
 
     def signed_distance_at(
         self,

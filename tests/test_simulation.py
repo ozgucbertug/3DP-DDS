@@ -20,6 +20,7 @@ from dds import (
     apply_deposit_to_index_field,
     simulate,
 )
+from dds.analysis import summarize_layers
 
 
 def make_domain() -> Domain:
@@ -555,3 +556,21 @@ def test_apply_deposit_to_index_field_marks_touched_voxels() -> None:
     assert hit is True
     assert int(index_field.max()) == 7
     assert int(index_field[4, 4, 4]) == 7
+
+
+def test_summarize_layers_handles_polyline_deposits() -> None:
+    deposit = PolylineDeposit(
+        poses=(
+            Pose3D((0.0, 0.0, 0.0)),
+            Pose3D((1.0, 0.0, 0.0)),
+            Pose3D((1.0, 1.0, 0.0)),
+        ),
+        profile=make_profile(),
+        metadata=DepositionMetadata(layer_id=2),
+    )
+
+    summary = summarize_layers([deposit])[2]
+
+    assert summary["deposit_count"] == 1
+    assert summary["polyline_deposits"] == 1
+    assert summary["total_line_length"] == pytest.approx(2.0)

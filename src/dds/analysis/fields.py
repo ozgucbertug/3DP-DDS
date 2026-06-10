@@ -8,7 +8,7 @@ from collections.abc import Iterable
 import numpy as np
 import numpy.typing as npt
 
-from ..primitives import LineDeposit, PointDeposit, iter_deposits
+from ..primitives import LineDeposit, PointDeposit, PolylineDeposit, iter_deposits
 
 
 def normalize_field(field: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -24,7 +24,7 @@ def normalize_field(field: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
 
 
 def summarize_layers(
-    deposits: Iterable[PointDeposit | LineDeposit],
+    deposits: Iterable[PointDeposit | LineDeposit | PolylineDeposit],
 ) -> dict[int | None, dict[str, float | int]]:
     """Return a lightweight per-layer deposit summary."""
 
@@ -33,6 +33,7 @@ def summarize_layers(
             "deposit_count": 0,
             "point_deposits": 0,
             "line_deposits": 0,
+            "polyline_deposits": 0,
             "total_line_length": 0.0,
         }
     )
@@ -41,7 +42,12 @@ def summarize_layers(
         summary[layer_id]["deposit_count"] += 1
         if isinstance(deposit, PointDeposit):
             summary[layer_id]["point_deposits"] += 1
-        else:
+        elif isinstance(deposit, LineDeposit):
             summary[layer_id]["line_deposits"] += 1
             summary[layer_id]["total_line_length"] += deposit.segment.length
+        else:
+            summary[layer_id]["polyline_deposits"] += 1
+            summary[layer_id]["total_line_length"] += sum(
+                segment.segment.length for segment in deposit.segments()
+            )
     return dict(summary)

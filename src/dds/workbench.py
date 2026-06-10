@@ -599,7 +599,10 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _apply_overhang_surface_coloring(self, mesh: Any, dataset: Any) -> Any:
         dataset.cell_data["overhang_angle_deg"] = np.asarray(
-            self.result.support(build_direction=self.build_direction, threshold=self.threshold).overhang_angles,
+            self.result.support(
+                build_direction=self._build_direction_label(),
+                threshold=self.threshold,
+            ).overhang_angles,
             dtype=float,
         )
         dataset.set_active_scalars("overhang_angle_deg")
@@ -1239,7 +1242,10 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         )
 
     def _refresh_support_status(self) -> None:
-        stats = self.result.support(build_direction=self.build_direction, threshold=self.threshold)
+        stats = self.result.support(
+            build_direction=self._build_direction_label(),
+            threshold=self.threshold,
+        )
         self.support_status.setPlainText(self._format_support_text(stats))
 
     def _marker_radius(self) -> float:
@@ -1254,7 +1260,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "voxel_index": domain.world_to_index(coordinates, clip=True) if domain.contains_point(coordinates) else None,
             "occupied": self.bundle.contains_point(coordinates, representation="occupancy", threshold=self.threshold),
             "density": self.bundle.sample_density_at(coordinates, interpolation="trilinear"),
-            "deposition_index": self.bundle.sample_deposition_index_at(coordinates, interpolation="trilinear"),
+            "deposition_index": self.bundle.sample_deposition_index_at(coordinates),
             "signed_distance": self.bundle.signed_distance_at(coordinates, threshold=self.threshold),
             "surface_normal": self.bundle.surface_normal_at(coordinates, threshold=self.threshold),
         }
