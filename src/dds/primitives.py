@@ -21,22 +21,13 @@ DEFAULT_Z_AXIS = (0.0, 0.0, 1.0)
 
 
 def _validate_deposit_attributes(
-    profile: BeadProfile | None,
+    profile: BeadProfile,
     metadata: DepositionMetadata,
 ) -> None:
-    if profile is not None and not isinstance(profile, BeadProfile):
-        raise TypeError("profile must be a BeadProfile or None.")
+    if not isinstance(profile, BeadProfile):
+        raise TypeError("profile must be a BeadProfile.")
     if not isinstance(metadata, DepositionMetadata):
         raise TypeError("metadata must be DepositionMetadata.")
-
-
-def _resolve_explicit_bead_dimensions(
-    profile: BeadProfile | None,
-) -> tuple[float, float] | None:
-    if profile is None:
-        return None
-    return float(profile.width), float(profile.height)
-
 
 def _bead_half_extents(
     axis: "Point3D | Sequence[float]",
@@ -190,7 +181,7 @@ class PointDeposit:
     x: float
     y: float
     z: float
-    profile: BeadProfile | None = None
+    profile: BeadProfile
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
     z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
 
@@ -226,15 +217,11 @@ class PointDeposit:
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
         """Return explicit bead bounds when dimensions are available."""
 
-        dimensions = _resolve_explicit_bead_dimensions(self.profile)
-        if dimensions is None:
-            return self.point, self.point
-        width, height = dimensions
         minimum, maximum = _point_target_support_bounds(
             self.point,
             self.axis,
-            width=width,
-            height=height,
+            width=self.profile.width,
+            height=self.profile.height,
             padding=padding,
         )
         return Point3D.from_value(minimum), Point3D.from_value(maximum)
@@ -249,7 +236,7 @@ class PointDeposit:
         cls,
         point: "Point3D | Sequence[float]",
         *,
-        profile: BeadProfile | None = None,
+        profile: BeadProfile,
         metadata: DepositionMetadata | None = None,
         z_axis: "Point3D | Sequence[float]" = DEFAULT_Z_AXIS,
     ) -> "PointDeposit":
@@ -284,7 +271,7 @@ class PointDeposit:
         cls,
         pose: Pose3D,
         *,
-        profile: BeadProfile | None = None,
+        profile: BeadProfile,
         metadata: DepositionMetadata | None = None,
     ) -> "PointDeposit":
         """Create a point deposit from a nozzle pose."""
@@ -303,7 +290,7 @@ class LineDeposit:
 
     start: Point3D | Sequence[float]
     end: Point3D | Sequence[float]
-    profile: BeadProfile | None = None
+    profile: BeadProfile
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
     start_z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
     end_z_axis: Point3D | Sequence[float] | None = None
@@ -367,7 +354,7 @@ class LineDeposit:
         start_pose: Pose3D,
         end_pose: Pose3D,
         *,
-        profile: BeadProfile | None = None,
+        profile: BeadProfile,
         metadata: DepositionMetadata | None = None,
     ) -> "LineDeposit":
         """Create a line deposit from start and end nozzle poses."""
@@ -384,14 +371,12 @@ class LineDeposit:
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
         """Return explicit swept-bead bounds when dimensions are available."""
 
-        dimensions = _resolve_explicit_bead_dimensions(self.profile)
-        if dimensions is None:
-            return self.segment.bounds()
-        width, height = dimensions
         padding_value = ensure_finite_scalar(padding, "padding")
         if padding_value < 0.0:
             raise ValueError("padding must be non-negative.")
-        support_radius = math.sqrt((width / 2.0) ** 2 + height**2) + padding_value
+        support_radius = math.sqrt(
+            (self.profile.width / 2.0) ** 2 + self.profile.height**2
+        ) + padding_value
         endpoints = np.stack((self.start.to_array(), self.end.to_array()), axis=0)
         minimum = endpoints.min(axis=0) - support_radius
         maximum = endpoints.max(axis=0) + support_radius
@@ -408,7 +393,7 @@ class PolylineDeposit:
     """One deposition event swept through an ordered sequence of nozzle poses."""
 
     poses: tuple[Pose3D, ...]
-    profile: BeadProfile | None = None
+    profile: BeadProfile
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
 
     def __post_init__(self) -> None:
@@ -430,7 +415,7 @@ class PolylineDeposit:
     def from_polyline(
         cls,
         polyline: Polyline3D,
-        profile: BeadProfile | None = None,
+        profile: BeadProfile,
         metadata: DepositionMetadata | None = None,
         target_z_axes: Sequence[Point3D | Sequence[float]] | None = None,
     ) -> "PolylineDeposit":

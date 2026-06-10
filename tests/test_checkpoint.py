@@ -68,12 +68,6 @@ def test_point_deposit_serialization_round_trip() -> None:
     assert restored.metadata.user_data == {"tag": "A"}
 
 
-def test_point_deposit_no_profile_round_trip() -> None:
-    original = PointDeposit(x=0.0, y=0.0, z=0.0)
-    restored = _deposit_from_dict(_deposit_to_dict(original))
-    assert restored.profile is None
-
-
 def test_line_deposit_serialization_round_trip() -> None:
     original = LineDeposit(
         start=(1.0, 2.0, 3.0),
@@ -119,6 +113,7 @@ def test_line_deposit_inherited_end_z_axis_round_trip() -> None:
     original = LineDeposit(
         start=(0.0, 0.0, 0.0),
         end=(1.0, 0.0, 0.0),
+        profile=BeadProfile(width=1.0, height=0.5),
         end_z_axis=None,
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
@@ -137,12 +132,11 @@ def test_deposit_from_dict_raises_for_unknown_type() -> None:
     with pytest.raises(ValueError, match="Unknown deposit type"):
         _deposit_from_dict(
             {
-                "type": "GhostDeposit",
-                "profile": None,
-                "metadata": {},
-                "process": {},
-            }
-        )
+                    "type": "GhostDeposit",
+                    "profile": {"width": 1.0, "height": 1.0},
+                    "metadata": {},
+                }
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -90,7 +90,7 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "y": deposit.y,
             "z": deposit.z,
             "z_axis": list(deposit.z_axis.to_tuple()),
-            "profile": deposit.profile.to_dict() if deposit.profile is not None else None,
+            "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
     if isinstance(deposit, LineDeposit):
@@ -100,14 +100,14 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "end": list(deposit.end.to_tuple()),
             "start_z_axis": list(deposit.start_z_axis.to_tuple()),
             "end_z_axis": list(deposit.end_z_axis.to_tuple()),
-            "profile": deposit.profile.to_dict() if deposit.profile is not None else None,
+            "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
     if isinstance(deposit, PolylineDeposit):
         return {
             "type": "PolylineDeposit",
             "poses": [pose.to_dict() for pose in deposit.poses],
-            "profile": deposit.profile.to_dict() if deposit.profile is not None else None,
+            "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
     raise TypeError(f"Cannot serialise deposit of type {type(deposit).__name__!r}.")
@@ -119,10 +119,14 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
     from .attributes import BeadProfile, DepositionMetadata
     from .primitives import LineDeposit, PointDeposit, PolylineDeposit, Pose3D
 
-    profile = BeadProfile(**d["profile"]) if d["profile"] is not None else None
+    deposit_type = d.get("type")
+    if deposit_type not in {"PointDeposit", "LineDeposit", "PolylineDeposit"}:
+        raise ValueError(f"Unknown deposit type {deposit_type!r}.")
+
+    profile = BeadProfile(**d["profile"])
     metadata = DepositionMetadata(**d["metadata"])
 
-    if d["type"] == "PointDeposit":
+    if deposit_type == "PointDeposit":
         return PointDeposit(
             x=d["x"],
             y=d["y"],
@@ -131,7 +135,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
             profile=profile,
             metadata=metadata,
         )
-    if d["type"] == "LineDeposit":
+    if deposit_type == "LineDeposit":
         return LineDeposit(
             start=tuple(d["start"]),
             end=tuple(d["end"]),
@@ -140,7 +144,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
             profile=profile,
             metadata=metadata,
         )
-    if d["type"] == "PolylineDeposit":
+    if deposit_type == "PolylineDeposit":
         return PolylineDeposit(
             poses=tuple(
                 Pose3D(
@@ -152,7 +156,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
             profile=profile,
             metadata=metadata,
         )
-    raise ValueError(f"Unknown deposit type {d['type']!r}.")
+    raise AssertionError("unreachable")
 
 
 def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:

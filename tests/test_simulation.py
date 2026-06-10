@@ -171,12 +171,27 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
 
 def test_line_deposit_rejects_antiparallel_endpoint_axes() -> None:
     with pytest.raises(ValueError, match="antiparallel"):
-        LineDeposit(
-            start=(0.0, 0.0, 0.0),
-            end=(1.0, 0.0, 0.0),
-            start_z_axis=(0.0, 0.0, 1.0),
-            end_z_axis=(0.0, 0.0, -1.0),
-        )
+            LineDeposit(
+                start=(0.0, 0.0, 0.0),
+                end=(1.0, 0.0, 0.0),
+                profile=make_profile(),
+                start_z_axis=(0.0, 0.0, 1.0),
+                end_z_axis=(0.0, 0.0, -1.0),
+            )
+
+
+def test_explicit_profile_geometry_is_independent_of_voxel_size() -> None:
+    profile = BeadProfile(width=2.0, height=1.0)
+    deposit = PointDeposit(x=4.0, y=5.0, z=6.0, profile=profile)
+
+    coarse = Domain.from_deposits(deposit, voxel_size=1.0, padding=0.0)
+    fine = Domain.from_deposits(deposit, voxel_size=0.25, padding=0.0)
+
+    minimum, maximum = deposit.support_bounds()
+    assert minimum.to_tuple() == pytest.approx((3.0, 4.0, 5.0))
+    assert maximum.to_tuple() == pytest.approx((5.0, 6.0, 6.0))
+    assert coarse.min_corner == fine.min_corner
+    assert coarse.max_corner == fine.max_corner
 
 
 def test_deposition_index_accumulates_for_overlapping_deposits() -> None:

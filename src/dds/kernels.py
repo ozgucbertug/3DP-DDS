@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
@@ -44,21 +43,13 @@ class ResolvedBeadProfile:
 
 
 def resolve_bead_profile(
-    profile: BeadProfile | None,
+    profile: BeadProfile,
     domain: Domain,
 ) -> ResolvedBeadProfile:
-    """Resolve bead geometry and transition width from metadata and domain defaults."""
+    """Resolve transition settings for an explicit bead profile."""
 
-    default_width = min(domain.voxel_size)
-    if profile is None:
-        warnings.warn(
-            "No BeadProfile supplied; falling back to a default profile derived from the domain voxel size. "
-            "This may produce unexpected geometry. Use BeadProfile.default(voxel_size) to create an explicit profile.",
-            UserWarning,
-            stacklevel=3,
-        )
-    width = profile.width if profile is not None else default_width
-    height = profile.height if profile is not None else width
+    width = profile.width
+    height = profile.height
     if width <= 0.0 or height <= 0.0:
         raise ValueError("Resolved bead width and height must both be positive.")
     rounding_radius = min(width, height) / 2.0
