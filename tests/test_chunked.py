@@ -13,7 +13,6 @@ from dds import (
     PointDeposit,
     PolylineDeposit,
     Pose3D,
-    Simulator,
     accumulate_chunked_field,
     simulate,
 )
@@ -59,7 +58,7 @@ def test_chunked_to_dense_coverage_matches_dense_accumulation() -> None:
     domain = make_domain()
     deposits = make_deposits()
 
-    chunked = accumulate_chunked_field(domain, deposits)
+    chunked = accumulate_chunked_field(domain, deposits, compositions=("max", "coverage"))
     expected = simulate(
         domain,
         deposits,
@@ -71,7 +70,11 @@ def test_chunked_to_dense_coverage_matches_dense_accumulation() -> None:
 
 
 def test_chunked_to_dense_all_matches_individual_calls() -> None:
-    chunked = accumulate_chunked_field(make_domain(), make_deposits())
+    chunked = accumulate_chunked_field(
+        make_domain(),
+        make_deposits(),
+        compositions=("max", "coverage"),
+    )
 
     all_fields = chunked.to_dense_all("max", "coverage")
 
@@ -112,7 +115,7 @@ def test_chunked_memory_and_activity_diagnostics() -> None:
 
     assert chunked.nbytes > 0
     assert chunked.dense_field_nbytes == int(np.prod(domain.grid_shape)) * 8
-    assert chunked.dense_nbytes == int(np.prod(domain.grid_shape)) * 16
+    assert chunked.dense_nbytes == int(np.prod(domain.grid_shape)) * 8
     assert chunked.event_count == 2
     assert 0 < chunked.active_voxel_count <= chunked.allocated_voxel_count
     assert 0.0 < chunked.active_fraction <= chunked.allocation_fraction <= 1.0
@@ -187,6 +190,7 @@ def test_polyline_event_merges_internal_segments_across_chunk_boundaries() -> No
         domain,
         [deposit],
         chunk_shape=(2, 2, 2),
+        compositions=("max", "coverage"),
     )
     result = simulate(
         domain,
@@ -203,57 +207,15 @@ def test_polyline_event_merges_internal_segments_across_chunk_boundaries() -> No
     )
 
 
-def test_simulator_chunked_field_matches_standalone_accumulation() -> None:
+def test_max_only_chunked_field_uses_half_the_dual_composition_memory() -> None:
     domain = make_domain()
     deposits = make_deposits()
-    simulator = Simulator(domain, deposits)
-
-    np.testing.assert_allclose(
-        simulator.chunked_field().to_dense("max"),
-        accumulate_chunked_field(domain, deposits).to_dense("max"),
+    max_only = accumulate_chunked_field(domain, deposits)
+    both = accumulate_chunked_field(
+        domain,
+        deposits,
+        compositions=("max", "coverage"),
     )
 
-
-def test_simulator_chunked_field_is_cached_and_incremental() -> None:
-    domain = make_domain()
-    deposits = make_deposits()
-    simulator = Simulator(domain, deposits[:1])
-    chunked = simulator.chunked_field()
-
-    assert simulator.chunked_field() is chunked
-    before = chunked.event_count
-    simulator.add_deposit(deposits[1])
-
-    assert chunked.event_count == before + 1
-    np.testing.assert_allclose(
-        chunked.to_dense("max"),
-        accumulate_chunked_field(domain, deposits).to_dense("max"),
-    )
-    with pytest.raises(ValueError, match="chunk_shape"):
-        simulator.chunked_field(chunk_shape=(8, 8, 8))
-
-
-def test_simulator_clear_resets_chunked_field() -> None:
-    simulator = Simulator(make_domain(), make_deposits())
-    chunked = simulator.chunked_field()
-
-    simulator.clear_deposits()
-
-    assert chunked.event_count == 0
-    assert chunked.chunk_count == 0
-    assert chunked.to_dense().sum() == pytest.approx(0.0)
-
-
-def test_simulator_chunked_and_dense_agree_after_mixed_operations() -> None:
-    domain = make_domain()
-    deposits = make_deposits()
-    simulator = Simulator(domain, deposits)
-    chunked = simulator.chunked_field()
-
-    simulator.clear_deposits()
-    simulator.add_deposit(deposits[0])
-
-    np.testing.assert_allclose(
-        chunked.to_dense("max"),
-        simulator.result().density_max,
-    )
+    assert both.nbytes == 2 * max_only.nbytes
+    np.testing.assert_allclose(max_only.to_dense("max"), both.to_dense("max"))

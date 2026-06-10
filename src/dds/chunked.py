@@ -17,20 +17,21 @@ ChunkIndex = tuple[int, int, int]
 
 @dataclass(slots=True)
 class _Chunk:
-    maximum: npt.NDArray[np.float64]
-    coverage: npt.NDArray[np.float64]
+    maximum: npt.NDArray[np.float64] | None
+    coverage: npt.NDArray[np.float64] | None
 
 
 @dataclass(slots=True)
 class ChunkedField:
     """Sparse field backed by fixed-size dense chunks.
 
-    Each allocated chunk stores both the geometric max envelope and the
-    additive, nonphysical coverage diagnostic. Empty chunks are never stored.
+    Each allocated chunk stores only the requested field compositions.
+    Empty chunks are never stored.
     """
 
     domain: Domain
     chunk_shape: TileShape = (32, 32, 32)
+    compositions: tuple[FieldComposition, ...] = ("max",)
     _chunks: dict[ChunkIndex, _Chunk] = field(
         default_factory=dict,
         init=False,
@@ -40,6 +41,11 @@ class ChunkedField:
 
     def __post_init__(self) -> None:
         self.chunk_shape = validate_tile_shape(self.chunk_shape)
+        self.compositions = tuple(dict.fromkeys(self.compositions))
+        if not self.compositions:
+            raise ValueError("compositions must contain at least one value.")
+        if any(value not in {"max", "coverage"} for value in self.compositions):
+            raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
 
     def _chunk_bounds(self, index: ChunkIndex) -> IndexBounds:
         lower = tuple(index[axis] * self.chunk_shape[axis] for axis in range(3))
@@ -58,8 +64,8 @@ class ChunkedField:
         if chunk is None:
             shape = self._chunk_array_shape(index)
             chunk = _Chunk(
-                maximum=np.zeros(shape, dtype=float),
-                coverage=np.zeros(shape, dtype=float),
+                maximum=np.zeros(shape, dtype=float) if "max" in self.compositions else None,
+                coverage=np.zeros(shape, dtype=float) if "coverage" in self.compositions else None,
             )
             self._chunks[index] = chunk
         return chunk
@@ -120,12 +126,14 @@ class ChunkedField:
                         )
                         for axis in range(3)
                     )
-                    np.maximum(
-                        chunk.maximum[chunk_slices],
-                        values,
-                        out=chunk.maximum[chunk_slices],
-                    )
-                    chunk.coverage[chunk_slices] += values
+                    if chunk.maximum is not None:
+                        np.maximum(
+                            chunk.maximum[chunk_slices],
+                            values,
+                            out=chunk.maximum[chunk_slices],
+                        )
+                    if chunk.coverage is not None:
+                        chunk.coverage[chunk_slices] += values
                     hit = True
         return hit
 
@@ -144,6 +152,8 @@ class ChunkedField:
 
         if composition not in {"max", "coverage"}:
             raise ValueError("composition must be 'max' or 'coverage'.")
+        if composition not in self.compositions:
+            raise ValueError(f"{composition!r} was not requested for this ChunkedField.")
         bounds = self._validate_index_bounds(index_bounds)
         output_shape = tuple(stop - start for start, stop in bounds)
         output = np.zeros(output_shape, dtype=float)
@@ -175,6 +185,7 @@ class ChunkedField:
                 for axis in range(3)
             )
             values = chunk.maximum if composition == "max" else chunk.coverage
+            assert values is not None
             output[output_slices] = values[chunk_slices]
         return output
 
@@ -241,20 +252,23 @@ class ChunkedField:
     def active_voxel_count(self) -> int:
         """Number of voxels with a positive geometric envelope."""
 
-        return sum(int(np.count_nonzero(chunk.maximum > 0.0)) for chunk in self._chunks.values())
+        return sum(
+            int(np.count_nonzero(self._active_array(chunk) > 0.0))
+            for chunk in self._chunks.values()
+        )
 
     @property
     def allocated_voxel_count(self) -> int:
         """Number of voxel slots allocated across all chunks."""
 
-        return sum(int(chunk.maximum.size) for chunk in self._chunks.values())
+        return sum(int(self._active_array(chunk).size) for chunk in self._chunks.values())
 
     @property
     def nbytes(self) -> int:
-        """Bytes occupied by both stored field compositions."""
+        """Bytes occupied by requested field compositions."""
 
         return sum(
-            chunk.maximum.nbytes + chunk.coverage.nbytes
+            sum(array.nbytes for array in (chunk.maximum, chunk.coverage) if array is not None)
             for chunk in self._chunks.values()
         )
 
@@ -266,9 +280,9 @@ class ChunkedField:
 
     @property
     def dense_nbytes(self) -> int:
-        """Bytes required by both equivalent dense float64 fields."""
+        """Bytes required by equivalent dense fields for requested compositions."""
 
-        return 2 * self.dense_field_nbytes
+        return len(self.compositions) * self.dense_field_nbytes
 
     @property
     def active_fraction(self) -> float:
@@ -286,6 +300,13 @@ class ChunkedField:
 
     @property
     def memory_ratio(self) -> float:
-        """Stored bytes divided by equivalent two-field dense bytes."""
+        """Stored bytes divided by equivalent requested dense fields."""
 
         return self.nbytes / self.dense_nbytes if self.dense_nbytes else 0.0
+
+    @staticmethod
+    def _active_array(chunk: _Chunk) -> npt.NDArray[np.float64]:
+        if chunk.maximum is not None:
+            return chunk.maximum
+        assert chunk.coverage is not None
+        return chunk.coverage

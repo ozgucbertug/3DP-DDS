@@ -8,12 +8,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 import numpy.typing as npt
 
-from .analysis import normalize_field
 from .domain import Domain
 from .kernels import iter_deposit_kernels
-from .occupancy import occupancy_from_density
 from .primitives import Deposit, DepositInput, iter_deposits
-from .types import FieldComposition, FieldName
+from .types import FieldComposition
 
 if TYPE_CHECKING:
     from .chunked import ChunkedField
@@ -149,36 +147,12 @@ def apply_deposit_to_index_field(
     return hit
 
 
-def sample_field(
-    domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
-    *,
-    field: FieldName = "density",
-    threshold: float = 0.5,
-    normalize: bool = False,
-) -> npt.NDArray[np.float64] | npt.NDArray[np.bool_]:
-    """Sample a dense field from deposition events."""
-
-    density = accumulate_field(domain, deposits, composition="max")
-    if field == "density":
-        return normalize_field(density) if normalize else density
-    if field == "coverage":
-        if normalize:
-            raise ValueError("coverage cannot be normalized as a physical density.")
-        return accumulate_field(domain, deposits, composition="coverage")
-    if field == "deposition_index":
-        return accumulate_deposition_index(domain, deposits).astype(float, copy=False)
-    if field == "occupancy":
-        base = normalize_field(density) if normalize else density
-        return occupancy_from_density(base, threshold=threshold)
-    raise ValueError("field must be 'density', 'coverage', 'occupancy', or 'deposition_index'.")
-
-
 def accumulate_chunked_field(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
     *,
     chunk_shape: Sequence[int] = (32, 32, 32),
+    compositions: tuple[FieldComposition, ...] = ("max",),
 ) -> "ChunkedField":
     """Build a chunked field without allocating full-domain dense arrays.
 
@@ -192,7 +166,11 @@ def accumulate_chunked_field(
 
     from .chunked import ChunkedField
 
-    chunked = ChunkedField(domain, chunk_shape=tuple(chunk_shape))
+    chunked = ChunkedField(
+        domain,
+        chunk_shape=tuple(chunk_shape),
+        compositions=compositions,
+    )
     for deposit in iter_deposits(deposits):
         hit = False
         for sampled in iter_deposit_kernels(

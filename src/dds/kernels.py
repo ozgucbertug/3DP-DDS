@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import heapq
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
+from itertools import count
 
 import numpy as np
 import numpy.typing as npt
@@ -101,136 +103,6 @@ def rounded_cylinder_signed_distance(
         np.minimum(np.maximum(bounds[..., 0], bounds[..., 1]), 0.0)
         + np.linalg.norm(np.maximum(bounds, 0.0), axis=-1)
         - profile.rounding_radius
-    )
-
-
-def sample_point_kernel(domain: Domain, deposit: PointDeposit) -> SampledKernel | None:
-    """Sample a rounded-cylinder point kernel on the local grid window."""
-
-    profile = resolve_bead_profile(deposit.profile, domain)
-    target = deposit.target.to_array()
-    axis = deposit.axis.to_array()
-    support_min, support_max = _point_target_support_bounds(
-        target,
-        axis,
-        width=profile.width,
-        height=profile.height,
-        padding=profile.support_padding,
-    )
-    index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
-    if index_bounds is None:
-        return None
-
-    x_bounds, y_bounds, z_bounds = index_bounds
-    xs, ys, zs = domain.grid_centers(index_bounds)
-    points = np.stack((xs, ys, zs), axis=-1)
-    signed_distance = rounded_cylinder_signed_distance(
-        points,
-        target=target,
-        axis=axis,
-        profile=profile,
-    )
-    values = density_from_signed_distance(signed_distance, profile.transition_width)
-    return SampledKernel(
-        slices=(
-            slice(*x_bounds),
-            slice(*y_bounds),
-            slice(*z_bounds),
-        ),
-        values=values.astype(float, copy=False),
-    )
-
-
-def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | None:
-    """Sample a swept rounded-bead line kernel."""
-
-    profile = resolve_bead_profile(deposit.profile, domain)
-    start = deposit.start.to_array()
-    end = deposit.end.to_array()
-    if np.allclose(start, end):
-        point_deposit = PointDeposit(
-            x=float(start[0]),
-            y=float(start[1]),
-            z=float(start[2]),
-            profile=deposit.profile,
-            metadata=deposit.metadata,
-            z_axis=deposit.start_axis,
-        )
-        return sample_point_kernel(domain, point_deposit)
-
-    start_axis = deposit.start_axis.to_array()
-    end_axis = deposit.end_axis.to_array()
-    support_min, support_max = deposit.support_bounds(
-        padding=profile.support_padding,
-    )
-    index_bounds = domain.index_bounds_for_aabb(support_min, support_max)
-    if index_bounds is None:
-        return None
-
-    x_bounds, y_bounds, z_bounds = index_bounds
-    xs, ys, zs = domain.grid_centers(index_bounds)
-    points = np.stack((xs, ys, zs), axis=-1)
-    flat_points = points.reshape(-1, 3)
-    parameters = closest_point_parameters(flat_points, start, end)
-    closest_targets = start + parameters[:, np.newaxis] * (end - start)
-    axes = slerp_unit_vectors(start_axis, end_axis, parameters)
-    signed_distance = rounded_cylinder_signed_distance(
-        flat_points,
-        target=closest_targets,
-        axis=axes,
-        profile=profile,
-    ).reshape(xs.shape)
-    values = density_from_signed_distance(signed_distance, profile.transition_width)
-    return SampledKernel(
-        slices=(
-            slice(*x_bounds),
-            slice(*y_bounds),
-            slice(*z_bounds),
-        ),
-        values=values.astype(float, copy=False),
-    )
-
-
-def sample_polyline_kernel(
-    domain: Domain,
-    deposit: PolylineDeposit,
-) -> SampledKernel | None:
-    """Sample one polyline event as the envelope of its line segments."""
-
-    segment_samples = [
-        sampled
-        for segment in deposit.segments()
-        if (sampled := sample_line_kernel(domain, segment)) is not None
-    ]
-    if not segment_samples:
-        return None
-
-    starts = np.asarray(
-        [[axis_slice.start for axis_slice in sampled.slices] for sampled in segment_samples],
-        dtype=int,
-    )
-    stops = np.asarray(
-        [[axis_slice.stop for axis_slice in sampled.slices] for sampled in segment_samples],
-        dtype=int,
-    )
-    lower = starts.min(axis=0)
-    upper = stops.max(axis=0)
-    values = np.zeros(tuple(int(value) for value in upper - lower), dtype=float)
-
-    for sampled, start in zip(segment_samples, starts, strict=True):
-        offset = start - lower
-        local_slices = tuple(
-            slice(int(offset[axis]), int(offset[axis]) + sampled.values.shape[axis])
-            for axis in range(3)
-        )
-        np.maximum(values[local_slices], sampled.values, out=values[local_slices])
-
-    return SampledKernel(
-        slices=tuple(
-            slice(int(lower[axis]), int(upper[axis]))
-            for axis in range(3)
-        ),
-        values=values,
     )
 
 
@@ -376,26 +248,37 @@ def _iter_polyline_kernels(
     deposit: PolylineDeposit,
     tile_shape: TileShape,
 ) -> Iterator[SampledKernel]:
-    merged: dict[
-        tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
-        npt.NDArray[np.float64],
-    ] = {}
+    serial = count()
+    heap: list[tuple[tuple[tuple[int, int], ...], int, SampledKernel, Iterator[SampledKernel]]] = []
     for segment in deposit.segments():
-        for sampled in _iter_line_kernels(domain, segment, tile_shape):
-            key = tuple(
-                (int(axis_slice.start), int(axis_slice.stop))
-                for axis_slice in sampled.slices
-            )
-            existing = merged.get(key)
-            if existing is None:
-                merged[key] = sampled.values.copy()
-            else:
-                np.maximum(existing, sampled.values, out=existing)
+        iterator = _iter_line_kernels(domain, segment, tile_shape)
+        sampled = next(iterator, None)
+        if sampled is not None:
+            bounds = tuple((int(s.start), int(s.stop)) for s in sampled.slices)
+            heapq.heappush(heap, (bounds, next(serial), sampled, iterator))
 
-    for bounds in sorted(merged):
+    while heap:
+        bounds, _, sampled, iterator = heapq.heappop(heap)
+        merged = sampled.values.copy()
+        next_sample = next(iterator, None)
+        if next_sample is not None:
+            next_bounds = tuple((int(s.start), int(s.stop)) for s in next_sample.slices)
+            heapq.heappush(heap, (next_bounds, next(serial), next_sample, iterator))
+
+        while heap and heap[0][0] == bounds:
+            _, _, overlapping, overlapping_iterator = heapq.heappop(heap)
+            np.maximum(merged, overlapping.values, out=merged)
+            next_overlapping = next(overlapping_iterator, None)
+            if next_overlapping is not None:
+                next_bounds = tuple((int(s.start), int(s.stop)) for s in next_overlapping.slices)
+                heapq.heappush(
+                    heap,
+                    (next_bounds, next(serial), next_overlapping, overlapping_iterator),
+                )
+
         yield SampledKernel(
             slices=tuple(slice(*axis_bounds) for axis_bounds in bounds),
-            values=merged[bounds],
+            values=merged,
         )
 
 
@@ -417,19 +300,4 @@ def iter_deposit_kernels(
     if isinstance(deposit, PolylineDeposit):
         yield from _iter_polyline_kernels(domain, deposit, resolved_tile_shape)
         return
-    raise TypeError("Unsupported deposit type.")
-
-
-def sample_deposit_kernel(
-    domain: Domain,
-    deposit: PointDeposit | LineDeposit | PolylineDeposit,
-) -> SampledKernel | None:
-    """Dispatch kernel sampling based on deposit type."""
-
-    if isinstance(deposit, PointDeposit):
-        return sample_point_kernel(domain, deposit)
-    if isinstance(deposit, LineDeposit):
-        return sample_line_kernel(domain, deposit)
-    if isinstance(deposit, PolylineDeposit):
-        return sample_polyline_kernel(domain, deposit)
     raise TypeError("Unsupported deposit type.")
