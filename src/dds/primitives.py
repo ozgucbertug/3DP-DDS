@@ -5,11 +5,11 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import Protocol, TypeAlias, runtime_checkable
+from typing import TypeAlias
 
 import numpy as np
 
-from .attributes import BeadProfile, DepositionMetadata, ProcessState
+from .attributes import BeadProfile, DepositionMetadata
 from .utils import (
     bounding_box_from_points,
     ensure_finite_scalar,
@@ -23,14 +23,11 @@ DEFAULT_Z_AXIS = (0.0, 0.0, 1.0)
 def _validate_deposit_attributes(
     profile: BeadProfile | None,
     metadata: DepositionMetadata,
-    process: ProcessState,
 ) -> None:
     if profile is not None and not isinstance(profile, BeadProfile):
         raise TypeError("profile must be a BeadProfile or None.")
     if not isinstance(metadata, DepositionMetadata):
         raise TypeError("metadata must be DepositionMetadata.")
-    if not isinstance(process, ProcessState):
-        raise TypeError("process must be ProcessState.")
 
 
 def _resolve_explicit_bead_dimensions(
@@ -186,18 +183,6 @@ class Polyline3D:
         return Point3D.from_value(minimum), Point3D.from_value(maximum)
 
 
-@runtime_checkable
-class DepositionPrimitive(Protocol):
-    """Protocol shared by deposition event primitives."""
-
-    profile: BeadProfile | None
-    metadata: DepositionMetadata
-    process: ProcessState
-
-    def bounds(self) -> tuple[Point3D, Point3D]:
-        """Return geometric bounds for the primitive."""
-
-
 @dataclass(frozen=True, slots=True)
 class PointDeposit:
     """A material deposition target whose point lies at the top of the bead."""
@@ -207,11 +192,10 @@ class PointDeposit:
     z: float
     profile: BeadProfile | None = None
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
-    process: ProcessState = field(default_factory=ProcessState)
     z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
 
     def __post_init__(self) -> None:
-        _validate_deposit_attributes(self.profile, self.metadata, self.process)
+        _validate_deposit_attributes(self.profile, self.metadata)
         ensure_finite_triplet((self.x, self.y, self.z), "PointDeposit coordinates")
         object.__setattr__(self, "z_axis", Point3D.from_value(normalize_axis(self.z_axis, name="PointDeposit.z_axis")))
 
@@ -267,7 +251,6 @@ class PointDeposit:
         *,
         profile: BeadProfile | None = None,
         metadata: DepositionMetadata | None = None,
-        process: ProcessState | None = None,
         z_axis: "Point3D | Sequence[float]" = DEFAULT_Z_AXIS,
     ) -> "PointDeposit":
         """Create a PointDeposit from a point-like value.
@@ -293,7 +276,6 @@ class PointDeposit:
             z=p.z,
             profile=profile,
             metadata=metadata if metadata is not None else DepositionMetadata(),
-            process=process if process is not None else ProcessState(),
             z_axis=z_axis,
         )
 
@@ -304,7 +286,6 @@ class PointDeposit:
         *,
         profile: BeadProfile | None = None,
         metadata: DepositionMetadata | None = None,
-        process: ProcessState | None = None,
     ) -> "PointDeposit":
         """Create a point deposit from a nozzle pose."""
 
@@ -312,7 +293,6 @@ class PointDeposit:
             pose.position,
             profile=profile,
             metadata=metadata,
-            process=process,
             z_axis=pose.axis,
         )
 
@@ -325,12 +305,11 @@ class LineDeposit:
     end: Point3D | Sequence[float]
     profile: BeadProfile | None = None
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
-    process: ProcessState = field(default_factory=ProcessState)
     start_z_axis: Point3D | Sequence[float] = DEFAULT_Z_AXIS
     end_z_axis: Point3D | Sequence[float] | None = None
 
     def __post_init__(self) -> None:
-        _validate_deposit_attributes(self.profile, self.metadata, self.process)
+        _validate_deposit_attributes(self.profile, self.metadata)
         object.__setattr__(self, "start", Point3D.from_value(self.start))
         object.__setattr__(self, "end", Point3D.from_value(self.end))
         start_z_axis = normalize_axis(self.start_z_axis, name="LineDeposit.start_z_axis")
@@ -390,7 +369,6 @@ class LineDeposit:
         *,
         profile: BeadProfile | None = None,
         metadata: DepositionMetadata | None = None,
-        process: ProcessState | None = None,
     ) -> "LineDeposit":
         """Create a line deposit from start and end nozzle poses."""
 
@@ -399,7 +377,6 @@ class LineDeposit:
             end=end_pose.position,
             profile=profile,
             metadata=metadata or DepositionMetadata(),
-            process=process or ProcessState(),
             start_z_axis=start_pose.axis,
             end_z_axis=end_pose.axis,
         )
@@ -433,10 +410,9 @@ class PolylineDeposit:
     poses: tuple[Pose3D, ...]
     profile: BeadProfile | None = None
     metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
-    process: ProcessState = field(default_factory=ProcessState)
 
     def __post_init__(self) -> None:
-        _validate_deposit_attributes(self.profile, self.metadata, self.process)
+        _validate_deposit_attributes(self.profile, self.metadata)
         poses = tuple(
             pose if isinstance(pose, Pose3D) else Pose3D(pose)
             for pose in self.poses
@@ -456,7 +432,6 @@ class PolylineDeposit:
         polyline: Polyline3D,
         profile: BeadProfile | None = None,
         metadata: DepositionMetadata | None = None,
-        process: ProcessState | None = None,
         target_z_axes: Sequence[Point3D | Sequence[float]] | None = None,
     ) -> "PolylineDeposit":
         """Create a polyline deposit from geometric points and target axes."""
@@ -474,7 +449,6 @@ class PolylineDeposit:
             ),
             profile=profile,
             metadata=metadata or DepositionMetadata(),
-            process=process or ProcessState(),
         )
 
     def segments(self) -> tuple[LineDeposit, ...]:
@@ -486,7 +460,6 @@ class PolylineDeposit:
                 end,
                 profile=self.profile,
                 metadata=self.metadata,
-                process=self.process,
             )
             for start, end in zip(self.poses[:-1], self.poses[1:], strict=True)
         )

@@ -9,10 +9,6 @@ from typing import Any
 
 from .utils import ensure_finite_scalar
 
-_SUPPORTED_LENGTH_UNITS = frozenset({"mm", "m"})
-_SUPPORTED_TIME_UNITS = frozenset({"s"})
-_SUPPORTED_TEMPERATURE_UNITS = frozenset({"degC", "K"})
-
 
 def _freeze_json_value(value: Any, *, path: str) -> Any:
     if value is None or isinstance(value, (str, bool, int)):
@@ -83,76 +79,6 @@ class BeadProfile:
         """Return an export-friendly dictionary representation."""
 
         return {"width": self.width, "height": self.height}
-
-
-@dataclass(frozen=True, slots=True)
-class UnitSystem:
-    """Units used by domain geometry and process-state values."""
-
-    length: str = "mm"
-    time: str = "s"
-    temperature: str = "degC"
-
-    def __post_init__(self) -> None:
-        if self.length not in _SUPPORTED_LENGTH_UNITS:
-            raise ValueError(f"length must be one of {sorted(_SUPPORTED_LENGTH_UNITS)}.")
-        if self.time not in _SUPPORTED_TIME_UNITS:
-            raise ValueError(f"time must be one of {sorted(_SUPPORTED_TIME_UNITS)}.")
-        if self.temperature not in _SUPPORTED_TEMPERATURE_UNITS:
-            raise ValueError(
-                f"temperature must be one of {sorted(_SUPPORTED_TEMPERATURE_UNITS)}."
-            )
-
-    def to_dict(self) -> dict[str, str]:
-        """Return a JSON-compatible representation."""
-
-        return {
-            "length": self.length,
-            "time": self.time,
-            "temperature": self.temperature,
-        }
-
-
-@dataclass(frozen=True, slots=True)
-class ProcessState:
-    """Robot and material process state associated with a deposition event."""
-
-    material_id: str | None = None
-    tool_id: str | None = None
-    timestamp: float | None = None
-    feedrate: float | None = None
-    extrusion_rate: float | None = None
-    temperature: float | None = None
-
-    def __post_init__(self) -> None:
-        for name in ("material_id", "tool_id"):
-            value = getattr(self, name)
-            if value is not None and (not isinstance(value, str) or not value.strip()):
-                raise ValueError(f"ProcessState.{name} must be a non-empty string or None.")
-        for name in ("timestamp", "feedrate", "extrusion_rate", "temperature"):
-            value = getattr(self, name)
-            if value is not None:
-                object.__setattr__(
-                    self,
-                    name,
-                    ensure_finite_scalar(value, f"ProcessState.{name}"),
-                )
-        for name in ("feedrate", "extrusion_rate"):
-            value = getattr(self, name)
-            if value is not None and value < 0.0:
-                raise ValueError(f"ProcessState.{name} must be non-negative.")
-
-    def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-compatible representation."""
-
-        return {
-            "material_id": self.material_id,
-            "tool_id": self.tool_id,
-            "timestamp": self.timestamp,
-            "feedrate": self.feedrate,
-            "extrusion_rate": self.extrusion_rate,
-            "temperature": self.temperature,
-        }
 
 
 @dataclass(frozen=True, slots=True)

@@ -8,7 +8,7 @@ from typing import Literal
 
 import numpy as np
 
-from .attributes import BeadProfile, DepositionMetadata, ProcessState
+from .attributes import BeadProfile, DepositionMetadata
 from .primitives import DEFAULT_Z_AXIS, LineDeposit, PointDeposit, PolylineDeposit, Pose3D
 from .utils import ensure_finite_triplet, normalize_axis
 
@@ -52,13 +52,11 @@ def point_deposits_from_targets(
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
-    process: ProcessState | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[PointDeposit, ...]:
     """Convert ordered targets into top-referenced point deposits."""
 
     metadata_value = metadata or DepositionMetadata()
-    process_value = process or ProcessState()
     deposits = []
     for target in targets:
         pt = target_point_from_origin(target, profile=profile, origin_reference=origin_reference)
@@ -69,7 +67,6 @@ def point_deposits_from_targets(
                 z=pt[2],
                 profile=profile,
                 metadata=metadata_value,
-                process=process_value,
                 z_axis=target.z_axis,
             )
         )
@@ -81,7 +78,6 @@ def line_deposits_from_targets(
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
-    process: ProcessState | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[LineDeposit, ...]:
     """Convert ordered targets into top-referenced line deposits."""
@@ -89,14 +85,12 @@ def line_deposits_from_targets(
     if len(targets) < 2:
         raise ValueError("line_deposits_from_targets requires at least two targets.")
     metadata_value = metadata or DepositionMetadata()
-    process_value = process or ProcessState()
     return tuple(
         LineDeposit(
             start=target_point_from_origin(targets[index], profile=profile, origin_reference=origin_reference),
             end=target_point_from_origin(targets[index + 1], profile=profile, origin_reference=origin_reference),
             profile=profile,
             metadata=metadata_value,
-            process=process_value,
             start_z_axis=targets[index].z_axis,
             end_z_axis=targets[index + 1].z_axis,
         )
@@ -109,7 +103,6 @@ def toolpath_from_targets(
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
-    process: ProcessState | None = None,
     origin_reference: OriginReference = "top",
 ) -> PolylineDeposit:
     """Convert ordered targets into one first-class polyline deposit."""
@@ -130,5 +123,4 @@ def toolpath_from_targets(
         ),
         profile=profile,
         metadata=metadata or DepositionMetadata(),
-        process=process or ProcessState(),
     )

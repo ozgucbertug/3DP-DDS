@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Any
 
 from . import formats, geometry, targets, viz
 from .analysis import AnalysisBundle, analysis_bundle
-from .attributes import BeadProfile, DepositionMetadata, ProcessState, UnitSystem
+from .attributes import BeadProfile, DepositionMetadata
 from .chunked import ChunkedField
 from .cli import run_cli
 from .domain import Domain
@@ -44,12 +44,10 @@ __all__ = [
     "Polyline3D",
     "PolylineDeposit",
     "Pose3D",
-    "ProcessState",
     "SimulationWorkbench",
     "SimulationResult",
     "Simulator",
     "ChunkedField",
-    "UnitSystem",
     "WorkbenchViewConfig",
     "accumulate_chunked_field",
     "analysis_bundle",

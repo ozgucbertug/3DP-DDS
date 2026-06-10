@@ -11,10 +11,8 @@ from dds import (
     PointDeposit,
     PolylineDeposit,
     Pose3D,
-    ProcessState,
     SimulationResult,
     Simulator,
-    UnitSystem,
     WorkbenchViewConfig,
     apply_deposit_to_field,
     apply_deposit_to_index_field,
@@ -64,8 +62,7 @@ def test_domain_aligns_nonintegral_bounds_to_voxel_grid() -> None:
     assert domain.contains_point(domain.index_to_world((1, 1, 1)))
 
 
-def test_domain_records_explicit_unit_system() -> None:
-    units = UnitSystem(length="m", time="s", temperature="K")
+def test_domain_records_explicit_length_unit() -> None:
     domain = Domain.from_bounds(
         xmin=0.0,
         xmax=1.0,
@@ -74,17 +71,22 @@ def test_domain_records_explicit_unit_system() -> None:
         zmin=0.0,
         zmax=1.0,
         voxel_size=0.1,
-        unit_system=units,
+        length_unit="m",
     )
 
-    assert domain.unit_system == units
-    assert domain.to_dict()["unit_system"] == {
-        "length": "m",
-        "time": "s",
-        "temperature": "K",
-    }
-    with pytest.raises(ValueError):
-        UnitSystem(length="inch")
+    assert domain.length_unit == "m"
+    assert domain.to_dict()["length_unit"] == "m"
+    with pytest.raises(ValueError, match="length_unit"):
+        Domain.from_bounds(
+            xmin=0.0,
+            xmax=1.0,
+            ymin=0.0,
+            ymax=1.0,
+            zmin=0.0,
+            zmax=1.0,
+            voxel_size=0.1,
+            length_unit="inch",  # type: ignore[arg-type]
+        )
 
 
 def test_domain_rejects_inconsistent_direct_construction() -> None:
@@ -361,38 +363,30 @@ def test_bead_profile_rejects_invalid_dimensions(width: float, height: float) ->
         BeadProfile(width=width, height=height)
 
 
-def test_metadata_and_process_state_are_validated() -> None:
+def test_metadata_is_immutable_and_validated() -> None:
     source = {"labels": ["calibration"]}
     metadata = DepositionMetadata(layer_id=1, user_data=source)
-    process = ProcessState(feedrate=10.0, extrusion_rate=2.0)
     source["labels"].append("mutated")
 
     assert metadata.to_dict()["user_data"] == {"labels": ["calibration"]}
     with pytest.raises(TypeError):
         metadata.user_data["new"] = "value"  # type: ignore[index]
 
-    with pytest.raises(ValueError):
-        ProcessState(feedrate=float("nan"))
-    with pytest.raises(ValueError):
-        ProcessState(extrusion_rate=-1.0)
     with pytest.raises(TypeError):
         DepositionMetadata(user_data={"bad": object()})
-    assert process.feedrate == pytest.approx(10.0)
 
 
 def test_pose_based_deposits_and_polyline_event() -> None:
     profile = make_profile(width=2.0, height=1.0)
-    process = ProcessState(material_id="test", feedrate=5.0)
     start = Pose3D((1.5, 2.5, 3.5))
     corner = Pose3D((4.5, 2.5, 3.5), (0.0, 1.0, 1.0))
     end = Pose3D((4.5, 5.5, 3.5))
 
-    point = PointDeposit.from_pose(start, profile=profile, process=process)
-    line = LineDeposit.from_poses(start, corner, profile=profile, process=process)
+    point = PointDeposit.from_pose(start, profile=profile)
+    line = LineDeposit.from_poses(start, corner, profile=profile)
     polyline = PolylineDeposit(
         poses=(start, corner, end),
         profile=profile,
-        process=process,
     )
 
     assert point.pose == start

@@ -163,7 +163,6 @@ def sample_line_kernel(domain: Domain, deposit: LineDeposit) -> SampledKernel | 
             z=float(start[2]),
             profile=deposit.profile,
             metadata=deposit.metadata,
-            process=deposit.process,
             z_axis=deposit.start_axis,
         )
         return sample_point_kernel(domain, point_deposit)
@@ -314,7 +313,6 @@ def _sample_line_on_bounds(
             z=float(start[2]),
             profile=deposit.profile,
             metadata=deposit.metadata,
-            process=deposit.process,
             z_axis=deposit.start_axis,
         )
         return _sample_point_on_bounds(domain, point_deposit, profile, index_bounds)
