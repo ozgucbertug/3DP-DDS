@@ -21,9 +21,31 @@ RepresentationMode = Literal["occupancy", "implicit", "sdf", "mesh"]
 SampleFieldName = Literal["implicit", "occupancy", "deposition_index", "signed_distance"]
 
 
-
 def _surface_cache_key(threshold: float, *, step_size: int = 1) -> tuple[float, int]:
     return (float(threshold), int(step_size))
+
+
+def _freeze_generated_array(
+    values: npt.NDArray[Any],
+    *,
+    dtype: npt.DTypeLike,
+) -> npt.NDArray[Any]:
+    result = np.asarray(values, dtype=dtype)
+    result.setflags(write=False)
+    return result
+
+
+def _face_centroids_and_areas(
+    vertices: npt.NDArray[np.float64],
+    faces: npt.NDArray[np.int64],
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    triangles = vertices[faces]
+    centroids = np.mean(triangles, axis=1)
+    cross = np.cross(
+        triangles[:, 1] - triangles[:, 0],
+        triangles[:, 2] - triangles[:, 0],
+    )
+    return centroids, 0.5 * np.linalg.norm(cross, axis=1)
 
 
 def _sample_nearest(
@@ -128,7 +150,9 @@ class SimulationAnalysis:
                 f"{values.shape} does not match domain grid shape "
                 f"{domain.grid_shape}."
             )
-        if not np.all(np.isfinite(values)) or np.any(values < 0.0):
+        if _copy_implicit_field and (
+            not np.all(np.isfinite(values)) or np.any(values < 0.0)
+        ):
             raise ValueError(
                 "implicit_field must contain only finite, non-negative values."
             )
@@ -152,7 +176,7 @@ class SimulationAnalysis:
         if self._cache.deposition_index is None:
             from ..fields import accumulate_deposition_index
 
-            self._cache.deposition_index = readonly_array(
+            self._cache.deposition_index = _freeze_generated_array(
                 accumulate_deposition_index(self.domain, self.deposits),
                 dtype=np.intp,
             )
@@ -165,7 +189,7 @@ class SimulationAnalysis:
     ) -> npt.NDArray[np.bool_]:
         key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._cache.occupancy:
-            self._cache.occupancy[key] = readonly_array(
+            self._cache.occupancy[key] = _freeze_generated_array(
                 occupancy_from_implicit_field(self._implicit_field, threshold=key),
                 dtype=bool,
             )
@@ -289,11 +313,9 @@ class SimulationAnalysis:
             raise ValueError("source must be 'surface_sdf' or 'mesh'.")
 
         steps = 0.5 * np.asarray(self.domain.voxel_size, dtype=float)
-        gradient = np.empty(3, dtype=float)
-        for axis in range(3):
-            offset = np.zeros(3, dtype=float)
-            offset[axis] = steps[axis]
-            gradient[axis] = float(sdf(base_point + offset) - sdf(base_point - offset)) / (2.0 * steps[axis])
+        offsets = np.concatenate((np.diag(steps), -np.diag(steps)), axis=0)
+        sampled = np.asarray(sdf(base_point + offsets), dtype=float)
+        gradient = (sampled[:3] - sampled[3:]) / (2.0 * steps)
         norm = float(np.linalg.norm(gradient))
         if norm <= EPSILON:
             return (0.0, 0.0, 0.0)
@@ -371,15 +393,18 @@ class SimulationAnalysis:
         samples, _single = _coerce_points(points)
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         result: dict[str, npt.NDArray[np.generic]] = {}
+        implicit_samples: npt.NDArray[np.float64] | None = None
         for field_name in fields:
             if field_name == "implicit":
-                result[field_name] = _sample_scalar_field(
-                    self.domain,
-                    self._implicit_field,
-                    samples,
-                    interpolation=interpolation,
-                    fill_value=0.0,
-                )
+                if implicit_samples is None:
+                    implicit_samples = _sample_scalar_field(
+                        self.domain,
+                        self._implicit_field,
+                        samples,
+                        interpolation=interpolation,
+                        fill_value=0.0,
+                    )
+                result[field_name] = implicit_samples
             elif field_name == "deposition_index":
                 result[field_name] = _sample_nearest(
                     self.domain,
@@ -388,13 +413,14 @@ class SimulationAnalysis:
                     fill_value=-1,
                 )
             elif field_name == "occupancy":
-                implicit_samples = _sample_scalar_field(
-                    self.domain,
-                    self._implicit_field,
-                    samples,
-                    interpolation=interpolation,
-                    fill_value=0.0,
-                )
+                if implicit_samples is None:
+                    implicit_samples = _sample_scalar_field(
+                        self.domain,
+                        self._implicit_field,
+                        samples,
+                        interpolation=interpolation,
+                        fill_value=0.0,
+                    )
                 result[field_name] = implicit_samples >= threshold_value
             elif field_name == "signed_distance":
                 sdf = self.surface_sdf(threshold=threshold_value)
@@ -441,10 +467,10 @@ class SimulationAnalysis:
         mesh_area = 0.0
         mesh = self.surface_mesh(threshold=threshold_value, step_size=step_size)
         if not mesh.is_empty:
-            from ..mesh_analysis import face_areas, face_centroids
-
-            centroids = face_centroids(mesh)
-            areas = face_areas(mesh)
+            centroids, areas = _face_centroids_and_areas(
+                mesh.vertices,
+                mesh.faces,
+            )
             min_array = np.asarray(ensure_finite_triplet(minimum, "minimum"), dtype=float)
             max_array = np.asarray(ensure_finite_triplet(maximum, "maximum"), dtype=float)
             inside = np.all((centroids >= min_array) & (centroids <= max_array), axis=1)

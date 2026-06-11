@@ -122,6 +122,62 @@ def test_occupancy_does_not_construct_deposition_indices(
     assert calls == 1
 
 
+def test_sample_points_reuses_implicit_samples_for_occupancy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.analysis.simulation
+
+    calls = 0
+    original = dds.analysis.simulation._sample_scalar_field
+
+    def tracked(*args: object, **kwargs: object) -> np.ndarray:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(
+        dds.analysis.simulation,
+        "_sample_scalar_field",
+        tracked,
+    )
+    analysis = make_result().analysis
+
+    sampled = analysis.sample_points(
+        ((2.25, 2.25, 0.65), (6.0, 6.0, 3.0)),
+        fields=("implicit", "occupancy"),
+        interpolation="trilinear",
+    )
+
+    assert calls == 1
+    np.testing.assert_array_equal(
+        sampled["occupancy"],
+        sampled["implicit"] >= analysis.default_threshold,
+    )
+
+
+def test_surface_normal_batches_sdf_samples(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[tuple[int, ...]] = []
+
+    class PlaneSDF:
+        def __call__(self, points: object) -> np.ndarray:
+            values = np.asarray(points, dtype=float)
+            calls.append(values.shape)
+            return values[:, 2]
+
+    monkeypatch.setattr(
+        SimulationAnalysis,
+        "surface_sdf",
+        lambda self, **kwargs: PlaneSDF(),
+    )
+
+    normal = make_result().analysis.surface_normal_at((2.0, 2.0, 2.0))
+
+    assert normal == pytest.approx((0.0, 0.0, 1.0))
+    assert calls == [(6, 3)]
+
+
 def test_implicit_field_and_surface_sdf_have_distinct_semantics() -> None:
     result = make_result()
     inside = (2.25, 2.25, 0.25)
