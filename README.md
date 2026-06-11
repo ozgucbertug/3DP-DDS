@@ -691,8 +691,9 @@ workbench.refresh(simulator)
 workbench.app.exec()
 ```
 
-See `examples/live_simulation.py` for a Qt timer-driven example that adds a few
-beads at a time.
+See `examples/live_simulation.py` for a YAML-driven example. Press `Space` to
+advance the deposition sequence and `R` to reset it without reopening the
+workbench.
 
 ## Example scripts
 
@@ -710,8 +711,10 @@ python examples/yaml_simulation.py --help
 python examples/yaml_simulation.py --include-coverage
 python examples/yaml_simulation.py --view
 
-# Live timer-driven visualization.
+# Live YAML-driven visualization.
+python examples/live_simulation.py --help
 python examples/live_simulation.py
+python examples/live_simulation.py --step-size 5
 ```
 
 Examples do not write files unless an output directory is supplied.

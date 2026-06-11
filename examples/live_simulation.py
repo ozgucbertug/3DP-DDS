@@ -1,67 +1,145 @@
 from __future__ import annotations
 
-from PySide6 import QtCore
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Literal
 
-import dds.viz
-from dds import BeadProfile, Domain, PointDeposit, Simulator
-from dds.viz import ViewConfig
+from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, Simulator
+from dds.cli import run_cli
+from dds.formats.yaml import load_targets
+from dds.targets import point_deposits_from_targets
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
-def main() -> None:
-    domain = Domain.from_bounds(
-        xmin=0.0,
-        xmax=20.0,
-        ymin=0.0,
-        ymax=20.0,
-        zmin=-1.0,
-        zmax=5.0,
-        voxel_size=0.25,
-        length_unit="mm",
+@dataclass
+class LiveSimulationConfig:
+    """Interactively advance a YAML target sequence in the visualization workbench."""
+
+    yaml_path: Path = ROOT / "example_wall.yaml"
+    voxel_size: float = 1.0
+    bead_width: float = 18.0
+    bead_height: float = 12.0
+    threshold: float = 0.5
+    padding: float | None = None
+    origin_reference: Literal["top", "center"] = "top"
+    step_size: int = 1
+    advance_key: str = "space"
+    reset_key: str = "r"
+    view_mode: Literal["surface", "occupancy", "implicit"] = "surface"
+
+
+@dataclass
+class DepositionStepper:
+    """Advance a fixed deposit sequence into a mutable simulator."""
+
+    simulator: Simulator
+    deposits: tuple[PointDeposit, ...]
+    step_size: int = 1
+    next_index: int = 0
+
+    def __post_init__(self) -> None:
+        if self.step_size <= 0:
+            raise ValueError("step_size must be positive")
+
+    @property
+    def complete(self) -> bool:
+        return self.next_index >= len(self.deposits)
+
+    def advance(self) -> int:
+        """Add the next batch and return the number of deposits added."""
+
+        batch = self.deposits[
+            self.next_index : self.next_index + self.step_size
+        ]
+        if not batch:
+            return 0
+        self.simulator.add_deposits(batch)
+        self.next_index += len(batch)
+        return len(batch)
+
+    def reset(self) -> None:
+        """Clear the simulator and rewind the target sequence."""
+
+        self.simulator.clear_deposits()
+        self.next_index = 0
+
+
+def build_live_simulation(
+    config: LiveSimulationConfig,
+) -> tuple[Domain, DepositionStepper]:
+    """Load YAML targets and construct an empty simulator plus stepper."""
+
+    profile = BeadProfile(
+        width=config.bead_width,
+        height=config.bead_height,
     )
-    profile = BeadProfile(width=1.2, height=0.6)
-    simulator = Simulator(domain)
+    targets = load_targets(config.yaml_path)
+    deposits = point_deposits_from_targets(
+        targets,
+        profile=profile,
+        metadata=DepositionMetadata(),
+        origin_reference=config.origin_reference,
+    )
+    domain = Domain.from_deposits(
+        deposits,
+        voxel_size=config.voxel_size,
+        padding="auto" if config.padding is None else config.padding,
+    )
+    return domain, DepositionStepper(
+        simulator=Simulator(domain),
+        deposits=deposits,
+        step_size=config.step_size,
+    )
 
-    positions = [
-        (2.0, 2.0, 0.6),
-        (4.0, 2.0, 0.6),
-        (6.0, 2.0, 0.6),
-        (8.0, 2.0, 0.6),
-        (2.0, 4.0, 0.6),
-        (4.0, 4.0, 0.6),
-        (6.0, 4.0, 0.6),
-        (8.0, 4.0, 0.6),
-    ]
-    batch_size = 2
-    next_position = 0
 
+def run_live_simulation(config: LiveSimulationConfig) -> None:
+    """Open the workbench and bind deposition advancement to keyboard input."""
+
+    import dds.viz
+    from dds.viz import ViewConfig
+
+    domain, stepper = build_live_simulation(config)
     workbench = dds.viz.show(
-        simulator,
-        threshold=0.5,
-        initial_view=ViewConfig(view_mode="surface"),
+        stepper.simulator,
+        threshold=config.threshold,
+        initial_view=ViewConfig(view_mode=config.view_mode),
     )
 
-    timer = QtCore.QTimer(workbench)
+    def refresh() -> None:
+        workbench.refresh(stepper.simulator)
 
-    def add_next_batch() -> None:
-        nonlocal next_position
-
-        batch_positions = positions[next_position : next_position + batch_size]
-        if not batch_positions:
-            timer.stop()
+    def advance() -> None:
+        added = stepper.advance()
+        if added == 0:
+            print("Deposition sequence is complete.")
             return
-
-        simulator.add_deposits(
-            PointDeposit(target=position, profile=profile)
-            for position in batch_positions
+        refresh()
+        print(
+            f"Displayed {stepper.next_index}/{len(stepper.deposits)} "
+            "YAML targets."
         )
-        next_position += len(batch_positions)
-        workbench.refresh(simulator)
-        print(f"Displayed {len(simulator.deposits)} beads")
 
-    timer.timeout.connect(add_next_batch)
-    timer.start(750)
+    def reset() -> None:
+        stepper.reset()
+        refresh()
+        print("Deposition sequence reset.")
+
+    workbench.plotter.add_key_event(config.advance_key, advance)
+    workbench.plotter.add_key_event(config.reset_key, reset)
+
+    print(f"Loaded {len(stepper.deposits)} targets from {config.yaml_path}")
+    print(f"Domain: {domain.min_corner} -> {domain.max_corner}")
+    print(
+        f"Press {config.advance_key!r} to add {config.step_size} target(s); "
+        f"press {config.reset_key!r} to reset."
+    )
     workbench.app.exec()
 
 
+def main(config: LiveSimulationConfig) -> None:
+    run_live_simulation(config)
+
+
 if __name__ == "__main__":
-    main()
+    run_cli(LiveSimulationConfig, main)
