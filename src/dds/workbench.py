@@ -22,7 +22,7 @@ from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals
 from .results import SimulationResult
 from .simulator import Simulator
-from .viz import ViewConfig
+from .viz import ViewConfig, _occupied_index_bounds
 
 Representation = Literal["surface", "occupancy", "implicit"]
 ScalarRepresentation = Literal["occupancy", "implicit"]
@@ -700,7 +700,10 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return view_values
 
     def _deposition_order_scalar_field(self) -> npt.NDArray[np.float64]:
-        return np.asarray(self.bundle.strata(mode="order", threshold=self.threshold).label_field, dtype=float)
+        return np.asarray(
+            self.bundle.deposition_order_field(threshold=self.threshold),
+            dtype=float,
+        )
 
     def _scalar_field(self, representation: Literal["occupancy", "implicit"], field_name: str) -> npt.NDArray[Any]:
         try:
@@ -911,14 +914,13 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             return cached
 
         occupancy = self.bundle.occupancy(threshold=self.threshold)
-        indices = np.argwhere(occupancy)
-        if indices.size == 0:
+        index_bounds = _occupied_index_bounds(occupancy)
+        if index_bounds is None:
             bounds = self._domain_bounds_for_camera()
             self._occupied_bounds_cache[key] = bounds
             return bounds
 
-        lower_index = tuple(int(value) for value in indices.min(axis=0))
-        upper_index = tuple(int(value) for value in indices.max(axis=0))
+        lower_index, upper_index = index_bounds
         lower_point = self.bundle.domain.index_to_world(lower_index)
         upper_point = self.bundle.domain.index_to_world(upper_index)
         spacing = np.asarray(self.bundle.domain.voxel_size, dtype=float)

@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar, Literal
 
+import numpy as np
+import numpy.typing as npt
+
 if TYPE_CHECKING:
     from .results import SimulationResult
     from .simulator import Simulator
@@ -13,6 +16,32 @@ if TYPE_CHECKING:
 ViewMode = Literal["surface", "occupancy", "implicit"]
 ViewColorMode = Literal["plain", "normals", "overhang"]
 ViewScalarField = Literal["occupancy", "implicit", "coverage", "deposition_order"]
+
+
+def _occupied_index_bounds(
+    occupancy: npt.ArrayLike,
+) -> tuple[tuple[int, int, int], tuple[int, int, int]] | None:
+    """Return inclusive occupied index bounds without materializing coordinates."""
+
+    values = np.asarray(occupancy, dtype=bool)
+    if values.ndim != 3:
+        raise ValueError("occupancy must be a three-dimensional array.")
+
+    bounds: list[tuple[int, int]] = []
+    for axis in range(3):
+        projection = np.any(
+            values,
+            axis=tuple(other_axis for other_axis in range(3) if other_axis != axis),
+        )
+        occupied_indices = np.flatnonzero(projection)
+        if occupied_indices.size == 0:
+            return None
+        bounds.append((int(occupied_indices[0]), int(occupied_indices[-1])))
+
+    return (
+        (bounds[0][0], bounds[1][0], bounds[2][0]),
+        (bounds[0][1], bounds[1][1], bounds[2][1]),
+    )
 
 
 @dataclass(slots=True, frozen=True)

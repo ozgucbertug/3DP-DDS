@@ -195,6 +195,24 @@ def test_implicit_field_switch_changes_active_implicit_field(qtbot: object) -> N
     workbench.close()
 
 
+def test_deposition_order_view_uses_cached_order_field(
+    qtbot: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    result = make_simulator().result(include_coverage=True)
+    workbench = SimulationWorkbench(result, off_screen=True)
+    qtbot.addWidget(workbench)
+    expected = result.analysis.deposition_order_field(threshold=workbench.threshold)
+
+    def fail_strata(*args: object, **kwargs: object) -> None:
+        raise AssertionError("deposition-order visualization must not build strata")
+
+    monkeypatch.setattr(type(result.analysis), "strata", fail_strata)
+
+    np.testing.assert_array_equal(workbench._deposition_order_scalar_field(), expected)
+    workbench.close()
+
+
 def test_initial_view_config_applies_without_example_side_mutation(qtbot: object) -> None:
     simulator = make_simulator()
     result = simulator.result(include_coverage=True)
