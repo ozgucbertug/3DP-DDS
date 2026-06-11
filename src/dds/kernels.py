@@ -91,17 +91,17 @@ def rounded_cylinder_signed_distance(
     relative = points - center
     axial = np.sum(relative * axis, axis=-1)
     radial_vectors = relative - axial[..., np.newaxis] * axis
-    radial = np.linalg.norm(radial_vectors, axis=-1)
-    bounds = np.stack(
-        (
-            radial - profile.radius + profile.rounding_radius,
-            np.abs(axial) - profile.half_height + profile.rounding_radius,
-        ),
-        axis=-1,
+    radial = np.sqrt(np.sum(radial_vectors * radial_vectors, axis=-1))
+    radial_bound = radial - profile.radius + profile.rounding_radius
+    axial_bound = (
+        np.abs(axial) - profile.half_height + profile.rounding_radius
     )
     return (
-        np.minimum(np.maximum(bounds[..., 0], bounds[..., 1]), 0.0)
-        + np.linalg.norm(np.maximum(bounds, 0.0), axis=-1)
+        np.minimum(np.maximum(radial_bound, axial_bound), 0.0)
+        + np.sqrt(
+            np.maximum(radial_bound, 0.0) ** 2
+            + np.maximum(axial_bound, 0.0) ** 2
+        )
         - profile.rounding_radius
     )
 
@@ -140,14 +140,25 @@ def _iter_index_tiles(
                 )
 
 
+def _grid_points_on_bounds(
+    domain: Domain,
+    index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
+) -> npt.NDArray[np.float64]:
+    shape = tuple(stop - start for start, stop in index_bounds)
+    points = np.empty((shape[0], shape[1], shape[2], 3), dtype=float)
+    points[..., 0] = domain.axis_centers(0, *index_bounds[0])[:, np.newaxis, np.newaxis]
+    points[..., 1] = domain.axis_centers(1, *index_bounds[1])[np.newaxis, :, np.newaxis]
+    points[..., 2] = domain.axis_centers(2, *index_bounds[2])[np.newaxis, np.newaxis, :]
+    return points
+
+
 def _sample_point_on_bounds(
     domain: Domain,
     deposit: PointDeposit,
     profile: _ResolvedBeadProfile,
     index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
 ) -> _SampledKernel:
-    xs, ys, zs = domain.grid_centers(index_bounds)
-    points = np.stack((xs, ys, zs), axis=-1)
+    points = _grid_points_on_bounds(domain, index_bounds)
     signed_distance = rounded_cylinder_signed_distance(
         points,
         target=deposit.target.position.to_array(),
@@ -173,30 +184,23 @@ def _sample_line_on_bounds(
 ) -> _SampledKernel:
     start = deposit.start.position.to_array()
     end = deposit.end.position.to_array()
-    if np.allclose(start, end):
-        point_deposit = PointDeposit(
-            target=deposit.start,
-            profile=deposit.profile,
-            metadata=deposit.metadata,
-        )
-        return _sample_point_on_bounds(domain, point_deposit, profile, index_bounds)
-
-    xs, ys, zs = domain.grid_centers(index_bounds)
-    points = np.stack((xs, ys, zs), axis=-1)
+    points = _grid_points_on_bounds(domain, index_bounds)
     flat_points = points.reshape(-1, 3)
     parameters = closest_point_parameters(flat_points, start, end)
     closest_targets = start + parameters[:, np.newaxis] * (end - start)
-    axes = slerp_unit_vectors(
-        deposit.start.normal.to_array(),
-        deposit.end.normal.to_array(),
-        parameters,
+    start_axis = deposit.start.normal.to_array()
+    end_axis = deposit.end.normal.to_array()
+    axes = (
+        start_axis
+        if np.array_equal(start_axis, end_axis)
+        else slerp_unit_vectors(start_axis, end_axis, parameters)
     )
     signed_distance = rounded_cylinder_signed_distance(
         flat_points,
         target=closest_targets,
         axis=axes,
         profile=profile,
-    ).reshape(xs.shape)
+    ).reshape(points.shape[:-1])
     values = _implicit_values_from_signed_distance(signed_distance, profile.transition_width)
     return _SampledKernel(
         slices=(
@@ -238,6 +242,21 @@ def _iter_line_kernels(
     deposit: LineDeposit,
     tile_shape: TileShape,
 ) -> Iterator[_SampledKernel]:
+    if np.allclose(
+        deposit.start.position.to_array(),
+        deposit.end.position.to_array(),
+    ):
+        yield from _iter_point_kernels(
+            domain,
+            PointDeposit(
+                target=deposit.start,
+                profile=deposit.profile,
+                metadata=deposit.metadata,
+            ),
+            tile_shape,
+        )
+        return
+
     profile = _resolve_bead_profile(deposit.profile, domain)
     support_min, support_max = deposit.support_bounds(
         padding=profile.support_padding,

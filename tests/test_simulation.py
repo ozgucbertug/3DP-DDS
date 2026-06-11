@@ -181,6 +181,30 @@ def test_line_deposit_with_equal_endpoint_axes_has_stable_field_values() -> None
     assert field[0, 0, 0] == pytest.approx(0.0)
 
 
+def test_line_deposit_with_equal_endpoint_axes_skips_spherical_interpolation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.kernels
+
+    def unexpected_interpolation(*args: object, **kwargs: object) -> np.ndarray:
+        raise AssertionError("equal endpoint axes should not use spherical interpolation")
+
+    monkeypatch.setattr(
+        dds.kernels,
+        "slerp_unit_vectors",
+        unexpected_interpolation,
+    )
+    deposit = LineDeposit(
+        start=DepositionTarget((1.5, 2.5, 3.5), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((6.5, 2.5, 3.5), (0.0, 0.0, 1.0)),
+        profile=make_profile(width=2.0, height=2.0),
+    )
+
+    assert simulate(make_domain(), [deposit]).implicit_field.max() == pytest.approx(
+        1.0
+    )
+
+
 def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> None:
     domain = Domain.from_bounds(
         xmin=-3.0,
@@ -331,6 +355,30 @@ def test_zero_length_line_matches_point_deposit() -> None:
     np.testing.assert_array_equal(
         point_result.analysis.occupancy(threshold=0.5),
         line_result.analysis.occupancy(threshold=0.5),
+    )
+
+
+def test_zero_length_line_uses_point_kernel_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.kernels
+
+    def unexpected_line_sampling(*args: object, **kwargs: object) -> object:
+        raise AssertionError("zero-length lines should use point-kernel sampling")
+
+    monkeypatch.setattr(
+        dds.kernels,
+        "_sample_line_on_bounds",
+        unexpected_line_sampling,
+    )
+    deposit = LineDeposit(
+        start=(2.5, 2.5, 3.5),
+        end=(2.5, 2.5, 3.5),
+        profile=make_profile(width=2.0, height=2.0),
+    )
+
+    assert simulate(make_domain(), [deposit]).implicit_field.max() == pytest.approx(
+        1.0
     )
 
 
