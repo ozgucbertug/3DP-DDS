@@ -18,7 +18,6 @@ from .primitives import (
 )
 from .results import SimulationResult, simulate
 from .simulator import Simulator
-from .types import FieldComposition
 
 __all__ = [
     "BeadProfile",
@@ -27,7 +26,6 @@ __all__ = [
     "DepositionMetadata",
     "DepositionTarget",
     "Domain",
-    "FieldComposition",
     "Line3D",
     "LineDeposit",
     "Point3D",

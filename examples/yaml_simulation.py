@@ -34,14 +34,14 @@ class YamlSimulationConfig:
     threshold: float = 0.5
     padding: float | None = None
     origin_reference: Literal["top", "center"] = "top"
-    field_composition: Literal["max", "coverage"] = "max"
+    include_coverage: bool = False
     analysis: Literal["none", "interface", "support", "all"] = "none"
     stratification: Literal["auto", "layer", "order"] = "auto"
     build_direction: Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"] = "+Z"
     write_mesh_output: bool = False
     mesh_step_size: int = 1
     view: bool = False
-    view_mode: Literal["surface", "occupancy", "density"] = "surface"
+    view_mode: Literal["surface", "occupancy", "implicit"] = "surface"
 
 
 def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResult:
@@ -63,12 +63,10 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         padding="auto" if config.padding is None else config.padding,
     )
     simulator = Simulator(domain, deposits)
-    compositions = (
-        ("max", "coverage")
-        if config.field_composition == "coverage"
-        else ("max",)
+    result = simulator.result(
+        include_coverage=config.include_coverage,
+        threshold=config.threshold,
     )
-    result = simulator.result(compositions=compositions, threshold=config.threshold)
 
     occupancy = result.analysis.occupancy(threshold=config.threshold)
     deposition_index = result.analysis.deposition_index_field()
@@ -82,7 +80,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
     print(f"Occupied voxels: {int(occupancy.sum())}")
     print(f"Occupancy fraction: {occupancy_fraction(occupancy):.4f}")
     print(f"Max deposition index: {float(deposition_index.max()):.4f}")
-    print(f"Max envelope density: {float(result.density_max.max()):.4f}")
+    print(f"Max implicit value: {float(result.implicit_field.max()):.4f}")
     if result.coverage is not None:
         print(f"Max nonphysical coverage: {float(result.coverage.max()):.4f}")
 
@@ -120,7 +118,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
                 "bead_height": config.bead_height,
                 "origin_reference": config.origin_reference,
                 "threshold": config.threshold,
-                "field_composition": config.field_composition,
+                "include_coverage": config.include_coverage,
             },
         )
         for label, path in written.items():
@@ -138,11 +136,11 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
     if config.view:
         initial_scalar_field = None
         initial_color_mode = None
-        if config.view_mode == "density":
-            if config.field_composition == "coverage":
+        if config.view_mode == "implicit":
+            if config.include_coverage:
                 initial_scalar_field = "coverage"
             else:
-                initial_scalar_field = "density"
+                initial_scalar_field = "implicit"
         elif config.view_mode == "occupancy":
             initial_scalar_field = "occupancy"
         elif config.view_mode == "surface" and config.analysis in {"support", "all"}:

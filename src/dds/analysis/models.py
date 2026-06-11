@@ -17,21 +17,21 @@ StratificationMode = Literal["layer", "order"]
 
 @dataclass(slots=True, frozen=True)
 class StratumFieldSet:
-    """Max-density and occupancy fields partitioned by layer or deposit order."""
+    """Implicit and occupancy fields partitioned by layer or deposit order."""
 
     domain: Domain
     mode: StratificationMode
     threshold: float
     stratum_ids: tuple[int, ...]
-    density_max_fields: tuple[npt.NDArray[np.float64], ...]
+    implicit_fields: tuple[npt.NDArray[np.float64], ...]
     occupancy_fields: tuple[npt.NDArray[np.bool_], ...]
     label_field: npt.NDArray[np.float64]
 
     def __post_init__(self) -> None:
         object.__setattr__(
             self,
-            "density_max_fields",
-            tuple(readonly_array(field, dtype=float) for field in self.density_max_fields),
+            "implicit_fields",
+            tuple(readonly_array(field, dtype=float) for field in self.implicit_fields),
         )
         object.__setattr__(
             self,
@@ -39,12 +39,12 @@ class StratumFieldSet:
             tuple(readonly_array(field, dtype=bool) for field in self.occupancy_fields),
         )
         object.__setattr__(self, "label_field", readonly_array(self.label_field, dtype=float))
-        if len(self.stratum_ids) != len(self.density_max_fields) or len(self.stratum_ids) != len(self.occupancy_fields):
-            raise ValueError("stratum_ids, density_max_fields, and occupancy_fields must have the same length.")
+        if len(self.stratum_ids) != len(self.implicit_fields) or len(self.stratum_ids) != len(self.occupancy_fields):
+            raise ValueError("stratum_ids, implicit_fields, and occupancy_fields must have the same length.")
         expected_shape = self.domain.grid_shape
-        for density in self.density_max_fields:
-            if density.shape != expected_shape:
-                raise ValueError("density_max_fields must match the domain grid shape.")
+        for implicit_field in self.implicit_fields:
+            if implicit_field.shape != expected_shape:
+                raise ValueError("implicit_fields must match the domain grid shape.")
         for occupancy in self.occupancy_fields:
             if occupancy.shape != expected_shape:
                 raise ValueError("occupancy_fields must match the domain grid shape.")
@@ -57,8 +57,8 @@ class StratumFieldSet:
         except ValueError as exc:
             raise KeyError(f"Unknown stratum_id {stratum_id!r}.") from exc
 
-    def density(self, stratum_id: int) -> npt.NDArray[np.float64]:
-        return self.density_max_fields[self.stratum_index(stratum_id)]
+    def implicit_field(self, stratum_id: int) -> npt.NDArray[np.float64]:
+        return self.implicit_fields[self.stratum_index(stratum_id)]
 
     def occupancy(self, stratum_id: int) -> npt.NDArray[np.bool_]:
         return self.occupancy_fields[self.stratum_index(stratum_id)]

@@ -10,9 +10,9 @@ if TYPE_CHECKING:
     from .simulator import Simulator
     from .workbench import SimulationWorkbench
 
-ViewMode = Literal["surface", "occupancy", "density"]
+ViewMode = Literal["surface", "occupancy", "implicit"]
 ViewColorMode = Literal["plain", "normals", "overhang"]
-ViewScalarField = Literal["occupancy", "density", "coverage", "deposition_order"]
+ViewScalarField = Literal["occupancy", "implicit", "coverage", "deposition_order"]
 
 
 @dataclass(slots=True, frozen=True)

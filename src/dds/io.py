@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .primitives import Deposit
     from .results import SimulationResult
 
-_CHECKPOINT_VERSION = 6
+_CHECKPOINT_VERSION = 7
 
 
 def _json_default(value: Any) -> Any:
@@ -47,7 +47,7 @@ def save_simulation_bundle(
     domain: Domain,
     occupancy: npt.NDArray[np.bool_] | None = None,
     deposition_index: npt.NDArray[np.integer[Any]] | npt.NDArray[np.float64] | None = None,
-    density: npt.NDArray[np.float64] | None = None,
+    implicit_field: npt.NDArray[np.float64] | None = None,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Path]:
     """Save simulation outputs and metadata into a directory."""
@@ -60,8 +60,11 @@ def save_simulation_bundle(
         written["occupancy"] = save_array(output_dir / "occupancy.npy", occupancy)
     if deposition_index is not None:
         written["deposition_index"] = save_array(output_dir / "deposition_index.npy", deposition_index)
-    if density is not None:
-        written["density"] = save_array(output_dir / "density.npy", density)
+    if implicit_field is not None:
+        written["implicit_field"] = save_array(
+            output_dir / "implicit_field.npy",
+            implicit_field,
+        )
 
     payload = {
         "domain": domain.to_dict(),
@@ -161,8 +164,8 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
 def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:
     """Save a :class:`~dds.results.SimulationResult` as a typed checkpoint.
 
-    The checkpoint is a single compressed ``npz`` file containing the density
-    arrays and a JSON blob with the domain geometry, deposit list, and
+    The checkpoint is a single compressed ``npz`` file containing the implicit
+    field and a JSON blob with the domain geometry, deposit list, and
     threshold.  Use :func:`load_checkpoint` to restore the result.
 
     Parameters
@@ -192,7 +195,7 @@ def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:
     meta_bytes = json.dumps(meta, default=_json_default).encode("utf-8")
 
     arrays: dict[str, Any] = {
-        "density_max": result.density_max,
+        "implicit_field": result.implicit_field,
         "_meta": np.frombuffer(meta_bytes, dtype=np.uint8),
     }
     if result.coverage is not None:
@@ -213,7 +216,7 @@ def load_checkpoint(path: str | Path) -> SimulationResult:
     Returns
     -------
     SimulationResult
-        A fully reconstructed result with density arrays and deposits.
+        A fully reconstructed result with implicit geometry and deposits.
 
     Raises
     ------
@@ -251,7 +254,7 @@ def load_checkpoint(path: str | Path) -> SimulationResult:
     return SimulationResult(
         domain=domain,
         deposits=deposits,
-        density_max=data["density_max"],
+        implicit_field=data["implicit_field"],
         coverage=coverage,
         default_threshold=float(meta["threshold"]),
     )

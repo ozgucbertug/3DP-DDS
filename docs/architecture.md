@@ -15,7 +15,7 @@ results, derived analysis, persistence, and optional integrations.
    `length_unit`.
 5. Private kernel iterators sample bounded, globally aligned tiles.
 6. Dense accumulation or standalone `ChunkedField` storage composes those
-   tiles into a max envelope and optional coverage diagnostic.
+   tiles into an implicit field and optional coverage diagnostic.
 7. `SimulationResult` freezes the deposits and computed arrays.
 8. `SimulationAnalysis`, reached through `result.analysis`, caches derived
    occupancy, index, SDF, mesh, strata, interface, and support products.

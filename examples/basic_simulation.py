@@ -60,14 +60,14 @@ class Args:
     threshold: float = 0.5
     output_dir: Path | None = None
     view: bool = False
-    view_mode: Literal["surface", "occupancy", "density"] = "surface"
+    view_mode: Literal["surface", "occupancy", "implicit"] = "surface"
 
 
 def main(args: Args) -> None:
     domain = build_example_domain()
     deposits = build_example_deposits()
     simulator = Simulator(domain, deposits)
-    result = simulator.result(compositions=("max", "coverage"), threshold=args.threshold)
+    result = simulator.result(include_coverage=True, threshold=args.threshold)
 
     occupancy = result.analysis.occupancy(threshold=args.threshold)
     deposition_index = result.analysis.deposition_index_field()

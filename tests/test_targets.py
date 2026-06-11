@@ -103,7 +103,7 @@ def test_line_and_toolpath_workflows_follow_target_order() -> None:
     assert len(toolpath.segments()) == 2
 
     domain = Domain.from_deposits(toolpath, voxel_size=0.5)
-    result = simulate(domain, toolpath, compositions=("max", "coverage"))
+    result = simulate(domain, toolpath, include_coverage=True)
     assert len(result.deposits) == 1
     assert result.coverage is not None
 

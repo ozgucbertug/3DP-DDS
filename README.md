@@ -105,7 +105,7 @@ deposits = [
 
 result = simulate(domain, deposits, threshold=0.5)
 
-density = result.field("max")
+implicit = result.implicit_field
 occupancy = result.analysis.occupancy()
 deposition_index = result.analysis.deposition_index_field()
 
@@ -281,20 +281,20 @@ from dds import simulate
 result = simulate(
     domain,
     deposits,
-    compositions=("max", "coverage"),
+    include_coverage=True,
     threshold=0.5,
 )
 
-geometry = result.field("max")
-coverage = result.field("coverage")
+geometry = result.implicit_field
+coverage = result.coverage
 ```
 
-The `"max"` composition is the canonical union-like fabricated geometry used
-for occupancy, surfaces, SDFs, and support analysis.
+`implicit_field` is the canonical union-like fabricated geometry used for
+occupancy, surfaces, SDFs, and support analysis.
 
-The optional `"coverage"` composition adds kernel contributions. It is useful
-for locating path overlap, but it is not physical density, mass, volume
-fraction, or material flow.
+Optional `coverage` adds kernel contributions. It is useful for locating path
+overlap, but it is not physical density, mass, volume fraction, or material
+flow.
 
 ### Stateful and incremental simulation
 
@@ -309,7 +309,7 @@ for deposit in deposits:
     simulator.add_deposit(deposit)
 
 result = simulator.result(
-    compositions=("max", "coverage"),
+    include_coverage=True,
     threshold=0.5,
 )
 ```
@@ -337,15 +337,15 @@ import numpy as np
 
 from dds.fields import apply_deposit_to_field, apply_deposit_to_index_field
 
-density_grid = np.zeros(domain.grid_shape, dtype=float)
+implicit_grid = np.zeros(domain.grid_shape, dtype=float)
 index_grid = np.full(domain.grid_shape, -1, dtype=np.intp)
 
 for deposit_index, deposit in enumerate(deposits):
     apply_deposit_to_field(
         domain,
-        density_grid,
+        implicit_grid,
         deposit,
-        composition="max",
+        field="implicit",
     )
     apply_deposit_to_index_field(
         domain,
@@ -368,14 +368,14 @@ chunked = accumulate_chunked_field(
     domain,
     deposits,
     chunk_shape=(32, 32, 32),
-    compositions=("max", "coverage"),
+    include_coverage=True,
 )
 
-dense_max = chunked.to_dense("max")
+dense_implicit = chunked.to_dense("implicit")
 dense_coverage = chunked.to_dense("coverage")
 
 roi = chunked.materialize(
-    "max",
+    "implicit",
     index_bounds=((0, 32), (0, 32), (0, 16)),
 )
 
@@ -405,11 +405,11 @@ sequence. Derived operations are cached on `result.analysis`.
 ```python
 analysis = result.analysis
 
-density = analysis.density_field()
+implicit = result.implicit_field
 occupancy = analysis.occupancy(threshold=0.5)
 deposition_index = analysis.deposition_index_field()
 
-density_at_point = analysis.sample_density_at(
+implicit_at_point = analysis.sample_implicit_value(
     (5.0, 5.0, 0.3),
     interpolation="trilinear",
 )
@@ -421,7 +421,7 @@ inside = analysis.contains_point(
 
 samples = analysis.sample_points(
     [(5.0, 5.0, 0.3), (10.0, 10.0, 1.0)],
-    fields=("density", "occupancy", "deposition_index", "signed_distance"),
+    fields=("implicit", "occupancy", "deposition_index", "signed_distance"),
     interpolation="trilinear",
 )
 ```
@@ -485,7 +485,7 @@ written = result.save(
 print(written)
 ```
 
-The bundle includes occupancy, deposition index, max density, metadata, and
+The bundle includes occupancy, deposition index, the implicit field, metadata, and
 coverage when it was requested.
 
 ### Typed checkpoint
@@ -613,8 +613,8 @@ Mesh conversion and I/O require the `mesh` extra:
 
 ```python
 from dds.geometry import (
-    density_to_mesh,
-    density_to_sdf,
+    implicit_field_to_mesh,
+    implicit_field_to_sdf,
     mesh_surface_area,
     mesh_to_sdf_field,
     occupancy_to_mesh,
@@ -622,7 +622,7 @@ from dds.geometry import (
     write_mesh,
 )
 
-surface = density_to_mesh(domain, result.field("max"), threshold=0.5)
+surface = implicit_field_to_mesh(domain, result.implicit_field, threshold=0.5)
 write_mesh("outputs/surface.ply", surface)
 
 loaded = read_mesh("outputs/surface.ply")
@@ -633,9 +633,9 @@ occupancy_surface = occupancy_to_mesh(
     domain,
     result.analysis.occupancy(),
 )
-density_sdf = density_to_sdf(
+implicit_sdf = implicit_field_to_sdf(
     domain,
-    result.field("max"),
+    result.implicit_field,
     threshold=0.5,
 )
 ```
@@ -668,7 +668,7 @@ workbench = dds.viz.show(
 workbench.app.exec()
 ```
 
-Available view modes are `"surface"`, `"occupancy"`, and `"density"`.
+Available view modes are `"surface"`, `"occupancy"`, and `"implicit"`.
 
 ### Live incremental view
 
@@ -703,7 +703,7 @@ python examples/basic_simulation.py --output-dir outputs/basic
 
 # YAML target workflow.
 python examples/yaml_simulation.py --help
-python examples/yaml_simulation.py --field-composition coverage
+python examples/yaml_simulation.py --include-coverage
 python examples/yaml_simulation.py --view
 
 # Live timer-driven visualization.
@@ -741,7 +741,7 @@ src/dds/
 ├── io.py               Array bundles and typed checkpoints
 ├── kernels.py          Private tiled bead-kernel sampling
 ├── mesh_analysis.py    Triangle-mesh metrics
-├── occupancy.py        Density threshold helpers
+├── occupancy.py        Implicit threshold helpers
 ├── primitives.py       Geometry wrappers and deposition events
 ├── results.py          SimulationResult and simulate()
 ├── simulator.py        Stateful incremental dense simulation
@@ -760,13 +760,13 @@ Specialized capabilities live in `dds.analysis`, `dds.geometry`, `dds.fields`,
 - **Names**: distribution `3dp-dds`, import package `dds`, repository
   `3DP-DDS`.
 - **Axis order**: arrays use `(x, y, z)` and NumPy `indexing="ij"`.
-- **Top-referenced targets**: a pose marks the bead top along its local axis.
+- **Top-referenced targets**: a target marks the bead top along its normal.
 - **Bead dimensions**: width is the full transverse width; height is the full
   distance along the local axis.
 - **Units**: world coordinates, bead dimensions, and voxel size use the
   domain's recorded `length_unit`; no conversion is performed.
-- **Max envelope**: `"max"` is the canonical fabricated geometry.
-- **Coverage**: `"coverage"` is a nonphysical overlap diagnostic that may
+- **Implicit field**: `implicit_field` is the canonical fabricated geometry.
+- **Coverage**: `coverage` is a nonphysical overlap diagnostic that may
   change with voxel resolution and path segmentation.
 - **SDF sign**: negative inside, positive outside, zero on the surface.
 - **Deposition index**: the 0-based index of the last deposit touching each

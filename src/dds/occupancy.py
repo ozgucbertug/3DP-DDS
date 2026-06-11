@@ -6,15 +6,15 @@ import numpy as np
 import numpy.typing as npt
 
 
-def occupancy_from_density(
-    density: npt.NDArray[np.float64],
+def occupancy_from_implicit_field(
+    implicit_field: npt.NDArray[np.float64],
     threshold: float = 0.5,
 ) -> npt.NDArray[np.bool_]:
     """Threshold a scalar field into a binary occupancy grid."""
 
     if threshold < 0.0:
         raise ValueError("threshold must be non-negative.")
-    return density >= threshold
+    return implicit_field >= threshold
 
 
 def occupancy_fraction(occupancy: npt.NDArray[np.bool_]) -> float:

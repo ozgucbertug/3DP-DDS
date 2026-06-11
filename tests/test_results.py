@@ -66,7 +66,7 @@ def test_simulation_result_strata_prefers_real_layers_in_auto_mode() -> None:
 
     assert field_set.mode == "layer"
     assert field_set.stratum_ids == (0, 1)
-    assert field_set.density(0).shape == domain.grid_shape
+    assert field_set.implicit_field(0).shape == domain.grid_shape
     assert field_set.occupancy(1).dtype == np.bool_
     assert np.max(field_set.label_field) == pytest.approx(2.0)
 
@@ -96,7 +96,7 @@ def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
     result = simulate(domain, deposits, threshold=0.5)
 
     field_set = result.analysis.strata(mode="layer", threshold=0.5)
-    density = field_set.density(3)
+    density = field_set.implicit_field(3)
     occupancy = field_set.occupancy(3)
 
     assert density.shape == domain.grid_shape
@@ -122,11 +122,11 @@ def test_simulator_result_requests_coverage() -> None:
         ],
     )
 
-    result = simulator.result(threshold=0.5, compositions=("max", "coverage"))
+    result = simulator.result(threshold=0.5, include_coverage=True)
 
     assert result.coverage is not None
     assert result.coverage.shape == domain.grid_shape
-    assert np.all(result.coverage >= result.density_max)
+    assert np.all(result.coverage >= result.implicit_field)
 
 
 def test_simulation_result_is_an_immutable_snapshot() -> None:
@@ -134,14 +134,14 @@ def test_simulation_result_is_an_immutable_snapshot() -> None:
     result = SimulationResult(
         domain=make_domain(),
         deposits=(),
-        density_max=density,
+        implicit_field=density,
     )
     analysis = result.analysis
     density.fill(1.0)
 
     assert analysis is result.analysis
-    assert float(result.density_max.max()) == pytest.approx(0.0)
+    assert float(result.implicit_field.max()) == pytest.approx(0.0)
     with pytest.raises(ValueError):
-        result.density_max[0, 0, 0] = 1.0
+        result.implicit_field[0, 0, 0] = 1.0
     with pytest.raises(FrozenInstanceError):
-        result.density_max = np.ones(result.domain.grid_shape)
+        result.implicit_field = np.ones(result.domain.grid_shape)

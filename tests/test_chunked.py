@@ -49,8 +49,8 @@ def test_chunked_to_dense_max_matches_simulate_max() -> None:
     chunked = accumulate_chunked_field(domain, deposits)
 
     np.testing.assert_allclose(
-        chunked.to_dense("max"),
-        simulate(domain, deposits).field("max"),
+        chunked.to_dense("implicit"),
+        simulate(domain, deposits).implicit_field,
     )
 
 
@@ -58,11 +58,11 @@ def test_chunked_to_dense_coverage_matches_dense_accumulation() -> None:
     domain = make_domain()
     deposits = make_deposits()
 
-    chunked = accumulate_chunked_field(domain, deposits, compositions=("max", "coverage"))
+    chunked = accumulate_chunked_field(domain, deposits, include_coverage=True)
     expected = simulate(
         domain,
         deposits,
-        compositions=("max", "coverage"),
+        include_coverage=True,
     )
 
     assert expected.coverage is not None
@@ -73,23 +73,22 @@ def test_chunked_to_dense_all_matches_individual_calls() -> None:
     chunked = accumulate_chunked_field(
         make_domain(),
         make_deposits(),
-        compositions=("max", "coverage"),
+        include_coverage=True,
     )
 
-    all_fields = chunked.to_dense_all("max", "coverage")
+    all_fields = chunked.to_dense_all()
 
-    np.testing.assert_allclose(all_fields["max"], chunked.to_dense("max"))
+    np.testing.assert_allclose(all_fields["implicit"], chunked.to_dense("implicit"))
     np.testing.assert_allclose(
         all_fields["coverage"],
         chunked.to_dense("coverage"),
     )
 
 
-def test_chunked_to_dense_all_raises_on_empty_compositions() -> None:
+def test_chunked_to_dense_all_returns_configured_fields() -> None:
     chunked = accumulate_chunked_field(make_domain(), make_deposits())
 
-    with pytest.raises(ValueError, match="composition"):
-        chunked.to_dense_all()
+    assert tuple(chunked.to_dense_all()) == ("implicit",)
 
 
 def test_chunked_empty_and_clear_behavior() -> None:
@@ -139,8 +138,8 @@ def test_chunked_roi_materialization_matches_dense_slice() -> None:
     chunked = accumulate_chunked_field(make_domain(), make_deposits())
     bounds = ((1, 5), (1, 6), (1, 7))
 
-    roi = chunked.materialize("max", index_bounds=bounds)
-    dense = chunked.to_dense("max")
+    roi = chunked.materialize("implicit", index_bounds=bounds)
+    dense = chunked.to_dense("implicit")
 
     np.testing.assert_allclose(roi, dense[1:5, 1:6, 1:7])
 
@@ -169,8 +168,8 @@ def test_chunked_diagonal_path_uses_subset_of_domain_memory() -> None:
     assert chunked.chunk_count < 8**3
     assert chunked.memory_ratio < 0.2
     np.testing.assert_allclose(
-        chunked.to_dense("max"),
-        simulate(domain, [deposit]).density_max,
+        chunked.to_dense("implicit"),
+        simulate(domain, [deposit]).implicit_field,
     )
 
 
@@ -188,39 +187,42 @@ def test_polyline_event_merges_internal_segments_across_chunk_boundaries() -> No
         domain,
         [deposit],
         chunk_shape=(2, 2, 2),
-        compositions=("max", "coverage"),
+        include_coverage=True,
     )
     result = simulate(
         domain,
         [deposit],
-        compositions=("max", "coverage"),
+        include_coverage=True,
     )
 
     assert result.coverage is not None
-    np.testing.assert_allclose(chunked.to_dense("max"), result.density_max)
+    np.testing.assert_allclose(chunked.to_dense("implicit"), result.implicit_field)
     np.testing.assert_allclose(chunked.to_dense("coverage"), result.coverage)
     np.testing.assert_allclose(
         chunked.to_dense("coverage"),
-        chunked.to_dense("max"),
+        chunked.to_dense("implicit"),
     )
 
 
-def test_max_only_chunked_field_uses_half_the_dual_composition_memory() -> None:
+def test_implicit_only_chunked_field_uses_half_the_dual_field_memory() -> None:
     domain = make_domain()
     deposits = make_deposits()
-    max_only = accumulate_chunked_field(domain, deposits)
+    implicit_only = accumulate_chunked_field(domain, deposits)
     both = accumulate_chunked_field(
         domain,
         deposits,
-        compositions=("max", "coverage"),
+        include_coverage=True,
     )
 
-    assert both.nbytes == 2 * max_only.nbytes
-    np.testing.assert_allclose(max_only.to_dense("max"), both.to_dense("max"))
+    assert both.nbytes == 2 * implicit_only.nbytes
+    np.testing.assert_allclose(
+        implicit_only.to_dense("implicit"),
+        both.to_dense("implicit"),
+    )
 
 
 def test_chunked_field_to_result_matches_simulate() -> None:
-    """ChunkedField.to_result() should yield the same density as simulate()."""
+    """ChunkedField.to_result() should match the dense implicit field."""
 
     domain = make_domain()
     deposits = make_deposits()
@@ -228,7 +230,7 @@ def test_chunked_field_to_result_matches_simulate() -> None:
     result_chunked = chunked.to_result(deposits)
     result_direct = simulate(domain, deposits)
 
-    np.testing.assert_allclose(result_chunked.density_max, result_direct.density_max)
+    np.testing.assert_allclose(result_chunked.implicit_field, result_direct.implicit_field)
     assert result_chunked.coverage is None
     assert result_chunked.analysis.occupancy().any()
 
@@ -238,7 +240,7 @@ def test_chunked_field_to_result_includes_coverage_when_tracked() -> None:
 
     domain = make_domain()
     deposits = make_deposits()
-    chunked = accumulate_chunked_field(domain, deposits, compositions=("max", "coverage"))
+    chunked = accumulate_chunked_field(domain, deposits, include_coverage=True)
     result = chunked.to_result(deposits)
 
     assert result.coverage is not None

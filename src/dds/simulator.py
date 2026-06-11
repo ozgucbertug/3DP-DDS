@@ -1,4 +1,4 @@
-"""Main simulation orchestration and user-facing helper API."""
+"""Mutable deposition construction and dense simulation snapshots."""
 
 from __future__ import annotations
 
@@ -8,15 +8,14 @@ import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain
-from .fields import accumulate_deposition_index, accumulate_field
+from .fields import accumulate_field
 from .kernels import iter_deposit_kernels
 from .primitives import Deposit, DepositInput, iter_deposits
 from .results import SimulationResult
-from .types import FieldComposition
 
 
 class Simulator:
-    """Stateful simulator with cached dense fields and headless analysis queries."""
+    """Stateful deposit collection with incrementally updated dense caches."""
 
     def __init__(
         self,
@@ -26,109 +25,84 @@ class Simulator:
         self.domain = domain
         self._deposits: list[Deposit] = []
         self._coverage_cache: npt.NDArray[np.float64] | None = None
-        self._density_max_cache: npt.NDArray[np.float64] | None = None
-        self._deposition_index_cache: npt.NDArray[np.intp] | None = None
+        self._implicit_field_cache: npt.NDArray[np.float64] | None = None
         if deposits is not None:
             self.add_deposits(deposits)
 
     @property
     def deposits(self) -> tuple[Deposit, ...]:
-        """Return the current deposit list."""
-
         return tuple(self._deposits)
 
-    def _apply_incremental(self, deposit: Deposit, index: int) -> None:
-        """Apply one deposit kernel to every live dense cache in a single sample pass."""
-
-        if not (
-            self._coverage_cache is not None
-            or self._density_max_cache is not None
-            or self._deposition_index_cache is not None
+    def _apply_incremental(self, deposit: Deposit) -> None:
+        if (
+            self._coverage_cache is None
+            and self._implicit_field_cache is None
         ):
-            # No base caches are warm yet; skip sampling.
             return
-
         for sampled in iter_deposit_kernels(self.domain, deposit):
             if self._coverage_cache is not None:
                 self._coverage_cache[sampled.slices] += sampled.values
-            if self._density_max_cache is not None:
+            if self._implicit_field_cache is not None:
                 np.maximum(
-                    self._density_max_cache[sampled.slices],
+                    self._implicit_field_cache[sampled.slices],
                     sampled.values,
-                    out=self._density_max_cache[sampled.slices],
+                    out=self._implicit_field_cache[sampled.slices],
                 )
-            if self._deposition_index_cache is not None:
-                touched = sampled.values > 0.0
-                self._deposition_index_cache[sampled.slices][touched] = index
 
-    def _density_field(self) -> npt.NDArray[np.float64]:
-        if self._density_max_cache is None:
-            self._density_max_cache = accumulate_field(
+    def _implicit_field(self) -> npt.NDArray[np.float64]:
+        if self._implicit_field_cache is None:
+            self._implicit_field_cache = accumulate_field(
                 self.domain,
                 self._deposits,
-                composition="max",
+                field="implicit",
             )
-        return self._density_max_cache
+        return self._implicit_field_cache
 
     def _coverage_field(self) -> npt.NDArray[np.float64]:
         if self._coverage_cache is None:
             self._coverage_cache = accumulate_field(
                 self.domain,
                 self._deposits,
-                composition="coverage",
+                field="coverage",
             )
         return self._coverage_cache
 
-    def _deposition_index_field(self) -> npt.NDArray[np.intp]:
-        if self._deposition_index_cache is None:
-            self._deposition_index_cache = accumulate_deposition_index(self.domain, self._deposits)
-        return self._deposition_index_cache
-
     def add_deposit(self, deposit: DepositInput) -> None:
-        """Add one deposit or toolpath sequence, updating caches incrementally."""
+        """Add one deposit, updating any warm dense caches."""
 
         for leaf in iter_deposits(deposit):
-            new_index = len(self._deposits)
             self._deposits.append(leaf)
-            self._apply_incremental(leaf, new_index)
+            self._apply_incremental(leaf)
 
     def add_deposits(self, deposits: Iterable[DepositInput] | DepositInput) -> None:
-        """Add multiple deposits or sequences, updating caches incrementally."""
+        """Add multiple deposits, updating any warm dense caches."""
 
         for leaf in iter_deposits(deposits):
-            new_index = len(self._deposits)
             self._deposits.append(leaf)
-            self._apply_incremental(leaf, new_index)
+            self._apply_incremental(leaf)
 
     def clear_deposits(self) -> None:
-        """Remove all deposits, reusing grid allocations where possible."""
+        """Remove all deposits while retaining allocated dense caches."""
 
         self._deposits.clear()
         if self._coverage_cache is not None:
             self._coverage_cache.fill(0.0)
-        if self._density_max_cache is not None:
-            self._density_max_cache.fill(0.0)
-        if self._deposition_index_cache is not None:
-            self._deposition_index_cache.fill(-1)
+        if self._implicit_field_cache is not None:
+            self._implicit_field_cache.fill(0.0)
 
     def result(
         self,
         *,
-        compositions: tuple[FieldComposition, ...] = ("max",),
+        include_coverage: bool = False,
         threshold: float = 0.5,
     ) -> SimulationResult:
-        """Return a reusable SimulationResult built from cached density fields."""
+        """Return an immutable snapshot of the current simulation."""
 
-        requested = tuple(dict.fromkeys(compositions))
-        if not requested:
-            raise ValueError("compositions must contain at least one density composition.")
-        if any(composition not in {"max", "coverage"} for composition in requested):
-            raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
-        coverage = self._coverage_field().copy() if "coverage" in requested else None
+        coverage = self._coverage_field().copy() if include_coverage else None
         return SimulationResult(
             domain=self.domain,
             deposits=tuple(self._deposits),
-            density_max=self._density_field().copy(),
+            implicit_field=self._implicit_field().copy(),
             coverage=coverage,
             default_threshold=threshold,
         )

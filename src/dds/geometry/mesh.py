@@ -175,18 +175,18 @@ def occupancy_to_mesh(
     )
 
 
-def density_to_mesh(
+def implicit_field_to_mesh(
     domain: Domain,
-    density: npt.ArrayLike,
+    implicit_field: npt.ArrayLike,
     *,
     threshold: float = 0.5,
     step_size: int = 1,
 ) -> TriangleMesh:
-    """Extract a mesh from a density-like field using an isovalue threshold."""
+    """Extract a mesh from an implicit field using an isovalue threshold."""
 
     return extract_mesh_from_field(
         domain,
-        density,
+        implicit_field,
         level=threshold,
         gradient_direction="descent",
         step_size=step_size,

@@ -127,7 +127,7 @@ def test_coordinate_conversion_round_trip_for_voxel_centers() -> None:
 def test_point_deposit_contributes_locally() -> None:
     domain = make_domain()
     deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
-    density = Simulator(domain, [deposit]).result().density_max
+    density = Simulator(domain, [deposit]).result().implicit_field
 
     assert density[2, 2, 2] > 0.0
     assert density[0, 0, 0] == pytest.approx(0.0)
@@ -136,7 +136,7 @@ def test_point_deposit_contributes_locally() -> None:
 def test_point_deposit_target_marks_the_top_of_the_bead() -> None:
     domain = make_domain()
     deposit = PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata())
-    density = Simulator(domain, [deposit]).result().density_max
+    density = Simulator(domain, [deposit]).result().implicit_field
 
     assert density[2, 2, 2] > density[2, 2, 3]
     assert density[2, 2, 3] == pytest.approx(0.5)
@@ -187,7 +187,7 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
         profile=BeadProfile(width=1.0, height=2.0),
     )
 
-    density = Simulator(domain, [deposit]).result().density_max
+    density = Simulator(domain, [deposit]).result().implicit_field
 
     assert density[domain.world_to_index((0.875, 0.625, 3.125))] > 0.0
 
@@ -296,7 +296,7 @@ def test_simulator_deposition_index_is_a_snapshot() -> None:
     assert int(second.max()) == 0
 
 
-def test_simulate_returns_rich_result_with_max_based_geometry() -> None:
+def test_simulate_returns_rich_result_with_implicit_geometry() -> None:
     domain = make_domain()
     deposits = [
         PointDeposit(target=(2.5, 2.5, 3.5), profile=make_profile(width=2.0, height=2.0), metadata=make_metadata()),
@@ -306,8 +306,8 @@ def test_simulate_returns_rich_result_with_max_based_geometry() -> None:
     result = simulate(domain, deposits, threshold=0.5)
 
     assert isinstance(result, SimulationResult)
-    assert result.field("max").shape == domain.grid_shape
-    assert result.density_max.max() <= 1.0
+    assert result.implicit_field.shape == domain.grid_shape
+    assert result.implicit_field.max() <= 1.0
     assert result.coverage is None
     assert result.analysis.occupancy(threshold=0.5)[2, 2, 2]
     assert result.analysis.contains_point((2.5, 2.5, 2.5), representation="occupancy", threshold=0.5)
@@ -328,11 +328,11 @@ def test_simulator_result_matches_stateless_simulate() -> None:
     direct = simulate(domain, deposits, threshold=0.5)
     cached = simulator.result(threshold=0.5)
 
-    np.testing.assert_allclose(cached.field("max"), direct.field("max"))
+    np.testing.assert_allclose(cached.implicit_field, direct.implicit_field)
     assert cached.default_threshold == pytest.approx(0.5)
 
 
-def test_simulate_can_produce_max_and_coverage_fields() -> None:
+def test_simulate_can_include_coverage() -> None:
     domain = make_domain()
     profile = make_profile(width=2.0, height=2.0)
     metadata = make_metadata()
@@ -341,11 +341,11 @@ def test_simulate_can_produce_max_and_coverage_fields() -> None:
         PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=metadata),
     ]
 
-    result = simulate(domain, deposits, compositions=("max", "coverage"), threshold=0.5)
+    result = simulate(domain, deposits, include_coverage=True, threshold=0.5)
 
     assert result.coverage is not None
-    assert np.all(result.coverage >= result.density_max)
-    assert float(result.coverage.max()) > float(result.density_max.max())
+    assert np.all(result.coverage >= result.implicit_field)
+    assert float(result.coverage.max()) > float(result.implicit_field.max())
 
 
 def test_domain_from_deposits_anisotropic_voxel_size() -> None:
@@ -433,11 +433,11 @@ def test_pose_based_deposits_and_polyline_event() -> None:
     result = simulate(
         make_domain(),
         [polyline],
-        compositions=("max", "coverage"),
+        include_coverage=True,
     )
     assert len(result.deposits) == 1
     assert result.coverage is not None
-    np.testing.assert_allclose(result.coverage, result.density_max)
+    np.testing.assert_allclose(result.coverage, result.implicit_field)
 
 
 # ---------------------------------------------------------------------------
@@ -464,7 +464,7 @@ def test_incremental_add_deposit_matches_batch_simulate() -> None:
     for dep in deposits:
         sim.add_deposit(dep)
 
-    np.testing.assert_allclose(sim.result().density_max, expected.field("max"))
+    np.testing.assert_allclose(sim.result().implicit_field, expected.implicit_field)
 
 
 def test_incremental_add_deposits_matches_batch_simulate() -> None:
@@ -480,24 +480,24 @@ def test_incremental_add_deposits_matches_batch_simulate() -> None:
     sim_bulk.add_deposits(deposits)
 
     np.testing.assert_allclose(
-        sim_single.result().density_max,
-        sim_bulk.result().density_max,
+        sim_single.result().implicit_field,
+        sim_bulk.result().implicit_field,
     )
 
 
-def test_clear_and_readd_reproduces_original_density() -> None:
+def test_clear_and_readd_reproduces_original_implicit_field() -> None:
     """clear_deposits() followed by re-adding the same deposits gives identical fields."""
     domain = make_domain()
     deposits = _two_deposits()
 
     sim = Simulator(domain, deposits)
-    before = sim.result().density_max.copy()
+    before = sim.result().implicit_field.copy()
 
     sim.clear_deposits()
-    assert sim.result().density_max.sum() == pytest.approx(0.0)
+    assert sim.result().implicit_field.sum() == pytest.approx(0.0)
 
     sim.add_deposits(deposits)
-    np.testing.assert_allclose(sim.result().density_max, before)
+    np.testing.assert_allclose(sim.result().implicit_field, before)
 
 
 def test_incremental_deposition_index_matches_batch() -> None:
@@ -520,13 +520,13 @@ def test_apply_deposit_to_field_accumulates_in_place() -> None:
     deposit = PointDeposit(target=(5.0, 5.0, 5.0), profile=make_profile(width=2.0, height=2.0))
     grid = np.zeros(domain.grid_shape, dtype=float)
 
-    hit = apply_deposit_to_field(domain, grid, deposit, composition="coverage")
+    hit = apply_deposit_to_field(domain, grid, deposit, field="coverage")
 
     assert hit is True
     assert grid.sum() > 0.0
 
 
-def test_density_is_geometric_envelope_and_coverage_is_additive() -> None:
+def test_implicit_field_is_geometric_envelope_and_coverage_is_additive() -> None:
     domain = make_domain()
     deposit = PointDeposit(
         target=(5.0, 5.0, 5.0),
@@ -534,12 +534,12 @@ def test_density_is_geometric_envelope_and_coverage_is_additive() -> None:
     )
     simulator = Simulator(domain, [deposit, deposit])
 
-    result = simulator.result(compositions=("max", "coverage"))
-    density = result.density_max
+    result = simulator.result(include_coverage=True)
+    implicit_field = result.implicit_field
     coverage = result.coverage
 
-    assert float(density.max()) <= 1.0
-    assert float(coverage.max()) > float(density.max())
+    assert float(implicit_field.max()) <= 1.0
+    assert float(coverage.max()) > float(implicit_field.max())
     assert coverage is not None
 
 
@@ -554,7 +554,7 @@ def test_apply_deposit_to_field_returns_false_for_out_of_bounds_deposit() -> Non
     assert grid.sum() == pytest.approx(0.0)
 
 
-def test_apply_deposit_to_field_rejects_invalid_composition_before_sampling() -> None:
+def test_apply_deposit_to_field_rejects_invalid_field_before_sampling() -> None:
     domain = make_domain()
     deposit = PointDeposit(
         target=(-50.0, -50.0, -50.0),
@@ -562,12 +562,12 @@ def test_apply_deposit_to_field_rejects_invalid_composition_before_sampling() ->
     )
     grid = np.zeros(domain.grid_shape, dtype=float)
 
-    with pytest.raises(ValueError, match="composition"):
+    with pytest.raises(ValueError, match="field"):
         apply_deposit_to_field(
             domain,
             grid,
             deposit,
-            composition="invalid",  # type: ignore[arg-type]
+            field="invalid",  # type: ignore[arg-type]
         )
 
 

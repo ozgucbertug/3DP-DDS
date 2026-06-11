@@ -17,8 +17,8 @@ from dds.geometry import (
     capsule_chain,
     cone,
     cylinder,
-    density_to_mesh,
-    density_to_sdf_field,
+    implicit_field_to_mesh,
+    implicit_field_to_sdf_values,
     difference,
     ellipsoid,
     intersection,
@@ -221,7 +221,7 @@ def test_extract_mesh_from_sdf_and_density_respects_domain() -> None:
     assert lower[0] < -1.0 and upper[0] > 1.0
 
     density = np.maximum(1.5 - sampled, 0.0)
-    density_mesh = density_to_mesh(domain, density, threshold=0.5)
+    density_mesh = implicit_field_to_mesh(domain, density, threshold=0.5)
     assert density_mesh.n_faces > 0
 
 
@@ -298,11 +298,11 @@ def test_deposition_occupancy_to_sdf_and_mesh_is_nonempty() -> None:
     assert mesh.n_faces > 0
 
 
-def test_density_to_sdf_field_uses_threshold() -> None:
+def test_implicit_field_to_sdf_values_uses_threshold() -> None:
     domain = make_domain()
     density = np.zeros(domain.grid_shape, dtype=float)
     density[domain.world_to_index((0.0, 0.0, 0.0), clip=True)] = 1.0
-    sdf_values = density_to_sdf_field(domain, density, threshold=0.5)
+    sdf_values = implicit_field_to_sdf_values(domain, density, threshold=0.5)
     center = domain.world_to_index((0.0, 0.0, 0.0), clip=True)
     assert sdf_values[center] <= 0.0
 
@@ -362,15 +362,15 @@ def test_occupancy_to_sdf_field_is_negative_inside_positive_outside() -> None:
     assert sdf[0, 0, 0] > 0.0
 
 
-def test_density_to_sdf_field_matches_occupancy_to_sdf_field_at_threshold() -> None:
+def test_implicit_field_to_sdf_values_matches_occupancy_to_sdf_field_at_threshold() -> None:
     from dds import PointDeposit, simulate
 
     domain = Domain.from_bounds(xmin=0.0, xmax=10.0, ymin=0.0, ymax=10.0, zmin=0.0, zmax=10.0, voxel_size=0.5)
     profile = BeadProfile(width=2.0, height=2.0)
     result = simulate(domain, [PointDeposit(target=(5.0, 5.0, 5.0), profile=profile)], threshold=0.5)
-    density = result.field("max")
+    density = result.implicit_field
     threshold = 0.5
-    sdf_from_density = density_to_sdf_field(domain, density, threshold=threshold)
+    sdf_from_density = implicit_field_to_sdf_values(domain, density, threshold=threshold)
     occupancy = density >= threshold
     sdf_from_occupancy = occupancy_to_sdf_field(domain, occupancy)
     np.testing.assert_allclose(sdf_from_density, sdf_from_occupancy, atol=1e-10)

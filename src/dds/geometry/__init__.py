@@ -17,8 +17,8 @@ from ..mesh_analysis import (
 )
 from .adapters import (
     MeshSDF3,
-    density_to_sdf,
-    density_to_sdf_field,
+    implicit_field_to_sdf,
+    implicit_field_to_sdf_values,
     mesh_to_occupancy,
     mesh_to_sdf_field,
     occupancy_to_sdf,
@@ -26,7 +26,13 @@ from .adapters import (
     read_mesh,
     write_mesh,
 )
-from .mesh import TriangleMesh, density_to_mesh, extract_mesh_from_field, occupancy_to_mesh, sdf_to_mesh
+from .mesh import (
+    TriangleMesh,
+    extract_mesh_from_field,
+    implicit_field_to_mesh,
+    occupancy_to_mesh,
+    sdf_to_mesh,
+)
 from .ops import difference, dilate, erode, intersection, shell, union
 from .sdf import SDF3, GridSDF3, as_sdf3
 from .shapes import (
@@ -71,9 +77,9 @@ __all__ = [
     "compute_face_data",
     "cone",
     "cylinder",
-    "density_to_mesh",
-    "density_to_sdf",
-    "density_to_sdf_field",
+    "implicit_field_to_mesh",
+    "implicit_field_to_sdf",
+    "implicit_field_to_sdf_values",
     "difference",
     "dilate",
     "downfacing_mask",

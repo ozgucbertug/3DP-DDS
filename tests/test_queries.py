@@ -36,29 +36,29 @@ def make_result():
     return Simulator(make_domain(), deposits).result()
 
 
-def test_result_analysis_queries_density_occupancy_sdf_and_points() -> None:
+def test_result_analysis_queries_implicit_occupancy_sdf_and_points() -> None:
     analysis = make_result().analysis
     inside = (2.25, 2.25, 0.25)
     outside = (9.0, 9.0, 3.5)
 
     assert isinstance(analysis, SimulationAnalysis)
     assert analysis.contains_point(inside, representation="occupancy")
-    assert analysis.contains_point(inside, representation="density", interpolation="trilinear")
+    assert analysis.contains_point(inside, representation="implicit", interpolation="trilinear")
     assert analysis.contains_point(inside, representation="sdf")
     with pytest.raises(ValueError, match="not watertight"):
         analysis.contains_point(inside, representation="mesh")
     assert not analysis.contains_point(outside)
     assert analysis.signed_distance_at(inside) <= 0.0
     assert analysis.signed_distance_at(outside) > 0.0
-    assert analysis.sample_density_at(inside) >= analysis.sample_density_at(outside)
+    assert analysis.sample_implicit_value(inside) >= analysis.sample_implicit_value(outside)
     assert analysis.sample_deposition_index(inside) == 1
 
     sampled = analysis.sample_points(
         np.asarray([inside, outside], dtype=float),
-        fields=("density", "occupancy", "deposition_index", "signed_distance"),
+        fields=("implicit", "occupancy", "deposition_index", "signed_distance"),
         interpolation="trilinear",
     )
-    assert set(sampled) == {"density", "occupancy", "deposition_index", "signed_distance"}
+    assert set(sampled) == {"implicit", "occupancy", "deposition_index", "signed_distance"}
     assert bool(sampled["occupancy"][0]) is True
     assert bool(sampled["occupancy"][1]) is False
 
@@ -85,18 +85,18 @@ def test_deposition_index_sampling_is_nearest_only_and_integer() -> None:
 
 def test_analysis_owns_read_only_snapshots() -> None:
     domain = make_domain()
-    density = np.zeros(domain.grid_shape, dtype=float)
+    implicit_field = np.zeros(domain.grid_shape, dtype=float)
     deposition_index = np.full(domain.grid_shape, -1, dtype=np.intp)
-    analysis = SimulationAnalysis(domain, density, deposition_index, ())
-    density.fill(1.0)
+    analysis = SimulationAnalysis(domain, implicit_field, deposition_index, ())
+    implicit_field.fill(1.0)
     deposition_index.fill(5)
 
-    assert float(analysis.density.max()) == pytest.approx(0.0)
+    assert float(analysis.implicit_field.max()) == pytest.approx(0.0)
     assert int(analysis.deposition_index.max()) == -1
     with pytest.raises(ValueError):
-        analysis.density[0, 0, 0] = 1.0
+        analysis.implicit_field[0, 0, 0] = 1.0
     with pytest.raises(FrozenInstanceError):
-        analysis.density = np.ones(domain.grid_shape)
+        analysis.implicit_field = np.ones(domain.grid_shape)
 
 
 def test_result_analysis_is_cached_and_simulator_results_are_isolated() -> None:
@@ -112,4 +112,4 @@ def test_result_analysis_is_cached_and_simulator_results_are_isolated() -> None:
     )
     after = simulator.result()
 
-    assert float(after.density_max.sum()) > float(before.density_max.sum())
+    assert float(after.implicit_field.sum()) > float(before.implicit_field.sum())

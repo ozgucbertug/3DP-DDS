@@ -40,8 +40,7 @@ def make_result(*, include_coverage: bool = False) -> SimulationResult:
             metadata=DepositionMetadata(layer_id=1),
         ),
     ]
-    compositions = ("max", "coverage") if include_coverage else ("max",)
-    return simulate(domain, deposits, compositions=compositions, threshold=0.3)
+    return simulate(domain, deposits, include_coverage=include_coverage, threshold=0.3)
 
 
 # ---------------------------------------------------------------------------
@@ -138,15 +137,15 @@ def test_deposit_from_dict_raises_for_unknown_type() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_checkpoint_round_trip_density_max(tmp_path) -> None:
+def test_checkpoint_round_trip_implicit_field(tmp_path) -> None:
     result = make_result()
     path = tmp_path / "sim.npz"
     written = save_checkpoint(path, result)
     assert written == path
 
     loaded = load_checkpoint(path)
-    np.testing.assert_allclose(loaded.density_max, result.density_max)
-    assert not loaded.density_max.flags.writeable
+    np.testing.assert_allclose(loaded.implicit_field, result.implicit_field)
+    assert not loaded.implicit_field.flags.writeable
 
 
 def test_checkpoint_round_trip_with_coverage(tmp_path) -> None:
@@ -210,7 +209,7 @@ def test_checkpoint_load_accepts_path_without_extension(tmp_path) -> None:
     result = make_result()
     save_checkpoint(tmp_path / "sim", result)
     loaded = load_checkpoint(tmp_path / "sim")  # no .npz
-    np.testing.assert_allclose(loaded.density_max, result.density_max)
+    np.testing.assert_allclose(loaded.implicit_field, result.implicit_field)
 
 
 def test_checkpoint_raises_on_unsupported_version(tmp_path) -> None:
@@ -226,7 +225,7 @@ def test_checkpoint_raises_on_unsupported_version(tmp_path) -> None:
     path = tmp_path / "bad.npz"
     np_inner.savez_compressed(
         path,
-        density_max=density,
+        implicit_field=density,
         _meta=np_inner.frombuffer(meta_bytes, dtype=np_inner.uint8),
     )
     with pytest.raises(ValueError, match="Unsupported checkpoint version"):
@@ -244,5 +243,5 @@ def test_simulation_result_checkpoint_method(tmp_path) -> None:
     assert path.exists()
 
     loaded = SimulationResult.load(path)
-    np.testing.assert_allclose(loaded.density_max, result.density_max)
+    np.testing.assert_allclose(loaded.implicit_field, result.implicit_field)
     assert len(loaded.deposits) == len(result.deposits)

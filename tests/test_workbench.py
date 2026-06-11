@@ -139,12 +139,12 @@ def test_mode_specific_controls_and_pick_payload(qtbot: object) -> None:
     workbench.set_color_mode("overhang")
     assert workbench.build_direction_combo.isVisible()
 
-    workbench.set_representation("density")
+    workbench.set_representation("implicit")
     assert not workbench.surface_box.isVisible()
     workbench.set_point_picking_enabled(True)
-    density_payload = workbench._handle_non_surface_picked_point((2.3, 2.3, 0.3), picker=object())
-    assert density_payload is not None
-    assert density_payload["representation"] == "density"
+    implicit_payload = workbench._handle_non_surface_picked_point((2.3, 2.3, 0.3), picker=object())
+    assert implicit_payload is not None
+    assert implicit_payload["representation"] == "implicit"
 
     workbench.set_representation("surface")
     payload = workbench._handle_picked_point((2.3, 2.3, 0.3))
@@ -161,7 +161,7 @@ def test_mode_specific_controls_and_pick_payload(qtbot: object) -> None:
 
 def test_scalar_field_options_match_representation(qtbot: object) -> None:
     simulator = make_simulator()
-    result = simulator.result(compositions=("max", "coverage"))
+    result = simulator.result(include_coverage=True)
     workbench = SimulationWorkbench(result, off_screen=True)
     qtbot.addWidget(workbench)
 
@@ -169,27 +169,27 @@ def test_scalar_field_options_match_representation(qtbot: object) -> None:
     occupancy_labels = [workbench.scalar_field_combo.itemText(i) for i in range(workbench.scalar_field_combo.count())]
     assert occupancy_labels == ["Occupancy", "Deposition Order"]
 
-    workbench.set_representation("density")
-    density_labels = [workbench.scalar_field_combo.itemText(i) for i in range(workbench.scalar_field_combo.count())]
-    assert density_labels == ["Density", "Coverage (nonphysical)", "Deposition Order"]
+    workbench.set_representation("implicit")
+    implicit_labels = [workbench.scalar_field_combo.itemText(i) for i in range(workbench.scalar_field_combo.count())]
+    assert implicit_labels == ["Implicit", "Coverage (nonphysical)", "Deposition Order"]
 
     workbench.close()
 
 
-def test_density_field_switch_changes_active_density_field(qtbot: object) -> None:
+def test_implicit_field_switch_changes_active_implicit_field(qtbot: object) -> None:
     simulator = make_simulator()
-    result = simulator.result(compositions=("max", "coverage"))
+    result = simulator.result(include_coverage=True)
     coverage = result.coverage
     assert coverage is not None
     workbench = SimulationWorkbench(result, off_screen=True)
     qtbot.addWidget(workbench)
 
-    workbench.set_representation("density")
-    workbench.set_scalar_field("density")
-    max_clim = workbench._density_clim()
+    workbench.set_representation("implicit")
+    workbench.set_scalar_field("implicit")
+    max_clim = workbench._implicit_clim()
     workbench.set_scalar_field("coverage")
-    coverage_clim = workbench._density_clim()
-    np.testing.assert_allclose(workbench._active_density_field(), coverage)
+    coverage_clim = workbench._implicit_clim()
+    np.testing.assert_allclose(workbench._active_implicit_field(), coverage)
     assert coverage_clim[1] > max_clim[1]
 
     workbench.close()
@@ -197,11 +197,11 @@ def test_density_field_switch_changes_active_density_field(qtbot: object) -> Non
 
 def test_initial_view_config_applies_without_example_side_mutation(qtbot: object) -> None:
     simulator = make_simulator()
-    result = simulator.result(compositions=("max", "coverage"))
+    result = simulator.result(include_coverage=True)
     workbench = SimulationWorkbench(
         result,
         initial_view=ViewConfig(
-            view_mode="density",
+            view_mode="implicit",
             scalar_field="coverage",
             build_direction="+Y",
         ),
@@ -209,12 +209,12 @@ def test_initial_view_config_applies_without_example_side_mutation(qtbot: object
     )
     qtbot.addWidget(workbench)
 
-    assert workbench.representation == "density"
-    assert workbench.density_field_name == "coverage"
-    assert workbench.view_mode_combo.currentData() == "density"
+    assert workbench.representation == "implicit"
+    assert workbench.implicit_field_name == "coverage"
+    assert workbench.view_mode_combo.currentData() == "implicit"
     assert workbench.scalar_field_combo.currentData() == "coverage"
     assert workbench.build_direction_combo.currentData() == "+Y"
-    assert workbench.view_opacity["density"] == pytest.approx(1.0)
+    assert workbench.view_opacity["implicit"] == pytest.approx(1.0)
 
     workbench.close()
 

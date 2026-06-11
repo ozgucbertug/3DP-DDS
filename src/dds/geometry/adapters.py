@@ -128,16 +128,20 @@ def occupancy_to_sdf_field(domain: Domain, occupancy: npt.ArrayLike) -> npt.NDAr
     return outside_distance - inside_distance
 
 
-def density_to_sdf_field(
+def implicit_field_to_sdf_values(
     domain: Domain,
-    density: npt.ArrayLike,
+    implicit_field: npt.ArrayLike,
     *,
     threshold: float = 0.5,
 ) -> npt.NDArray[np.float64]:
-    """Threshold a density field into occupancy and convert it to a signed-distance field."""
+    """Convert a thresholded implicit field to signed-distance values."""
 
-    density_array = _validate_field_shape(domain, density, field_name="density")
-    occupancy = density_array >= threshold
+    values = _validate_field_shape(
+        domain,
+        implicit_field,
+        field_name="implicit_field",
+    )
+    occupancy = values >= threshold
     return occupancy_to_sdf_field(domain, occupancy)
 
 
@@ -148,13 +152,17 @@ def occupancy_to_sdf(domain: Domain, occupancy: npt.ArrayLike) -> GridSDF3:
     return GridSDF3(domain, values, name="occupancy_sdf")
 
 
-def density_to_sdf(
+def implicit_field_to_sdf(
     domain: Domain,
-    density: npt.ArrayLike,
+    implicit_field: npt.ArrayLike,
     *,
     threshold: float = 0.5,
 ) -> GridSDF3:
-    """Wrap a thresholded density field as an interpolated GridSDF3."""
+    """Wrap a thresholded implicit field as an interpolated GridSDF3."""
 
-    values = density_to_sdf_field(domain, density, threshold=threshold)
-    return GridSDF3(domain, values, name="density_sdf")
+    values = implicit_field_to_sdf_values(
+        domain,
+        implicit_field,
+        threshold=threshold,
+    )
+    return GridSDF3(domain, values, name="implicit_field_sdf")

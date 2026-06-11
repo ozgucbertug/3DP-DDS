@@ -47,12 +47,12 @@ def test_yaml_simulation_example_exposes_tyro_help() -> None:
     assert result.returncode == 0
     assert "--yaml-path" in result.stdout
     assert "--origin-reference" in result.stdout
-    assert "--field-composition {max,coverage}" in result.stdout
+    assert "--include-coverage" in result.stdout
     assert "--analysis {none,interface,support,all}" in result.stdout
     assert "--stratification {auto,layer,order}" in result.stdout
     assert "--build-direction {+X,-X,+Y,-Y,+Z,-Z}" in result.stdout
     assert "--view" in result.stdout
-    assert "--view-mode {surface,occupancy,density}" in result.stdout
+    assert "--view-mode {surface,occupancy,implicit}" in result.stdout
     assert "slice" not in result.stdout
 
 
@@ -62,7 +62,7 @@ def test_yaml_simulation_config_is_ide_friendly() -> None:
 
     assert config.yaml_path.name == "example_wall.yaml"
     assert config.origin_reference == "top"
-    assert config.field_composition == "max"
+    assert config.include_coverage is False
     assert config.analysis == "none"
     assert config.stratification == "auto"
     assert config.build_direction == "+Z"
@@ -94,7 +94,7 @@ targets:
             bead_height=12.0,
             analysis="interface",
             build_direction="+Z",
-            field_composition="coverage",
+            include_coverage=True,
             write_mesh_output=False,
             view=False,
         )
@@ -103,11 +103,11 @@ targets:
     assert isinstance(result, SimulationResult)
     assert result.analysis.occupancy(threshold=0.5).any()
     assert result.analysis.deposition_index_field().max() >= 0  # at least one deposit has index ≥ 0
-    assert result.density_max.max() >= 0.5
+    assert result.implicit_field.max() >= 0.5
     assert result.coverage is not None
     assert result.coverage.shape == result.domain.grid_shape
-    assert np.all(result.coverage >= result.density_max)
-    assert (tmp_path / "out" / "density.npy").exists()
+    assert np.all(result.coverage >= result.implicit_field)
+    assert (tmp_path / "out" / "implicit_field.npy").exists()
     assert (tmp_path / "out" / "coverage.npy").exists()
     assert (tmp_path / "out" / "metadata.json").exists()
 
@@ -135,14 +135,14 @@ targets:
             bead_height=12.0,
             analysis="interface",
             build_direction="+Z",
-            field_composition="coverage",
+            include_coverage=True,
             write_mesh_output=False,
             view=False,
         )
     )
 
     assert result.coverage is not None
-    assert np.any(result.coverage > result.density_max)
+    assert np.any(result.coverage > result.implicit_field)
 
 
 def test_yaml_example_support_analysis_runs(tmp_path: Path) -> None:

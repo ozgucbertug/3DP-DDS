@@ -18,7 +18,7 @@
 - Endpoint normals are normalized and interpolated along line segments.
 - Antiparallel endpoint normals are rejected because interpolation is ambiguous
   without an intermediate orientation.
-- The max-envelope field is the union-like fabricated geometry used for
+- The implicit field is the union-like fabricated geometry used for
   occupancy, surface extraction, SDF construction, and support analysis.
 - Changing voxel size changes discretization, not the specified bead support
   bounds or other world-space geometry.
@@ -52,7 +52,7 @@ The simulator does not model:
 
 ## Numerical interpretation
 
-Occupancy is obtained by thresholding the max-envelope field. Research results
+Occupancy is obtained by thresholding the implicit field. Research results
 should report the domain, `length_unit`, voxel size, threshold, bead profile,
 and path definition. Convergence studies across voxel sizes are recommended
 for quantitative use.

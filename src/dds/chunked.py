@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -13,17 +13,17 @@ import numpy.typing as npt
 from .domain import Domain, IndexBounds
 from .kernels import SampledKernel, TileShape, iter_deposit_kernels, validate_tile_shape
 from .primitives import DepositInput, iter_deposits
-from .types import FieldComposition
 
 if TYPE_CHECKING:
     from .results import SimulationResult
 
 ChunkIndex = tuple[int, int, int]
+ChunkFieldName: TypeAlias = Literal["implicit", "coverage"]
 
 
 @dataclass(slots=True)
 class _Chunk:
-    maximum: npt.NDArray[np.float64] | None
+    implicit: npt.NDArray[np.float64]
     coverage: npt.NDArray[np.float64] | None
 
 
@@ -31,13 +31,13 @@ class _Chunk:
 class ChunkedField:
     """Sparse field backed by fixed-size dense chunks.
 
-    Each allocated chunk stores only the requested field compositions.
-    Empty chunks are never stored.
+    Every chunk stores the implicit field. Coverage is allocated only when
+    requested. Empty chunks are never stored.
     """
 
     domain: Domain
     chunk_shape: TileShape = (32, 32, 32)
-    compositions: tuple[FieldComposition, ...] = ("max",)
+    include_coverage: bool = False
     _chunks: dict[ChunkIndex, _Chunk] = field(
         default_factory=dict,
         init=False,
@@ -47,11 +47,6 @@ class ChunkedField:
 
     def __post_init__(self) -> None:
         self.chunk_shape = validate_tile_shape(self.chunk_shape)
-        self.compositions = tuple(dict.fromkeys(self.compositions))
-        if not self.compositions:
-            raise ValueError("compositions must contain at least one value.")
-        if any(value not in {"max", "coverage"} for value in self.compositions):
-            raise ValueError("compositions must contain only 'max' and/or 'coverage'.")
 
     def _chunk_bounds(self, index: ChunkIndex) -> IndexBounds:
         lower = tuple(index[axis] * self.chunk_shape[axis] for axis in range(3))
@@ -78,8 +73,10 @@ class ChunkedField:
         if chunk is None:
             shape = self._chunk_array_shape(index)
             chunk = _Chunk(
-                maximum=np.zeros(shape, dtype=float) if "max" in self.compositions else None,
-                coverage=np.zeros(shape, dtype=float) if "coverage" in self.compositions else None,
+                implicit=np.zeros(shape, dtype=float),
+                coverage=(
+                    np.zeros(shape, dtype=float) if self.include_coverage else None
+                ),
             )
             self._chunks[index] = chunk
         return chunk
@@ -140,12 +137,11 @@ class ChunkedField:
                         )
                         for axis in range(3)
                     )
-                    if chunk.maximum is not None:
-                        np.maximum(
-                            chunk.maximum[chunk_slices],
-                            values,
-                            out=chunk.maximum[chunk_slices],
-                        )
+                    np.maximum(
+                        chunk.implicit[chunk_slices],
+                        values,
+                        out=chunk.implicit[chunk_slices],
+                    )
                     if chunk.coverage is not None:
                         chunk.coverage[chunk_slices] += values
                     hit = True
@@ -158,16 +154,16 @@ class ChunkedField:
 
     def materialize(
         self,
-        composition: FieldComposition = "max",
+        field: ChunkFieldName = "implicit",
         *,
         index_bounds: IndexBounds | None = None,
     ) -> npt.NDArray[np.float64]:
         """Materialize the full field or an index-space region of interest."""
 
-        if composition not in {"max", "coverage"}:
-            raise ValueError("composition must be 'max' or 'coverage'.")
-        if composition not in self.compositions:
-            raise ValueError(f"{composition!r} was not requested for this ChunkedField.")
+        if field not in {"implicit", "coverage"}:
+            raise ValueError("field must be 'implicit' or 'coverage'.")
+        if field == "coverage" and not self.include_coverage:
+            raise ValueError("coverage was not requested for this ChunkedField.")
         bounds = self._validate_index_bounds(index_bounds)
         output_shape = tuple(stop - start for start, stop in bounds)
         output = np.zeros(output_shape, dtype=float)
@@ -198,7 +194,7 @@ class ChunkedField:
                 )
                 for axis in range(3)
             )
-            values = chunk.maximum if composition == "max" else chunk.coverage
+            values = chunk.implicit if field == "implicit" else chunk.coverage
             assert values is not None
             output[output_slices] = values[chunk_slices]
         return output
@@ -228,25 +224,21 @@ class ChunkedField:
 
     def to_dense(
         self,
-        composition: FieldComposition = "max",
+        field: ChunkFieldName = "implicit",
     ) -> npt.NDArray[np.float64]:
         """Materialize a full-domain dense field."""
 
-        return self.materialize(composition)
+        return self.materialize(field)
 
-    def to_dense_all(
-        self,
-        *compositions: FieldComposition,
-    ) -> dict[FieldComposition, npt.NDArray[np.float64]]:
-        """Materialize multiple field compositions."""
+    def to_dense_all(self) -> dict[ChunkFieldName, npt.NDArray[np.float64]]:
+        """Materialize all fields configured on this storage object."""
 
-        requested = tuple(dict.fromkeys(compositions))
-        if not requested:
-            raise ValueError("At least one composition must be requested.")
-        return {
-            composition: self.materialize(composition)
-            for composition in requested
+        fields: dict[ChunkFieldName, npt.NDArray[np.float64]] = {
+            "implicit": self.materialize("implicit")
         }
+        if self.include_coverage:
+            fields["coverage"] = self.materialize("coverage")
+        return fields
 
     def clear(self) -> None:
         """Remove all allocated chunks and event diagnostics."""
@@ -271,7 +263,7 @@ class ChunkedField:
         """Number of voxels with a positive geometric envelope."""
 
         return sum(
-            int(np.count_nonzero(self._active_array(chunk) > 0.0))
+            int(np.count_nonzero(chunk.implicit > 0.0))
             for chunk in self._chunks.values()
         )
 
@@ -279,14 +271,14 @@ class ChunkedField:
     def allocated_voxel_count(self) -> int:
         """Number of voxel slots allocated across all chunks."""
 
-        return sum(int(self._active_array(chunk).size) for chunk in self._chunks.values())
+        return sum(int(chunk.implicit.size) for chunk in self._chunks.values())
 
     @property
     def nbytes(self) -> int:
-        """Bytes occupied by requested field compositions."""
+        """Bytes occupied by the implicit field and optional coverage."""
 
         return sum(
-            sum(array.nbytes for array in (chunk.maximum, chunk.coverage) if array is not None)
+            sum(array.nbytes for array in (chunk.implicit, chunk.coverage) if array is not None)
             for chunk in self._chunks.values()
         )
 
@@ -298,9 +290,9 @@ class ChunkedField:
 
     @property
     def dense_nbytes(self) -> int:
-        """Bytes required by equivalent dense fields for requested compositions."""
+        """Bytes required by equivalent configured dense fields."""
 
-        return len(self.compositions) * self.dense_field_nbytes
+        return (2 if self.include_coverage else 1) * self.dense_field_nbytes
 
     @property
     def active_fraction(self) -> float:
@@ -321,13 +313,6 @@ class ChunkedField:
         """Stored bytes divided by equivalent requested dense fields."""
 
         return self.nbytes / self.dense_nbytes if self.dense_nbytes else 0.0
-
-    @staticmethod
-    def _active_array(chunk: _Chunk) -> npt.NDArray[np.float64]:
-        if chunk.maximum is not None:
-            return chunk.maximum
-        assert chunk.coverage is not None
-        return chunk.coverage
 
     def to_result(
         self,
@@ -358,13 +343,13 @@ class ChunkedField:
         # only under TYPE_CHECKING).
         from .results import SimulationResult
 
-        density_max = self.materialize("max")
-        coverage = self.materialize("coverage") if "coverage" in self.compositions else None
+        implicit_field = self.materialize("implicit")
+        coverage = self.materialize("coverage") if self.include_coverage else None
         deposit_tuple = tuple(iter_deposits(deposits))
         return SimulationResult(
             domain=self.domain,
             deposits=deposit_tuple,
-            density_max=density_max,
+            implicit_field=implicit_field,
             coverage=coverage,
             default_threshold=threshold,
         )
@@ -379,7 +364,7 @@ def accumulate_chunked_field(
     deposits: Iterable[DepositInput] | DepositInput,
     *,
     chunk_shape: Sequence[int] = (32, 32, 32),
-    compositions: tuple[FieldComposition, ...] = ("max",),
+    include_coverage: bool = False,
 ) -> ChunkedField:
     """Build a chunked field without allocating full-domain dense arrays.
 
@@ -394,7 +379,7 @@ def accumulate_chunked_field(
     chunked = ChunkedField(
         domain,
         chunk_shape=validate_tile_shape(chunk_shape),
-        compositions=compositions,
+        include_coverage=include_coverage,
     )
     for deposit in iter_deposits(deposits):
         hit = False

@@ -10,15 +10,15 @@ import numpy.typing as npt
 
 from ..domain import Domain
 from ..geometry.sdf import _coerce_points
-from ..occupancy import occupancy_from_density
+from ..occupancy import occupancy_from_implicit_field
 from ..primitives import Deposit
 from ..utils import EPSILON, ensure_finite_triplet, readonly_array
 from .models import InterfaceAnalysis, StratumFieldSet, SupportAnalysis
 from .support import BuildDirection
 
 InterpolationMode = Literal["nearest", "trilinear"]
-RepresentationMode = Literal["occupancy", "density", "sdf", "mesh"]
-SampleFieldName = Literal["density", "occupancy", "deposition_index", "signed_distance"]
+RepresentationMode = Literal["occupancy", "implicit", "sdf", "mesh"]
+SampleFieldName = Literal["implicit", "occupancy", "deposition_index", "signed_distance"]
 
 
 
@@ -85,10 +85,10 @@ def _sample_scalar_field(
 
 @dataclass(slots=True, frozen=True)
 class SimulationAnalysis:
-    """Cached query state derived from a dense density field."""
+    """Cached query state derived from an implicit geometry field."""
 
     domain: Domain
-    density: npt.NDArray[np.float64]
+    implicit_field: npt.NDArray[np.float64]
     deposition_index: npt.NDArray[np.intp]
     deposits: tuple[Deposit, ...]
     default_threshold: float = 0.5
@@ -101,14 +101,24 @@ class SimulationAnalysis:
     _support_cache: dict[tuple[BuildDirection, float, float], SupportAnalysis] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "density", readonly_array(self.density, dtype=float))
-        if self.density.shape != self.domain.grid_shape:
+        object.__setattr__(
+            self,
+            "implicit_field",
+            readonly_array(self.implicit_field, dtype=float),
+        )
+        if self.implicit_field.shape != self.domain.grid_shape:
             raise ValueError(
-                f"density shape {self.density.shape} does not match domain grid shape {self.domain.grid_shape}."
+                "implicit_field shape "
+                f"{self.implicit_field.shape} does not match domain grid shape "
+                f"{self.domain.grid_shape}."
             )
 
-        if not np.all(np.isfinite(self.density)) or np.any(self.density < 0.0):
-            raise ValueError("density must contain only finite, non-negative values.")
+        if not np.all(np.isfinite(self.implicit_field)) or np.any(
+            self.implicit_field < 0.0
+        ):
+            raise ValueError(
+                "implicit_field must contain only finite, non-negative values."
+            )
         deposition_index = readonly_array(self.deposition_index, dtype=np.intp)
         if deposition_index.shape != self.domain.grid_shape:
             raise ValueError(
@@ -117,9 +127,6 @@ class SimulationAnalysis:
             )
         object.__setattr__(self, "deposition_index", deposition_index)
         object.__setattr__(self, "deposits", tuple(self.deposits))
-
-    def density_field(self) -> npt.NDArray[np.float64]:
-        return self.density
 
     def deposition_index_field(self) -> npt.NDArray[np.intp]:
         return self.deposition_index
@@ -132,7 +139,7 @@ class SimulationAnalysis:
         key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._occupancy_cache:
             self._occupancy_cache[key] = readonly_array(
-                occupancy_from_density(self.density, threshold=key),
+                occupancy_from_implicit_field(self.implicit_field, threshold=key),
                 dtype=bool,
             )
         return self._occupancy_cache[key]
@@ -146,11 +153,11 @@ class SimulationAnalysis:
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = _surface_cache_key(threshold_value, step_size=step_size)
         if key not in self._surface_mesh_cache:
-            from ..geometry import density_to_mesh
+            from ..geometry import implicit_field_to_mesh
 
-            self._surface_mesh_cache[key] = density_to_mesh(
+            self._surface_mesh_cache[key] = implicit_field_to_mesh(
                 self.domain,
-                self.density,
+                self.implicit_field,
                 threshold=threshold_value,
                 step_size=step_size,
             )
@@ -163,11 +170,11 @@ class SimulationAnalysis:
     ) -> Any:
         key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._surface_sdf_cache:
-            from ..geometry import density_to_sdf
+            from ..geometry import implicit_field_to_sdf
 
-            self._surface_sdf_cache[key] = density_to_sdf(
+            self._surface_sdf_cache[key] = implicit_field_to_sdf(
                 self.domain,
-                self.density,
+                self.implicit_field,
                 threshold=key,
             )
         return self._surface_sdf_cache[key]
@@ -193,7 +200,7 @@ class SimulationAnalysis:
             )
         return self._mesh_sdf_cache[key]
 
-    def sample_density_at(
+    def sample_implicit_value(
         self,
         point: tuple[float, float, float] | npt.ArrayLike,
         *,
@@ -202,7 +209,7 @@ class SimulationAnalysis:
         points, _single = _coerce_points(point)
         values = _sample_scalar_field(
             self.domain,
-            self.density,
+            self.implicit_field,
             points,
             interpolation=interpolation,
             fill_value=0.0,
@@ -290,9 +297,21 @@ class SimulationAnalysis:
                         self.domain.world_to_index(coordinates, clip=True)
                     ]
                 )
-            return self.sample_density_at(coordinates, interpolation=interpolation) >= threshold_value
-        if representation == "density":
-            return self.sample_density_at(coordinates, interpolation=interpolation) >= threshold_value
+            return (
+                self.sample_implicit_value(
+                    coordinates,
+                    interpolation=interpolation,
+                )
+                >= threshold_value
+            )
+        if representation == "implicit":
+            return (
+                self.sample_implicit_value(
+                    coordinates,
+                    interpolation=interpolation,
+                )
+                >= threshold_value
+            )
         if representation == "sdf":
             return self.signed_distance_at(coordinates, threshold=threshold_value) <= 0.0
         if representation == "mesh":
@@ -305,13 +324,20 @@ class SimulationAnalysis:
                 )
                 <= 0.0
             )
-        raise ValueError("representation must be 'occupancy', 'density', 'sdf', or 'mesh'.")
+        raise ValueError(
+            "representation must be 'occupancy', 'implicit', 'sdf', or 'mesh'."
+        )
 
     def sample_points(
         self,
         points: npt.ArrayLike,
         *,
-        fields: tuple[SampleFieldName, ...] = ("density", "occupancy", "deposition_index", "signed_distance"),
+        fields: tuple[SampleFieldName, ...] = (
+            "implicit",
+            "occupancy",
+            "deposition_index",
+            "signed_distance",
+        ),
         threshold: float | None = None,
         interpolation: InterpolationMode = "nearest",
     ) -> dict[str, npt.NDArray[np.generic]]:
@@ -319,10 +345,10 @@ class SimulationAnalysis:
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         result: dict[str, npt.NDArray[np.generic]] = {}
         for field_name in fields:
-            if field_name == "density":
+            if field_name == "implicit":
                 result[field_name] = _sample_scalar_field(
                     self.domain,
-                    self.density,
+                    self.implicit_field,
                     samples,
                     interpolation=interpolation,
                     fill_value=0.0,
@@ -335,20 +361,21 @@ class SimulationAnalysis:
                     fill_value=-1,
                 )
             elif field_name == "occupancy":
-                density_samples = _sample_scalar_field(
+                implicit_samples = _sample_scalar_field(
                     self.domain,
-                    self.density,
+                    self.implicit_field,
                     samples,
                     interpolation=interpolation,
                     fill_value=0.0,
                 )
-                result[field_name] = density_samples >= threshold_value
+                result[field_name] = implicit_samples >= threshold_value
             elif field_name == "signed_distance":
                 sdf = self.surface_sdf(threshold=threshold_value)
                 result[field_name] = np.asarray(sdf(samples), dtype=float)
             else:
                 raise ValueError(
-                    "fields entries must be 'density', 'occupancy', 'deposition_index', or 'signed_distance'."
+                    "fields entries must be 'implicit', 'occupancy', "
+                    "'deposition_index', or 'signed_distance'."
                 )
         return result
 
@@ -367,18 +394,18 @@ class SimulationAnalysis:
                 "voxel_count": 0.0,
                 "occupied_voxel_count": 0.0,
                 "occupied_fraction": 0.0,
-                "density_mean": 0.0,
-                "density_max": 0.0,
+                "implicit_mean": 0.0,
+                "implicit_max": 0.0,
                 "deposition_index_mean": 0.0,
                 "deposition_index_max": 0.0,
                 "mesh_area": 0.0,
             }
 
         slices = tuple(slice(start, stop) for start, stop in index_bounds)
-        density = self.density[slices]
+        implicit_field = self.implicit_field[slices]
         deposition_index = self.deposition_index.astype(float, copy=False)[slices]
         occupancy = self.occupancy(threshold=threshold_value)[slices]
-        voxel_count = float(np.prod(density.shape))
+        voxel_count = float(np.prod(implicit_field.shape))
         occupied_voxel_count = float(np.count_nonzero(occupancy))
 
         mesh_area = 0.0
@@ -397,8 +424,12 @@ class SimulationAnalysis:
             "voxel_count": voxel_count,
             "occupied_voxel_count": occupied_voxel_count,
             "occupied_fraction": occupied_voxel_count / voxel_count if voxel_count else 0.0,
-            "density_mean": float(np.mean(density)) if density.size else 0.0,
-            "density_max": float(np.max(density)) if density.size else 0.0,
+            "implicit_mean": (
+                float(np.mean(implicit_field)) if implicit_field.size else 0.0
+            ),
+            "implicit_max": (
+                float(np.max(implicit_field)) if implicit_field.size else 0.0
+            ),
             "deposition_index_mean": float(np.mean(deposition_index)) if deposition_index.size else 0.0,
             "deposition_index_max": float(np.max(deposition_index)) if deposition_index.size else 0.0,
             "mesh_area": mesh_area,

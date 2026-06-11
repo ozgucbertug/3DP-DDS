@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 
 from ..fields import accumulate_fields
-from ..occupancy import occupancy_from_density
+from ..occupancy import occupancy_from_implicit_field
 from ..primitives import Deposit, iter_deposits
 from .models import StratificationMode, StratumFieldSet
 
@@ -56,24 +56,26 @@ def strata(
     mode: StrataMode = "auto",
     threshold: float = 0.5,
 ) -> StratumFieldSet:
-    """Build max-density and occupancy fields for each layer or ordered deposit stratum."""
+    """Build implicit and occupancy fields for each deposition stratum."""
 
     resolved_mode = _resolve_mode(source, mode)
     deposit_tuple = tuple(iter_deposits(source.deposits))
     groups = _group_deposits(deposit_tuple, mode=resolved_mode)
     label_field = np.zeros(source.domain.grid_shape, dtype=float)
-    density_fields: list[np.ndarray] = []
+    implicit_fields: list[np.ndarray] = []
     occupancy_fields: list[np.ndarray] = []
     stratum_ids: list[int] = []
 
     for position, (stratum_id, grouped_deposits) in enumerate(groups, start=1):
-        density = accumulate_fields(
+        implicit_field = accumulate_fields(
             source.domain,
             grouped_deposits,
-            compositions=("max",),
-        )["max"]
-        occupancy = occupancy_from_density(density, threshold=threshold)
-        density_fields.append(density)
+        )["implicit"]
+        occupancy = occupancy_from_implicit_field(
+            implicit_field,
+            threshold=threshold,
+        )
+        implicit_fields.append(implicit_field)
         occupancy_fields.append(occupancy)
         label_field[occupancy] = float(position)
         stratum_ids.append(int(stratum_id))
@@ -83,7 +85,7 @@ def strata(
         mode=resolved_mode,
         threshold=float(threshold),
         stratum_ids=tuple(stratum_ids),
-        density_max_fields=tuple(density_fields),
+        implicit_fields=tuple(implicit_fields),
         occupancy_fields=tuple(occupancy_fields),
         label_field=label_field,
     )

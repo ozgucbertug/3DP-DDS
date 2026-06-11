@@ -24,10 +24,10 @@ from .results import SimulationResult
 from .simulator import Simulator
 from .viz import ViewConfig
 
-Representation = Literal["surface", "occupancy", "density"]
-ScalarRepresentation = Literal["occupancy", "density"]
+Representation = Literal["surface", "occupancy", "implicit"]
+ScalarRepresentation = Literal["occupancy", "implicit"]
 ColorMode = Literal["plain", "normals", "overhang"]
-ScalarFieldName = Literal["occupancy", "density", "coverage", "deposition_order"]
+ScalarFieldName = Literal["occupancy", "implicit", "coverage", "deposition_order"]
 
 
 def _set_grid_geometry(
@@ -95,7 +95,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     """Minimal Qt workbench for dense-field inspection and mesh analysis."""
 
     _BUILD_DIRECTIONS = BUILD_DIRECTION_VECTORS
-    _SCALAR_BAR_TITLES = ("Density", "Overhang (deg)")
+    _SCALAR_BAR_TITLES = ("Implicit", "Overhang (deg)")
 
     def __init__(
         self,
@@ -113,7 +113,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.result = (
             simulator_or_result
             if isinstance(simulator_or_result, SimulationResult)
-            else simulator_or_result.result(threshold=threshold, compositions=("max", "coverage"))
+            else simulator_or_result.result(threshold=threshold, include_coverage=True)
         )
         self.bundle = self.result.analysis
         self.threshold = float(threshold)
@@ -121,10 +121,10 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.view_opacity: dict[Representation, float] = {
             "surface": 1.0,
             "occupancy": 1.0,
-            "density": 1.0,
+            "implicit": 1.0,
         }
         self.occupancy_field_name: ScalarFieldName = "occupancy"
-        self.density_field_name: ScalarFieldName = "density"
+        self.implicit_field_name: ScalarFieldName = "implicit"
         self.color_mode: ColorMode = "plain"
         self.build_direction = self._coerce_build_direction(build_direction)
         self.off_screen = bool(off_screen)
@@ -134,7 +134,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
         self._surface_actor: Any | None = None
         self._occupancy_actor: Any | None = None
-        self._density_actor: Any | None = None
+        self._implicit_actor: Any | None = None
         self._clip_actor: Any | None = None
         self._clip_widget: Any | None = None
         self._roi_widget: Any | None = None
@@ -155,8 +155,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
                 "occupancy": self._occupancy_scalar_field,
                 "deposition_order": self._deposition_order_scalar_field,
             },
-            "density": {
-                "density": self._density_scalar_field,
+            "implicit": {
+                "implicit": self._implicit_scalar_field,
                 "coverage": self._coverage_scalar_field,
                 "deposition_order": self._deposition_order_scalar_field,
             },
@@ -166,8 +166,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
                 "occupancy": "Occupancy",
                 "deposition_order": "Deposition Order",
             },
-            "density": {
-                "density": "Density",
+            "implicit": {
+                "implicit": "Implicit",
                 "coverage": "Coverage (nonphysical)",
                 "deposition_order": "Deposition Order",
             },
@@ -211,7 +211,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             )
             color_mode = config.color_mode or "plain"
         else:
-            labels = self._available_scalar_field_labels("density")
+            labels = self._available_scalar_field_labels("implicit")
             scalar_field = (
                 config.scalar_field
                 if config.scalar_field in labels
@@ -233,9 +233,9 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.build_direction = self._coerce_build_direction(config.build_direction)
         if self.representation == "occupancy" and config.scalar_field is not None:
             self.occupancy_field_name = config.scalar_field
-        if self.representation == "density":
+        if self.representation == "implicit":
             if config.scalar_field is not None:
-                self.density_field_name = config.scalar_field
+                self.implicit_field_name = config.scalar_field
 
         self._set_combo_current_data(self.view_mode_combo, self.representation)
         self._set_combo_current_data(self.color_mode_combo, self.color_mode)
@@ -289,7 +289,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._configure_combo_box(self.view_mode_combo, min_width=170)
         self.view_mode_combo.addItem("Surface", "surface")
         self.view_mode_combo.addItem("Occupancy", "occupancy")
-        self.view_mode_combo.addItem("Density", "density")
+        self.view_mode_combo.addItem("Implicit", "implicit")
         self.view_mode_combo.currentIndexChanged.connect(
             lambda _index: self.set_representation(self.view_mode_combo.currentData())
         )
@@ -679,9 +679,9 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _occupancy_scalar_field(self) -> npt.NDArray[np.uint8]:
         return self.bundle.occupancy(threshold=self.threshold).astype(np.uint8, copy=False)
 
-    def _density_scalar_field(self) -> npt.NDArray[np.float64]:
-        density = np.asarray(self._active_density_field(), dtype=float)
-        view_values = density.copy()
+    def _implicit_scalar_field(self) -> npt.NDArray[np.float64]:
+        implicit = np.asarray(self._active_implicit_field(), dtype=float)
+        view_values = implicit.copy()
         maximum = float(np.max(view_values)) if view_values.size else 0.0
         if maximum > 0.0:
             floor = max(0.05 * maximum, 0.05 * self.threshold)
@@ -690,7 +690,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _coverage_scalar_field(self) -> npt.NDArray[np.float64]:
         if self._coverage is None:
-            return self._density_scalar_field()
+            return self._implicit_scalar_field()
         coverage = np.asarray(self._coverage, dtype=float)
         view_values = coverage.copy()
         maximum = float(np.max(view_values)) if view_values.size else 0.0
@@ -702,7 +702,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _deposition_order_scalar_field(self) -> npt.NDArray[np.float64]:
         return np.asarray(self.bundle.strata(mode="order", threshold=self.threshold).label_field, dtype=float)
 
-    def _scalar_field(self, representation: Literal["occupancy", "density"], field_name: str) -> npt.NDArray[Any]:
+    def _scalar_field(self, representation: Literal["occupancy", "implicit"], field_name: str) -> npt.NDArray[Any]:
         try:
             producer = self._scalar_field_registry[representation][field_name]
         except KeyError as exc:
@@ -710,7 +710,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return producer()
 
     def _active_scalar_field_name(self, representation: ScalarRepresentation) -> ScalarFieldName:
-        return self.occupancy_field_name if representation == "occupancy" else self.density_field_name
+        return self.occupancy_field_name if representation == "occupancy" else self.implicit_field_name
 
     def _set_active_scalar_field_name(
         self,
@@ -720,19 +720,19 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if representation == "occupancy":
             self.occupancy_field_name = field_name
         else:
-            self.density_field_name = field_name
+            self.implicit_field_name = field_name
 
     def _available_scalar_field_labels(
         self,
         representation: ScalarRepresentation,
     ) -> dict[ScalarFieldName, str]:
         labels = dict(self._scalar_field_labels[representation])
-        if representation == "density" and self._coverage is None:
+        if representation == "implicit" and self._coverage is None:
             labels.pop("coverage", None)
         return labels
 
     def _sync_scalar_field_options(self) -> None:
-        is_scalar_representation = self.representation in {"occupancy", "density"}
+        is_scalar_representation = self.representation in {"occupancy", "implicit"}
         self.scalar_field_row.setVisible(is_scalar_representation)
         if not is_scalar_representation:
             return
@@ -763,40 +763,40 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         )
         return grid.threshold(value=0.5, scalars=self.occupancy_field_name, preference="cell")
 
-    def _active_density_field(self) -> npt.NDArray[np.float64]:
-        if self.density_field_name == "coverage" and self._coverage is not None:
+    def _active_implicit_field(self) -> npt.NDArray[np.float64]:
+        if self.implicit_field_name == "coverage" and self._coverage is not None:
             return self._coverage
-        return self.bundle.density_field()
+        return self.bundle.implicit_field
 
-    def _density_grid(self) -> Any:
-        view_values = self._scalar_field("density", self.density_field_name)
+    def _implicit_grid(self) -> Any:
+        view_values = self._scalar_field("implicit", self.implicit_field_name)
         return _field_to_image_data(
             self.bundle.domain,
             view_values,
-            field_name=self.density_field_name,
+            field_name=self.implicit_field_name,
             association="point",
         )
 
-    def _density_clim(self) -> tuple[float, float]:
-        if self.density_field_name == "deposition_order":
+    def _implicit_clim(self) -> tuple[float, float]:
+        if self.implicit_field_name == "deposition_order":
             maximum = float(np.max(self._deposition_order_scalar_field()))
             return (0.0, maximum if maximum > 0.0 else 1.0)
-        maximum = float(np.max(self._active_density_field()))
+        maximum = float(np.max(self._active_implicit_field()))
         upper = maximum if maximum > 0.0 else 1.0
         lower = max(self.threshold * 0.2, upper * 0.05 if upper > 0.0 else 0.0)
         return (lower, upper)
 
-    def _density_cmap(self) -> str:
-        if self.density_field_name == "deposition_order":
+    def _implicit_cmap(self) -> str:
+        if self.implicit_field_name == "deposition_order":
             return "turbo"
         return "viridis"
 
-    def _density_scalar_bar_title(self) -> str:
-        return self._available_scalar_field_labels("density")[self.density_field_name]
+    def _implicit_scalar_bar_title(self) -> str:
+        return self._available_scalar_field_labels("implicit")[self.implicit_field_name]
 
     def _volume_opacity(self) -> list[float]:
-        alpha = float(np.clip(self.view_opacity["density"], 0.0, 1.0))
-        if self.density_field_name == "deposition_order":
+        alpha = float(np.clip(self.view_opacity["implicit"], 0.0, 1.0))
+        if self.implicit_field_name == "deposition_order":
             return [0.0] + [alpha] * 255
         base = np.asarray([0.0, 0.0, 0.05, 0.12, 0.28, 0.55, 1.0], dtype=float)
         return np.clip(base * alpha, 0.0, 1.0).tolist()
@@ -828,8 +828,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return self._available_scalar_field_labels("occupancy")[self.occupancy_field_name]
 
     def _threshold_slider_upper(self) -> float:
-        density_max = float(np.max(self._active_density_field()))
-        return max(1.0, density_max * 1.1, self.threshold)
+        implicit_field = float(np.max(self._active_implicit_field()))
+        return max(1.0, implicit_field * 1.1, self.threshold)
 
     def _threshold_to_slider(self, value: float) -> int:
         upper = self._threshold_slider_upper()
@@ -871,7 +871,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             self.plotter.remove_actor(actor, render=False)
 
     def _capture_camera_state(self) -> dict[str, Any] | None:
-        if self._surface_actor is None and self._occupancy_actor is None and self._density_actor is None:
+        if self._surface_actor is None and self._occupancy_actor is None and self._implicit_actor is None:
             return None
         camera = self.plotter.camera
         return {
@@ -959,11 +959,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _sync_scalar_bars(self) -> None:
         self._clear_managed_scalar_bars()
-        if self.representation == "density" and self.density_field_name != "deposition_order":
-            mapper = self._mapper_from_actor(self._density_actor)
+        if self.representation == "implicit" and self.implicit_field_name != "deposition_order":
+            mapper = self._mapper_from_actor(self._implicit_actor)
             if mapper is not None:
                 self.plotter.add_scalar_bar(
-                    title=self._density_scalar_bar_title(),
+                    title=self._implicit_scalar_bar_title(),
                     mapper=mapper,
                     title_font_size=12,
                     label_font_size=10,
@@ -1008,19 +1008,19 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             return
         self._occupancy_actor = self.plotter.add_mesh(dataset, **self._occupancy_color_kwargs(dataset))
 
-    def _rebuild_density_actor(self) -> None:
-        self._remove_actor(self._density_actor)
+    def _rebuild_implicit_actor(self) -> None:
+        self._remove_actor(self._implicit_actor)
         volume_kwargs: dict[str, Any] = {
-            "scalars": self.density_field_name,
-            "cmap": self._density_cmap(),
-            "clim": self._density_clim(),
+            "scalars": self.implicit_field_name,
+            "cmap": self._implicit_cmap(),
+            "clim": self._implicit_clim(),
             "show_scalar_bar": False,
             "render": False,
-            "name": "density_actor",
+            "name": "implicit_actor",
             "reset_camera": False,
             "shade": False,
         }
-        if self.density_field_name == "deposition_order":
+        if self.implicit_field_name == "deposition_order":
             volume_kwargs.update(
                 {
                     "opacity": "foreground",
@@ -1029,8 +1029,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             )
         else:
             volume_kwargs["opacity"] = self._volume_opacity()
-        self._density_actor = self.plotter.add_volume(
-            self._density_grid(),
+        self._implicit_actor = self.plotter.add_volume(
+            self._implicit_grid(),
             **volume_kwargs,
         )
 
@@ -1056,8 +1056,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             self._surface_actor.SetVisibility(self.representation == "surface" and not self.clip_enabled)
         if self._occupancy_actor is not None:
             self._occupancy_actor.SetVisibility(self.representation == "occupancy" and not self.clip_enabled)
-        if self._density_actor is not None:
-            self._density_actor.SetVisibility(self.representation == "density")
+        if self._implicit_actor is not None:
+            self._implicit_actor.SetVisibility(self.representation == "implicit")
         if self._clip_actor is not None:
             self._clip_actor.SetVisibility(self.clip_enabled and self.representation in {"surface", "occupancy"})
 
@@ -1092,9 +1092,9 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
                     show_scalar_bar=False,
                     reset_camera=False,
                 )
-        elif self.representation == "density" and self._density_actor is not None:
+        elif self.representation == "implicit" and self._implicit_actor is not None:
             self._clip_widget = self.plotter.add_volume_clip_plane(
-                self._density_actor,
+                self._implicit_actor,
                 interaction_event="always",
             )
         self._apply_visibility()
@@ -1127,7 +1127,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._clear_clip_state()
         self._rebuild_surface_actor()
         self._rebuild_occupancy_actor()
-        self._rebuild_density_actor()
+        self._rebuild_implicit_actor()
         if self.clip_enabled:
             self._activate_clip_widget()
         else:
@@ -1140,7 +1140,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _sync_surface_controls(self) -> None:
         surface_mode = self.representation == "surface"
         overhang_mode = surface_mode and self.color_mode == "overhang"
-        scalar_mode = self.representation in {"occupancy", "density"}
+        scalar_mode = self.representation in {"occupancy", "implicit"}
         self.color_mode_row.setVisible(surface_mode)
         self.surface_box.setVisible(overhang_mode)
         self.build_direction_row.setVisible(overhang_mode)
@@ -1247,7 +1247,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             [
                 f"Voxel Index: {payload['voxel_index']}\n",
                 f"Occupied: {payload['occupied']}\n",
-                f"Density: {payload['density']:.3f}\n",
+                f"Implicit: {payload['implicit']:.3f}\n",
                 f"Dep. Index: {payload['deposition_index']:.3f}\n",
                 f"Signed Distance: {payload['signed_distance']:.3f}\n",
                 f"Normal: ({normal[0]:.2f}, {normal[1]:.2f}, {normal[2]:.2f})",
@@ -1258,7 +1258,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _format_roi_text(self, stats: dict[str, float]) -> str:
         return (
             f"Occupied Fraction: {stats['occupied_fraction']:.3f}\n"
-            f"Density Max / Mean: {stats['density_max']:.3f} / {stats['density_mean']:.3f}\n"
+            f"Implicit Max / Mean: {stats['implicit_max']:.3f} / {stats['implicit_mean']:.3f}\n"
             f"Dep. Index Max / Mean: {stats['deposition_index_max']:.3f} / {stats['deposition_index_mean']:.3f}\n"
             f"Mesh Area: {stats['mesh_area']:.3f}\n"
             f"Voxel Count: {int(stats['voxel_count'])}"
@@ -1295,7 +1295,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "representation": self.representation,
             "voxel_index": domain.world_to_index(coordinates, clip=True) if domain.contains_point(coordinates) else None,
             "occupied": self.bundle.contains_point(coordinates, representation="occupancy", threshold=self.threshold),
-            "density": self.bundle.sample_density_at(coordinates, interpolation="trilinear"),
+            "implicit": self.bundle.sample_implicit_value(coordinates, interpolation="trilinear"),
             "deposition_index": self.bundle.sample_deposition_index(coordinates),
             "signed_distance": self.bundle.signed_distance_at(coordinates, threshold=self.threshold),
             "surface_normal": self.bundle.surface_normal_at(coordinates, threshold=self.threshold),
@@ -1330,8 +1330,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         return stats
 
     def set_representation(self, representation: Representation) -> None:
-        if representation not in {"surface", "occupancy", "density"}:
-            raise ValueError("representation must be 'surface', 'occupancy', or 'density'.")
+        if representation not in {"surface", "occupancy", "implicit"}:
+            raise ValueError("representation must be 'surface', 'occupancy', or 'implicit'.")
         camera_state = self._capture_camera_state()
         self.representation = representation
         self._set_combo_current_data(self.view_mode_combo, representation)
@@ -1357,7 +1357,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             if isinstance(simulator_or_result, SimulationResult)
             else simulator_or_result.result(
                 threshold=self.threshold,
-                compositions=("max", "coverage"),
+                include_coverage=True,
             )
         )
         if result.domain != self.result.domain:
@@ -1398,7 +1398,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._sync_opacity_controls()
 
     def set_scalar_field(self, field_name: ScalarFieldName | None) -> None:
-        if self.representation not in {"occupancy", "density"} or field_name is None:
+        if self.representation not in {"occupancy", "implicit"} or field_name is None:
             return
         representation = cast(ScalarRepresentation, self.representation)
         if field_name not in self._available_scalar_field_labels(representation):
@@ -1472,12 +1472,12 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             show_point=False,
             use_picker=True,
             picker=picker,
-            pickable_window=self.representation == "density",
+            pickable_window=self.representation == "implicit",
         )
 
     def _handle_non_surface_picked_point(self, point: npt.ArrayLike, picker: Any) -> dict[str, Any] | None:
         coordinates = tuple(float(value) for value in np.asarray(point, dtype=float).reshape(3))
-        if self.representation == "density" and not self.bundle.domain.contains_point(coordinates):
+        if self.representation == "implicit" and not self.bundle.domain.contains_point(coordinates):
             self.clear_pick()
             return None
         if self.representation == "occupancy" and hasattr(picker, "GetDataSet") and picker.GetDataSet() is None:
