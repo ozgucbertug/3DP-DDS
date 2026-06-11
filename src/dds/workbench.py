@@ -135,6 +135,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._surface_actor: Any | None = None
         self._occupancy_actor: Any | None = None
         self._implicit_actor: Any | None = None
+        self._dirty_representations: set[Representation] = {
+            "surface",
+            "occupancy",
+            "implicit",
+        }
         self._clip_actor: Any | None = None
         self._clip_widget: Any | None = None
         self._roi_widget: Any | None = None
@@ -181,8 +186,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
         self._build_ui()
         self._apply_window_style()
-        self._rebuild_scene()
         self._apply_initial_view_config()
+        self._rebuild_scene()
         self._initialize_camera()
         self.set_point_picking_enabled(False)
         self._sync_threshold_controls()
@@ -239,12 +244,14 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
         self._set_combo_current_data(self.view_mode_combo, self.representation)
         self._set_combo_current_data(self.color_mode_combo, self.color_mode)
-        self.build_direction_combo.setCurrentText(self._build_direction_label())
+        self._set_combo_current_data(
+            self.build_direction_combo,
+            self._build_direction_label(),
+        )
         self._sync_scalar_field_options()
         self._sync_surface_controls()
         self._sync_status_controls()
         self._sync_opacity_controls()
-        self._rebuild_scene()
 
     def _build_ui(self) -> None:
         self.setWindowTitle("3DP-DDS Workbench")
@@ -1036,6 +1043,24 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             **volume_kwargs,
         )
 
+    def _mark_representations_dirty(
+        self,
+        *representations: Representation,
+    ) -> None:
+        self._dirty_representations.update(representations)
+
+    def _rebuild_active_actor_if_dirty(self) -> None:
+        representation = self.representation
+        if representation not in self._dirty_representations:
+            return
+        if representation == "surface":
+            self._rebuild_surface_actor()
+        elif representation == "occupancy":
+            self._rebuild_occupancy_actor()
+        else:
+            self._rebuild_implicit_actor()
+        self._dirty_representations.discard(representation)
+
     def _activate_overlay(self, name: str) -> None:
         handler = self._overlay_registry.get(name, {}).get("activate")
         if callable(handler):
@@ -1127,9 +1152,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _rebuild_scene(self) -> None:
         camera_state = self._capture_camera_state()
         self._clear_clip_state()
-        self._rebuild_surface_actor()
-        self._rebuild_occupancy_actor()
-        self._rebuild_implicit_actor()
+        self._rebuild_active_actor_if_dirty()
         if self.clip_enabled:
             self._activate_clip_widget()
         else:
@@ -1334,22 +1357,15 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def set_representation(self, representation: Representation) -> None:
         if representation not in {"surface", "occupancy", "implicit"}:
             raise ValueError("representation must be 'surface', 'occupancy', or 'implicit'.")
-        camera_state = self._capture_camera_state()
         self.representation = representation
         self._set_combo_current_data(self.view_mode_combo, representation)
         self._sync_scalar_field_options()
         self._sync_opacity_controls()
         self._sync_surface_controls()
         self._sync_status_controls()
-        if self.clip_enabled:
-            self._activate_clip_widget()
-        else:
-            self._apply_visibility()
-            self._sync_scalar_bars()
+        self._rebuild_scene()
         if self.point_picking_enabled:
             self._install_point_picking()
-        self._restore_camera_state(camera_state)
-        self.plotter.render()
 
     def refresh(self, simulator_or_result: Simulator | SimulationResult) -> None:
         """Refresh the workbench from the latest simulator state or result snapshot."""
@@ -1370,6 +1386,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._coverage = result.coverage
         self._surface_polydata_cache.clear()
         self._occupied_bounds_cache.clear()
+        self._mark_representations_dirty("surface", "occupancy", "implicit")
         self.clear_pick()
         self._sync_scalar_field_options()
         self._rebuild_scene()
@@ -1386,6 +1403,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.threshold = value
         self._surface_polydata_cache.pop(previous_threshold, None)
         self._occupied_bounds_cache.pop(previous_threshold, None)
+        self._mark_representations_dirty("surface", "occupancy", "implicit")
         self._rebuild_scene()
         self._refresh_roi_stats()
         self._sync_threshold_controls()
@@ -1396,6 +1414,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             self._sync_opacity_controls()
             return
         self.view_opacity[self.representation] = value
+        self._mark_representations_dirty(self.representation)
         self._rebuild_scene()
         self._sync_opacity_controls()
 
@@ -1415,33 +1434,44 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._sync_scalar_field_options()
         self._sync_surface_controls()
         self._sync_status_controls()
+        self._mark_representations_dirty(representation)
         self._rebuild_scene()
 
     def set_color_mode(self, value: ColorMode) -> None:
         if value not in {"plain", "normals", "overhang"}:
             raise ValueError("color_mode must be 'plain', 'normals', or 'overhang'.")
-        camera_state = self._capture_camera_state()
+        if self.color_mode == value:
+            self._set_combo_current_data(self.color_mode_combo, value)
+            self._sync_surface_controls()
+            self._sync_status_controls()
+            return
         self.color_mode = value
         self._set_combo_current_data(self.color_mode_combo, value)
         self._sync_surface_controls()
         self._sync_status_controls()
-        self._rebuild_surface_actor()
-        if self.clip_enabled and self.representation == "surface":
-            self._activate_clip_widget()
-        else:
-            self._apply_visibility()
-            self._sync_scalar_bars()
-        self._restore_camera_state(camera_state)
-        self.plotter.render()
+        self._mark_representations_dirty("surface")
+        if self.representation == "surface":
+            self._rebuild_scene()
 
     def set_build_direction(self, axis_or_vector: str | tuple[float, float, float] | npt.ArrayLike) -> None:
-        camera_state = self._capture_camera_state()
-        self.build_direction = self._coerce_build_direction(axis_or_vector)
-        self.build_direction_combo.setCurrentText(self._build_direction_label())
+        build_direction = self._coerce_build_direction(axis_or_vector)
+        if np.allclose(self.build_direction, build_direction):
+            self._set_combo_current_data(
+                self.build_direction_combo,
+                self._build_direction_label(),
+            )
+            self._sync_status_controls()
+            return
+        self.build_direction = build_direction
+        self._set_combo_current_data(
+            self.build_direction_combo,
+            self._build_direction_label(),
+        )
         self._sync_status_controls()
-        self._rebuild_scene()
-        self._restore_camera_state(camera_state)
-        self.plotter.render()
+        if self.color_mode == "overhang":
+            self._mark_representations_dirty("surface")
+            if self.representation == "surface":
+                self._rebuild_scene()
 
     def clear_pick(self) -> None:
         self._last_pick_payload = None

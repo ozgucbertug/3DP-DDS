@@ -233,15 +233,104 @@ def test_initial_view_config_applies_without_example_side_mutation(qtbot: object
     assert workbench.scalar_field_combo.currentData() == "coverage"
     assert workbench.build_direction_combo.currentData() == "+Y"
     assert workbench.view_opacity["implicit"] == pytest.approx(1.0)
+    assert workbench._implicit_actor is not None
+    assert workbench._surface_actor is None
+    assert workbench._occupancy_actor is None
 
     workbench.close()
 
 
-def test_refresh_updates_live_simulator_state(qtbot: object) -> None:
+def test_dirty_views_rebuild_only_when_active(
+    qtbot: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workbench = SimulationWorkbench(make_simulator(), off_screen=True)
+    qtbot.addWidget(workbench)
+    rebuild_counts = {"surface": 0, "occupancy": 0, "implicit": 0}
+
+    for representation in rebuild_counts:
+        method_name = f"_rebuild_{representation}_actor"
+        original = getattr(workbench, method_name)
+
+        def tracked(
+            original: object = original,
+            representation: str = representation,
+        ) -> None:
+            rebuild_counts[representation] += 1
+            original()
+
+        monkeypatch.setattr(workbench, method_name, tracked)
+
+    workbench.set_threshold(0.6)
+
+    assert rebuild_counts == {"surface": 1, "occupancy": 0, "implicit": 0}
+    assert workbench._dirty_representations == {"occupancy", "implicit"}
+
+    workbench.set_representation("occupancy")
+    assert rebuild_counts == {"surface": 1, "occupancy": 1, "implicit": 0}
+
+    workbench.set_representation("surface")
+    assert rebuild_counts == {"surface": 1, "occupancy": 1, "implicit": 0}
+
+    workbench.set_color_mode("normals")
+    assert rebuild_counts == {"surface": 2, "occupancy": 1, "implicit": 0}
+
+    workbench.set_representation("implicit")
+    assert rebuild_counts == {"surface": 2, "occupancy": 1, "implicit": 1}
+
+    workbench.close()
+
+
+def test_inactive_surface_changes_remain_lazy(
+    qtbot: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    workbench = SimulationWorkbench(make_simulator(), off_screen=True)
+    qtbot.addWidget(workbench)
+    workbench.set_representation("occupancy")
+    rebuild_count = 0
+    original = workbench._rebuild_surface_actor
+
+    def tracked() -> None:
+        nonlocal rebuild_count
+        rebuild_count += 1
+        original()
+
+    monkeypatch.setattr(workbench, "_rebuild_surface_actor", tracked)
+
+    workbench.set_color_mode("overhang")
+    workbench.set_build_direction("+Y")
+
+    assert rebuild_count == 0
+    assert "surface" in workbench._dirty_representations
+
+    workbench.set_representation("surface")
+    assert rebuild_count == 1
+
+    workbench.close()
+
+
+def test_refresh_updates_live_simulator_state(
+    qtbot: object,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     simulator = Simulator(make_domain())
     workbench = SimulationWorkbench(simulator, off_screen=True)
     qtbot.addWidget(workbench)
 
+    def fail_inactive_rebuild() -> None:
+        raise AssertionError("refresh must not rebuild inactive actors")
+
+    monkeypatch.setattr(
+        workbench,
+        "_rebuild_occupancy_actor",
+        fail_inactive_rebuild,
+    )
+    monkeypatch.setattr(
+        workbench,
+        "_rebuild_implicit_actor",
+        fail_inactive_rebuild,
+    )
     simulator.add_deposit(
         PointDeposit(
             target=(2.25, 2.25, 0.65),
@@ -252,5 +341,6 @@ def test_refresh_updates_live_simulator_state(qtbot: object) -> None:
 
     assert len(workbench.result.deposits) == 1
     assert int(workbench.bundle.occupancy(threshold=0.5).sum()) > 0
+    assert workbench._dirty_representations == {"occupancy", "implicit"}
 
     workbench.close()
