@@ -5,14 +5,13 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass, field
-from typing import TypeAlias
+from typing import Any, TypeAlias, cast
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
 from .attributes import BeadProfile, DepositionMetadata
 from .utils import ensure_finite_scalar
-
 
 Coordinate3D: TypeAlias = Sequence[float]
 PointLike: TypeAlias = "Point3D | Coordinate3D"
@@ -24,17 +23,17 @@ DEFAULT_AXIS = (0.0, 0.0, 1.0)
 
 def _coerce_xyz(value: object, *, name: str) -> tuple[float, float, float]:
     if isinstance(value, (Point3D, Vector3D)):
-        xyz = value.to_tuple()
+        xyz: tuple[float, ...] = value.to_tuple()
     else:
         try:
-            xyz = tuple(float(component) for component in value)  # type: ignore[arg-type]
+            xyz = tuple(float(component) for component in cast(Iterable[Any], value))
         except (TypeError, ValueError) as exc:
             raise TypeError(f"{name} must contain exactly three numeric values") from exc
     if len(xyz) != 3:
         raise ValueError(f"{name} must contain exactly three values")
     if not np.all(np.isfinite(xyz)):
         raise ValueError(f"{name} values must be finite")
-    return xyz
+    return xyz[0], xyz[1], xyz[2]
 
 
 @dataclass(frozen=True, slots=True)
@@ -142,7 +141,7 @@ class Pose3D:
             self.orientation.apply(Point3D.from_value(point).to_array())
             + self.position.to_array()
         )
-        return Point3D.from_value(transformed)
+        return Point3D.from_value(transformed.tolist())
 
     def transform_vector(self, vector: VectorLike) -> Vector3D:
         transformed = self.orientation.apply(Vector3D.from_value(vector).to_array())
@@ -151,7 +150,7 @@ class Pose3D:
     def inverse(self) -> Pose3D:
         orientation = self.orientation.inv()
         position = -orientation.apply(self.position.to_array())
-        return Pose3D(position=position, orientation=orientation)
+        return Pose3D(position=position.tolist(), orientation=orientation)
 
     def compose(self, local_pose: Pose3D) -> Pose3D:
         """Apply ``local_pose`` and then this pose."""
@@ -186,7 +185,7 @@ class Pose3D:
         ) or not np.isclose(np.linalg.det(rotation_matrix), 1.0, atol=1e-10):
             raise ValueError("pose matrix must contain a proper orthonormal rotation")
         return cls(
-            position=values[:3, 3],
+            position=values[:3, 3].tolist(),
             orientation=Rotation.from_matrix(rotation_matrix),
         )
 
@@ -253,7 +252,7 @@ class DepositionTarget:
 
     @classmethod
     def from_value(cls, value: TargetLike) -> DepositionTarget:
-        if isinstance(value, cls):
+        if isinstance(value, DepositionTarget):
             return value
         if isinstance(value, Pose3D):
             return cls.from_pose(value)
@@ -279,18 +278,22 @@ class Line3D:
 
     @property
     def direction(self) -> Vector3D:
-        return Vector3D.from_value(self.end.to_array() - self.start.to_array())
+        start = cast(Point3D, self.start)
+        end = cast(Point3D, self.end)
+        return Vector3D.from_value((end.to_array() - start.to_array()).tolist())
 
     @property
     def length(self) -> float:
-        return float(np.linalg.norm(self.end.to_array() - self.start.to_array()))
+        start = cast(Point3D, self.start)
+        end = cast(Point3D, self.end)
+        return float(np.linalg.norm(end.to_array() - start.to_array()))
 
     @property
     def bounds(self) -> tuple[Point3D, Point3D]:
-        start = self.start.to_array()
-        end = self.end.to_array()
-        return Point3D.from_value(np.minimum(start, end)), Point3D.from_value(
-            np.maximum(start, end)
+        start = cast(Point3D, self.start).to_array()
+        end = cast(Point3D, self.end).to_array()
+        return Point3D.from_value(np.minimum(start, end).tolist()), Point3D.from_value(
+            np.maximum(start, end).tolist()
         )
 
 
@@ -320,11 +323,11 @@ class Polyline3D:
     @property
     def bounds(self) -> tuple[Point3D, Point3D]:
         coordinates = np.asarray(
-            [point.to_tuple() for point in self.points],
+            [cast(Point3D, point).to_tuple() for point in self.points],
             dtype=np.float64,
         )
-        return Point3D.from_value(coordinates.min(axis=0)), Point3D.from_value(
-            coordinates.max(axis=0)
+        return Point3D.from_value(coordinates.min(axis=0).tolist()), Point3D.from_value(
+            coordinates.max(axis=0).tolist()
         )
 
 
@@ -389,7 +392,9 @@ class PointDeposit:
             height=self.profile.height,
             padding=padding,
         )
-        return Point3D.from_value(minimum), Point3D.from_value(maximum)
+        return Point3D.from_value(minimum.tolist()), Point3D.from_value(
+            maximum.tolist()
+        )
 
 
 @dataclass(frozen=True, slots=True, init=False)

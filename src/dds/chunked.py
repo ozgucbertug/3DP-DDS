@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain, IndexBounds
-from .kernels import _SampledKernel, TileShape, iter_deposit_kernels, validate_tile_shape
+from .kernels import TileShape, _SampledKernel, iter_deposit_kernels, validate_tile_shape
 from .primitives import DepositInput, iter_deposits
 
 if TYPE_CHECKING:

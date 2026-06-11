@@ -7,8 +7,8 @@ import pytest
 
 from dds import (
     BeadProfile,
-    DepositionTarget,
     DepositionMetadata,
+    DepositionTarget,
     Domain,
     LineDeposit,
     PointDeposit,

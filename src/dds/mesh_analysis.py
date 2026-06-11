@@ -14,7 +14,6 @@ import numpy.typing as npt
 from .geometry.mesh import TriangleMesh, _load_trimesh
 from .utils import EPSILON, normalize_axis
 
-
 # ---------------------------------------------------------------------------
 # Public batch data-holder and factory
 # ---------------------------------------------------------------------------

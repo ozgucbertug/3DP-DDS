@@ -12,7 +12,6 @@ from dds import (
     LineDeposit,
     PointDeposit,
     PolylineDeposit,
-    Pose3D,
     simulate,
 )
 from dds.fields import accumulate_chunked_field
