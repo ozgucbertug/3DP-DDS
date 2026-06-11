@@ -1,4 +1,4 @@
-"""Helpers for converting ordered poses into deposition inputs."""
+"""Helpers for converting ordered deposition targets into deposits."""
 
 from __future__ import annotations
 
@@ -6,41 +6,44 @@ from collections.abc import Sequence
 from typing import Literal
 
 from .attributes import BeadProfile, DepositionMetadata
-from .primitives import LineDeposit, Point3D, PointDeposit, PolylineDeposit, Pose3D
+from .primitives import DepositionTarget, LineDeposit, PointDeposit, PolylineDeposit
 
 OriginReference = Literal["top", "center"]
 
 
-def target_pose_from_origin(
-    pose: Pose3D,
+def _target_from_origin(
+    target: DepositionTarget,
     *,
     profile: BeadProfile,
     origin_reference: OriginReference = "top",
-) -> Pose3D:
-    """Convert a top- or center-referenced pose to a top-referenced target."""
+) -> DepositionTarget:
+    """Convert a top- or center-referenced target to a top reference."""
 
     if origin_reference == "top":
-        return pose
+        return target
     if origin_reference != "center":
         raise ValueError("origin_reference must be 'top' or 'center'")
 
-    position = pose.position.to_array() + (profile.height / 2.0) * pose.axis.to_array()
-    return Pose3D(position=Point3D.from_value(position), axis=pose.axis)
+    position = (
+        target.position.to_array()
+        + (profile.height / 2.0) * target.normal.to_array()
+    )
+    return DepositionTarget(position=position, normal=target.normal)
 
 
 def point_deposits_from_targets(
-    targets: Sequence[Pose3D],
+    targets: Sequence[DepositionTarget],
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[PointDeposit, ...]:
-    """Convert ordered target poses into point deposits."""
+    """Convert ordered targets into point deposits."""
 
     metadata_value = metadata or DepositionMetadata()
     return tuple(
         PointDeposit(
-            target=target_pose_from_origin(
+            target=_target_from_origin(
                 target,
                 profile=profile,
                 origin_reference=origin_reference,
@@ -53,19 +56,19 @@ def point_deposits_from_targets(
 
 
 def line_deposits_from_targets(
-    targets: Sequence[Pose3D],
+    targets: Sequence[DepositionTarget],
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[LineDeposit, ...]:
-    """Convert ordered target poses into consecutive line deposits."""
+    """Convert ordered targets into consecutive line deposits."""
 
     if len(targets) < 2:
         raise ValueError("line_deposits_from_targets requires at least two targets")
     metadata_value = metadata or DepositionMetadata()
-    poses = tuple(
-        target_pose_from_origin(
+    normalized_targets = tuple(
+        _target_from_origin(
             target,
             profile=profile,
             origin_reference=origin_reference,
@@ -79,24 +82,28 @@ def line_deposits_from_targets(
             profile=profile,
             metadata=metadata_value,
         )
-        for start, end in zip(poses[:-1], poses[1:], strict=True)
+        for start, end in zip(
+            normalized_targets[:-1],
+            normalized_targets[1:],
+            strict=True,
+        )
     )
 
 
 def toolpath_from_targets(
-    targets: Sequence[Pose3D],
+    targets: Sequence[DepositionTarget],
     *,
     profile: BeadProfile,
     metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> PolylineDeposit:
-    """Convert ordered target poses into one polyline deposit."""
+    """Convert ordered targets into one polyline deposit."""
 
     if len(targets) < 2:
         raise ValueError("toolpath_from_targets requires at least two targets")
     return PolylineDeposit(
-        poses=tuple(
-            target_pose_from_origin(
+        targets=tuple(
+            _target_from_origin(
                 target,
                 profile=profile,
                 origin_reference=origin_reference,

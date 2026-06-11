@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .primitives import Deposit
     from .results import SimulationResult
 
-_CHECKPOINT_VERSION = 5
+_CHECKPOINT_VERSION = 6
 
 
 def _json_default(value: Any) -> Any:
@@ -101,7 +101,7 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
     if isinstance(deposit, PolylineDeposit):
         return {
             "type": "PolylineDeposit",
-            "poses": [pose.to_dict() for pose in deposit.poses],
+            "targets": [target.to_dict() for target in deposit.targets],
             "profile": deposit.profile.to_dict(),
             "metadata": deposit.metadata.to_dict(),
         }
@@ -112,7 +112,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
     """Reconstruct a leaf deposit from a plain dict produced by :func:`_deposit_to_dict`."""
 
     from .attributes import BeadProfile, DepositionMetadata
-    from .primitives import LineDeposit, PointDeposit, PolylineDeposit, Pose3D
+    from .primitives import DepositionTarget, LineDeposit, PointDeposit, PolylineDeposit
 
     deposit_type = d.get("type")
     if deposit_type not in {"PointDeposit", "LineDeposit", "PolylineDeposit"}:
@@ -123,34 +123,34 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
 
     if deposit_type == "PointDeposit":
         return PointDeposit(
-            target=Pose3D(
+            target=DepositionTarget(
                 position=tuple(d["target"]["position"]),
-                axis=tuple(d["target"]["axis"]),
+                normal=tuple(d["target"]["normal"]),
             ),
             profile=profile,
             metadata=metadata,
         )
     if deposit_type == "LineDeposit":
         return LineDeposit(
-            start=Pose3D(
+            start=DepositionTarget(
                 position=tuple(d["start"]["position"]),
-                axis=tuple(d["start"]["axis"]),
+                normal=tuple(d["start"]["normal"]),
             ),
-            end=Pose3D(
+            end=DepositionTarget(
                 position=tuple(d["end"]["position"]),
-                axis=tuple(d["end"]["axis"]),
+                normal=tuple(d["end"]["normal"]),
             ),
             profile=profile,
             metadata=metadata,
         )
     if deposit_type == "PolylineDeposit":
         return PolylineDeposit(
-            poses=tuple(
-                Pose3D(
-                    position=tuple(pose["position"]),
-                    axis=tuple(pose["axis"]),
+            targets=tuple(
+                DepositionTarget(
+                    position=tuple(target["position"]),
+                    normal=tuple(target["normal"]),
                 )
-                for pose in d["poses"]
+                for target in d["targets"]
             ),
             profile=profile,
             metadata=metadata,

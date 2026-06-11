@@ -151,7 +151,7 @@ def _sample_point_on_bounds(
     signed_distance = rounded_cylinder_signed_distance(
         points,
         target=deposit.target.position.to_array(),
-        axis=deposit.target.axis.to_array(),
+        axis=deposit.target.normal.to_array(),
         profile=profile,
     )
     values = density_from_signed_distance(signed_distance, profile.transition_width)
@@ -187,8 +187,8 @@ def _sample_line_on_bounds(
     parameters = closest_point_parameters(flat_points, start, end)
     closest_targets = start + parameters[:, np.newaxis] * (end - start)
     axes = slerp_unit_vectors(
-        deposit.start.axis.to_array(),
-        deposit.end.axis.to_array(),
+        deposit.start.normal.to_array(),
+        deposit.end.normal.to_array(),
         parameters,
     )
     signed_distance = rounded_cylinder_signed_distance(
@@ -216,7 +216,7 @@ def _iter_point_kernels(
     profile = resolve_bead_profile(deposit.profile, domain)
     support_min, support_max = _point_target_support_bounds(
         deposit.target.position,
-        deposit.target.axis,
+        deposit.target.normal,
         width=profile.width,
         height=profile.height,
         padding=profile.support_padding,

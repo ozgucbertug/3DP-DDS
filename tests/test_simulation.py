@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+from scipy.spatial.transform import Rotation
 
 from dds import (
     BeadProfile,
     DepositionMetadata,
+    DepositionTarget,
     Domain,
     Line3D,
     LineDeposit,
@@ -45,11 +47,15 @@ def make_metadata() -> DepositionMetadata:
 
 def test_geometry_primitives_have_distinct_roles() -> None:
     point = Point3D(1.0, 2.0, 3.0)
-    pose = Pose3D(point, Vector3D(0.0, 0.0, 2.0))
+    pose = Pose3D(point, Rotation.from_euler("z", 90.0, degrees=True))
+    target = DepositionTarget(point, Vector3D(0.0, 0.0, 2.0))
     line = Line3D(point, Point3D(4.0, 6.0, 3.0))
 
     assert pose.position == point
-    assert pose.axis == Vector3D(0.0, 0.0, 1.0)
+    assert target.normal == Vector3D(0.0, 0.0, 1.0)
+    assert pose.transform_vector((1.0, 0.0, 0.0)).to_tuple() == pytest.approx(
+        (0.0, 1.0, 0.0)
+    )
     assert line.direction == Vector3D(3.0, 4.0, 0.0)
     assert line.length == pytest.approx(5.0)
 
@@ -170,11 +176,11 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
         voxel_size=0.25,
     )
     deposit = LineDeposit(
-        start=Pose3D(
+        start=DepositionTarget(
             (0.0, 0.0, 1.0),
             (-0.58861627, -0.45646528, -0.66721087),
         ),
-        end=Pose3D(
+        end=DepositionTarget(
             (2.0, 0.0, 1.0),
             (0.68238459, -0.07779286, -0.72684217),
         ),
@@ -189,8 +195,8 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
 def test_line_deposit_rejects_antiparallel_endpoint_axes() -> None:
     with pytest.raises(ValueError, match="antiparallel"):
             LineDeposit(
-                start=Pose3D((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
-                end=Pose3D((1.0, 0.0, 0.0), (0.0, 0.0, -1.0)),
+                start=DepositionTarget((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+                end=DepositionTarget((1.0, 0.0, 0.0), (0.0, 0.0, -1.0)),
                 profile=make_profile(),
             )
 
@@ -409,18 +415,18 @@ def test_metadata_is_immutable_and_validated() -> None:
 def test_pose_based_deposits_and_polyline_event() -> None:
     profile = make_profile(width=2.0, height=1.0)
     start = Pose3D((1.5, 2.5, 3.5))
-    corner = Pose3D((4.5, 2.5, 3.5), (0.0, 1.0, 1.0))
+    corner = DepositionTarget((4.5, 2.5, 3.5), (0.0, 1.0, 1.0))
     end = Pose3D((4.5, 5.5, 3.5))
 
     point = PointDeposit(target=start, profile=profile)
     line = LineDeposit(start=start, end=corner, profile=profile)
     polyline = PolylineDeposit(
-        poses=(start, corner, end),
+        targets=(start, corner, end),
         profile=profile,
     )
 
-    assert point.target == start
-    assert line.start == start
+    assert point.target == DepositionTarget.from_pose(start)
+    assert line.start == DepositionTarget.from_pose(start)
     assert line.end == corner
     assert len(polyline.segments()) == 2
 
@@ -579,10 +585,10 @@ def test_apply_deposit_to_index_field_marks_touched_voxels() -> None:
 
 def test_summarize_layers_handles_polyline_deposits() -> None:
     deposit = PolylineDeposit(
-        poses=(
-            Pose3D((0.0, 0.0, 0.0)),
-            Pose3D((1.0, 0.0, 0.0)),
-            Pose3D((1.0, 1.0, 0.0)),
+        targets=(
+            (0.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (1.0, 1.0, 0.0),
         ),
         profile=make_profile(),
         metadata=DepositionMetadata(layer_id=2),

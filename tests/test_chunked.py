@@ -177,10 +177,10 @@ def test_chunked_diagonal_path_uses_subset_of_domain_memory() -> None:
 def test_polyline_event_merges_internal_segments_across_chunk_boundaries() -> None:
     domain = make_domain()
     deposit = PolylineDeposit(
-        poses=(
-            Pose3D((1.5, 1.5, 3.5)),
-            Pose3D((5.5, 1.5, 3.5)),
-            Pose3D((5.5, 6.5, 3.5)),
+        targets=(
+            (1.5, 1.5, 3.5),
+            (5.5, 1.5, 3.5),
+            (5.5, 6.5, 3.5),
         ),
         profile=make_profile(),
     )

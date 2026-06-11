@@ -6,6 +6,7 @@ from .domain import Domain
 from .primitives import (
     Deposit,
     DepositInput,
+    DepositionTarget,
     Line3D,
     LineDeposit,
     Point3D,
@@ -24,6 +25,7 @@ __all__ = [
     "Deposit",
     "DepositInput",
     "DepositionMetadata",
+    "DepositionTarget",
     "Domain",
     "FieldComposition",
     "Line3D",

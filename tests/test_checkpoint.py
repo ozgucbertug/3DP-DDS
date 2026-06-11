@@ -7,12 +7,12 @@ import pytest
 
 from dds import (
     BeadProfile,
+    DepositionTarget,
     DepositionMetadata,
     Domain,
     LineDeposit,
     PointDeposit,
     PolylineDeposit,
-    Pose3D,
     SimulationResult,
     simulate,
 )
@@ -51,14 +51,14 @@ def make_result(*, include_coverage: bool = False) -> SimulationResult:
 
 def test_point_deposit_serialization_round_trip() -> None:
     original = PointDeposit(
-        target=Pose3D((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
+        target=DepositionTarget((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
         profile=BeadProfile(width=1.5, height=0.8),
         metadata=DepositionMetadata(layer_id=5, user_data={"tag": "A"}),
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert isinstance(restored, PointDeposit)
     assert restored.target.position == original.target.position
-    assert restored.target.axis == original.target.axis
+    assert restored.target.normal == original.target.normal
     assert restored.profile == original.profile
     assert restored.metadata.layer_id == original.metadata.layer_id
     assert restored.metadata.user_data == {"tag": "A"}
@@ -66,23 +66,25 @@ def test_point_deposit_serialization_round_trip() -> None:
 
 def test_line_deposit_serialization_round_trip() -> None:
     original = LineDeposit(
-        start=Pose3D((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
-        end=Pose3D((4.0, 5.0, 6.0), (0.0, 1.0, 1.0)),
+        start=DepositionTarget((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((4.0, 5.0, 6.0), (0.0, 1.0, 1.0)),
         profile=BeadProfile(width=2.0, height=1.0),
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert isinstance(restored, LineDeposit)
     assert restored.start == original.start
     assert restored.end.position == original.end.position
-    assert restored.end.axis.to_tuple() == pytest.approx(original.end.axis.to_tuple())
+    assert restored.end.normal.to_tuple() == pytest.approx(
+        original.end.normal.to_tuple()
+    )
 
 
 def test_polyline_deposit_serialization_round_trip() -> None:
     original = PolylineDeposit(
-        poses=(
-            Pose3D((0.0, 0.0, 1.0)),
-            Pose3D((1.0, 0.0, 1.0), (0.0, 1.0, 1.0)),
-            Pose3D((1.0, 1.0, 1.0)),
+        targets=(
+            DepositionTarget((0.0, 0.0, 1.0)),
+            DepositionTarget((1.0, 0.0, 1.0), (0.0, 1.0, 1.0)),
+            DepositionTarget((1.0, 1.0, 1.0)),
         ),
         profile=BeadProfile(width=1.0, height=0.5),
         metadata=DepositionMetadata(
@@ -94,9 +96,9 @@ def test_polyline_deposit_serialization_round_trip() -> None:
     restored = _deposit_from_dict(_deposit_to_dict(original))
 
     assert isinstance(restored, PolylineDeposit)
-    assert len(restored.poses) == 3
-    assert restored.poses[1].axis.to_tuple() == pytest.approx(
-        original.poses[1].axis.to_tuple()
+    assert len(restored.targets) == 3
+    assert restored.targets[1].normal.to_tuple() == pytest.approx(
+        original.targets[1].normal.to_tuple()
     )
     assert restored.metadata.user_data["material_id"] == "clay"
 
