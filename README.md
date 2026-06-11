@@ -412,6 +412,7 @@ analysis = result.analysis
 implicit = result.implicit_field
 occupancy = analysis.occupancy(threshold=0.5)
 deposition_index = analysis.deposition_index_field()
+deposition_order = analysis.deposition_order_field(threshold=0.5)
 
 implicit_at_point = analysis.sample_implicit_value(
     (5.0, 5.0, 0.3),
@@ -472,7 +473,10 @@ print(support.risk_area)
 ```
 
 Layer stratification requires deposits with `metadata.layer_id`. Use
-`mode="order"` to stratify by deposit order instead.
+`mode="order"` to stratify by deposit order instead. For visualization or
+per-voxel order queries without materializing every stratum, use
+`deposition_order_field()`. It returns a cached, read-only integer field with
+one-based deposit order and zero for untouched voxels.
 
 ## Persistence
 

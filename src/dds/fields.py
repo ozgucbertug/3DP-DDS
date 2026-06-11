@@ -11,6 +11,7 @@ import numpy.typing as npt
 from .domain import Domain
 from .kernels import _SampledKernel, iter_deposit_kernels
 from .primitives import Deposit, DepositInput, iter_deposits
+from .utils import ensure_finite_scalar
 
 FieldName: TypeAlias = Literal["implicit", "coverage"]
 
@@ -85,6 +86,30 @@ def accumulate_deposition_index(
         for sampled in iter_deposit_kernels(domain, deposit):
             _apply_kernel_to_index_field(index_field, sampled, deposit_index)
     return index_field
+
+
+def accumulate_deposition_order(
+    domain: Domain,
+    deposits: Iterable[DepositInput] | DepositInput,
+    *,
+    threshold: float = 0.5,
+) -> npt.NDArray[np.intp]:
+    """Record the one-based order of the last deposit reaching a threshold."""
+
+    threshold_value = ensure_finite_scalar(threshold, "threshold")
+    if threshold_value < 0.0:
+        raise ValueError("threshold must be non-negative.")
+
+    order_field = np.zeros(domain.grid_shape, dtype=np.intp)
+    for deposit_order, deposit in enumerate(iter_deposits(deposits), start=1):
+        for sampled in iter_deposit_kernels(domain, deposit):
+            occupied = (
+                sampled.values > 0.0
+                if threshold_value == 0.0
+                else sampled.values >= threshold_value
+            )
+            order_field[sampled.slices][occupied] = deposit_order
+    return order_field
 
 
 def apply_deposit_to_field(

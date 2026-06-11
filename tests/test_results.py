@@ -9,7 +9,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, SimulationResult, Simulator, simulate
+from dds import (
+    BeadProfile,
+    DepositionMetadata,
+    Domain,
+    LineDeposit,
+    PointDeposit,
+    PolylineDeposit,
+    SimulationResult,
+    Simulator,
+    simulate,
+)
 
 
 def test_root_import_does_not_load_optional_visualization_modules() -> None:
@@ -85,6 +95,69 @@ def test_simulation_result_strata_falls_back_to_order_without_real_layers() -> N
     assert field_set.mode == "order"
     assert field_set.stratum_ids == (0, 1)
     assert np.max(field_set.label_field) == pytest.approx(2.0)
+
+
+@pytest.mark.parametrize("threshold", [0.25, 0.5, 0.8])
+def test_deposition_order_field_matches_order_strata(threshold: float) -> None:
+    domain = make_domain()
+    profile = make_profile()
+    deposits = [
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile),
+        LineDeposit(
+            start=(2.5, 2.5, 2.5),
+            end=(8.5, 2.5, 2.5),
+            profile=profile,
+        ),
+        PolylineDeposit(
+            targets=(
+                (5.5, 2.5, 3.5),
+                (5.5, 7.5, 3.5),
+                (8.5, 7.5, 3.5),
+            ),
+            profile=profile,
+        ),
+    ]
+    analysis = simulate(domain, deposits, threshold=threshold).analysis
+
+    order_field = analysis.deposition_order_field()
+    strata_labels = analysis.strata(mode="order").label_field
+
+    assert order_field.dtype == np.intp
+    np.testing.assert_array_equal(order_field, strata_labels)
+
+
+def test_zero_threshold_deposition_order_keeps_untouched_voxels_zero() -> None:
+    result = simulate(
+        make_domain(),
+        [PointDeposit(target=(2.5, 2.5, 2.5), profile=make_profile())],
+        threshold=0.0,
+    )
+
+    order_field = result.analysis.deposition_order_field()
+
+    assert np.any(order_field == 0)
+    assert np.any(order_field == 1)
+
+
+def test_deposition_order_field_is_cached_per_threshold_and_read_only() -> None:
+    result = simulate(
+        make_domain(),
+        [
+            PointDeposit(target=(2.5, 2.5, 2.5), profile=make_profile()),
+            PointDeposit(target=(2.5, 2.5, 2.5), profile=make_profile()),
+        ],
+    )
+
+    default_field = result.analysis.deposition_order_field()
+    explicit_default = result.analysis.deposition_order_field(threshold=0.5)
+    lower_threshold = result.analysis.deposition_order_field(threshold=0.25)
+
+    assert default_field is explicit_default
+    assert default_field is not lower_threshold
+    assert not default_field.flags.writeable
+    assert np.max(default_field) == 2
+    with pytest.raises(ValueError):
+        default_field[0, 0, 0] = 1
 
 
 def test_layer_density_and_occupancy_require_real_layer_ids() -> None:

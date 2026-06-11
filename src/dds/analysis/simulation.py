@@ -108,6 +108,7 @@ def _sample_scalar_field(
 @dataclass(slots=True)
 class _AnalysisCache:
     deposition_index: npt.NDArray[np.intp] | None = None
+    deposition_order: dict[float, npt.NDArray[np.intp]] = field(default_factory=dict)
     occupancy: dict[float, npt.NDArray[np.bool_]] = field(default_factory=dict)
     surface_mesh: dict[tuple[float, int], Any] = field(default_factory=dict)
     surface_sdf: dict[float, Any] = field(default_factory=dict)
@@ -181,6 +182,27 @@ class SimulationAnalysis:
                 dtype=np.intp,
             )
         return self._cache.deposition_index
+
+    def deposition_order_field(
+        self,
+        *,
+        threshold: float | None = None,
+    ) -> npt.NDArray[np.intp]:
+        """Return the cached one-based deposit order for thresholded voxels."""
+
+        from ..fields import accumulate_deposition_order
+
+        key = self.default_threshold if threshold is None else float(threshold)
+        if key not in self._cache.deposition_order:
+            self._cache.deposition_order[key] = _freeze_generated_array(
+                accumulate_deposition_order(
+                    self.domain,
+                    self.deposits,
+                    threshold=key,
+                ),
+                dtype=np.intp,
+            )
+        return self._cache.deposition_order[key]
 
     def occupancy(
         self,
