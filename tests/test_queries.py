@@ -67,14 +67,15 @@ def test_deposition_index_sampling_is_nearest_only_and_integer() -> None:
     domain = Domain.from_bounds(
         xmin=0.0, xmax=4.0, ymin=0.0, ymax=4.0, zmin=0.0, zmax=4.0, voxel_size=1.0
     )
-    deposition_index = np.full(domain.grid_shape, -1, dtype=np.intp)
-    deposition_index[1, 1, 1] = 0
-    deposition_index[2, 1, 1] = 1
+    profile = BeadProfile(width=1.0, height=1.0)
+    deposits = (
+        PointDeposit(target=(1.5, 1.5, 1.5), profile=profile),
+        PointDeposit(target=(2.5, 1.5, 1.5), profile=profile),
+    )
     analysis = SimulationAnalysis(
         domain,
         np.zeros(domain.grid_shape),
-        deposition_index,
-        (),
+        deposits,
     )
 
     value = analysis.sample_deposition_index((2.0, 1.5, 1.5))
@@ -86,17 +87,39 @@ def test_deposition_index_sampling_is_nearest_only_and_integer() -> None:
 def test_analysis_owns_read_only_snapshots() -> None:
     domain = make_domain()
     implicit_field = np.zeros(domain.grid_shape, dtype=float)
-    deposition_index = np.full(domain.grid_shape, -1, dtype=np.intp)
-    analysis = SimulationAnalysis(domain, implicit_field, deposition_index, ())
+    analysis = SimulationAnalysis(domain, implicit_field, ())
     implicit_field.fill(1.0)
-    deposition_index.fill(5)
 
     assert float(analysis.implicit_field.max()) == pytest.approx(0.0)
-    assert int(analysis.deposition_index.max()) == -1
+    assert int(analysis.deposition_index_field().max()) == -1
     with pytest.raises(ValueError):
         analysis.implicit_field[0, 0, 0] = 1.0
-    with pytest.raises(FrozenInstanceError):
+    with pytest.raises((FrozenInstanceError, TypeError)):
         analysis.implicit_field = np.ones(domain.grid_shape)
+
+
+def test_occupancy_does_not_construct_deposition_indices(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.fields
+
+    calls = 0
+    original = dds.fields.accumulate_deposition_index
+
+    def tracked(*args: object, **kwargs: object) -> np.ndarray:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(dds.fields, "accumulate_deposition_index", tracked)
+    analysis = make_result().analysis
+
+    assert analysis.occupancy().any()
+    assert calls == 0
+    assert analysis.deposition_index_field().max() >= 0
+    assert calls == 1
+    analysis.deposition_index_field()
+    assert calls == 1
 
 
 def test_result_analysis_is_cached_and_simulator_results_are_isolated() -> None:
@@ -106,6 +129,10 @@ def test_result_analysis_is_cached_and_simulator_results_are_isolated() -> None:
     )
     before = simulator.result()
     assert before.analysis is before.analysis
+    assert np.shares_memory(
+        before.implicit_field,
+        before.analysis.implicit_field,
+    )
 
     simulator.add_deposit(
         PointDeposit(target=(4.25, 4.25, 0.65), profile=BeadProfile(width=1.2, height=0.8))

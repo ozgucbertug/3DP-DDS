@@ -31,11 +31,6 @@ class SimulationResult:
         init=False,
         repr=False,
     )
-    _deposition_index_cache: npt.NDArray[np.intp] | None = field(
-        default=None,
-        init=False,
-        repr=False,
-    )
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "deposits", tuple(self.deposits))
@@ -79,21 +74,6 @@ class SimulationResult:
         if not 0.0 <= self.default_threshold <= 1.0:
             raise ValueError("default_threshold must be between 0 and 1.")
 
-    def _deposition_index_field(self) -> npt.NDArray[np.intp]:
-        if self._deposition_index_cache is None:
-            from .fields import accumulate_deposition_index
-
-            object.__setattr__(
-                self,
-                "_deposition_index_cache",
-                readonly_array(
-                    accumulate_deposition_index(self.domain, self.deposits),
-                    dtype=np.intp,
-                ),
-            )
-        assert self._deposition_index_cache is not None
-        return self._deposition_index_cache
-
     @property
     def analysis(self) -> SimulationAnalysis:
         """Return cached derived queries for this result snapshot."""
@@ -105,9 +85,9 @@ class SimulationResult:
                 SimulationAnalysis(
                     self.domain,
                     self.implicit_field,
-                    self._deposition_index_field(),
                     self.deposits,
                     self.default_threshold,
+                    _copy_implicit_field=False,
                 ),
             )
         assert self._analysis_cache is not None

@@ -83,53 +83,80 @@ def _sample_scalar_field(
     raise ValueError("interpolation must be 'nearest' or 'trilinear'.")
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(slots=True)
+class _AnalysisCache:
+    deposition_index: npt.NDArray[np.intp] | None = None
+    occupancy: dict[float, npt.NDArray[np.bool_]] = field(default_factory=dict)
+    surface_mesh: dict[tuple[float, int], Any] = field(default_factory=dict)
+    surface_sdf: dict[float, Any] = field(default_factory=dict)
+    mesh_sdf: dict[tuple[float, int], Any] = field(default_factory=dict)
+    strata: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict)
+    interface: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict)
+    support: dict[
+        tuple[BuildDirection, float, float],
+        SupportAnalysis,
+    ] = field(default_factory=dict)
+
+
+@dataclass(slots=True, frozen=True, init=False)
 class SimulationAnalysis:
-    """Cached query state derived from an implicit geometry field."""
+    """Cached queries derived lazily from an immutable implicit field."""
 
     domain: Domain
-    implicit_field: npt.NDArray[np.float64]
-    deposition_index: npt.NDArray[np.intp]
     deposits: tuple[Deposit, ...]
-    default_threshold: float = 0.5
-    _occupancy_cache: dict[float, npt.NDArray[np.bool_]] = field(default_factory=dict)
-    _surface_mesh_cache: dict[tuple[float, int], Any] = field(default_factory=dict)
-    _surface_sdf_cache: dict[float, Any] = field(default_factory=dict)
-    _mesh_sdf_cache: dict[tuple[float, int], Any] = field(default_factory=dict)
-    _strata_cache: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict)
-    _interface_cache: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict)
-    _support_cache: dict[tuple[BuildDirection, float, float], SupportAnalysis] = field(default_factory=dict)
+    default_threshold: float
+    _implicit_field: npt.NDArray[np.float64] = field(repr=False)
+    _cache: _AnalysisCache = field(repr=False)
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "implicit_field",
-            readonly_array(self.implicit_field, dtype=float),
+    def __init__(
+        self,
+        domain: Domain,
+        implicit_field: npt.NDArray[np.float64],
+        deposits: tuple[Deposit, ...],
+        default_threshold: float = 0.5,
+        *,
+        _copy_implicit_field: bool = True,
+    ) -> None:
+        values = (
+            readonly_array(implicit_field, dtype=float)
+            if _copy_implicit_field
+            else np.asarray(implicit_field, dtype=float)
         )
-        if self.implicit_field.shape != self.domain.grid_shape:
+        if values.shape != domain.grid_shape:
             raise ValueError(
                 "implicit_field shape "
-                f"{self.implicit_field.shape} does not match domain grid shape "
-                f"{self.domain.grid_shape}."
+                f"{values.shape} does not match domain grid shape "
+                f"{domain.grid_shape}."
             )
-
-        if not np.all(np.isfinite(self.implicit_field)) or np.any(
-            self.implicit_field < 0.0
-        ):
+        if not np.all(np.isfinite(values)) or np.any(values < 0.0):
             raise ValueError(
                 "implicit_field must contain only finite, non-negative values."
             )
-        deposition_index = readonly_array(self.deposition_index, dtype=np.intp)
-        if deposition_index.shape != self.domain.grid_shape:
-            raise ValueError(
-                "deposition_index shape "
-                f"{deposition_index.shape} does not match domain grid shape {self.domain.grid_shape}."
-            )
-        object.__setattr__(self, "deposition_index", deposition_index)
-        object.__setattr__(self, "deposits", tuple(self.deposits))
+        if values.flags.writeable:
+            raise ValueError("implicit_field must be read-only when sharing storage.")
+        object.__setattr__(self, "domain", domain)
+        object.__setattr__(self, "deposits", tuple(deposits))
+        object.__setattr__(self, "default_threshold", float(default_threshold))
+        object.__setattr__(self, "_implicit_field", values)
+        object.__setattr__(self, "_cache", _AnalysisCache())
+
+    @property
+    def implicit_field(self) -> npt.NDArray[np.float64]:
+        """Return the immutable field shared with the simulation result."""
+
+        return self._implicit_field
 
     def deposition_index_field(self) -> npt.NDArray[np.intp]:
-        return self.deposition_index
+        """Build and cache the last-touch deposition index on first use."""
+
+        if self._cache.deposition_index is None:
+            from ..fields import accumulate_deposition_index
+
+            self._cache.deposition_index = readonly_array(
+                accumulate_deposition_index(self.domain, self.deposits),
+                dtype=np.intp,
+            )
+        return self._cache.deposition_index
 
     def occupancy(
         self,
@@ -137,12 +164,12 @@ class SimulationAnalysis:
         threshold: float | None = None,
     ) -> npt.NDArray[np.bool_]:
         key = self.default_threshold if threshold is None else float(threshold)
-        if key not in self._occupancy_cache:
-            self._occupancy_cache[key] = readonly_array(
-                occupancy_from_implicit_field(self.implicit_field, threshold=key),
+        if key not in self._cache.occupancy:
+            self._cache.occupancy[key] = readonly_array(
+                occupancy_from_implicit_field(self._implicit_field, threshold=key),
                 dtype=bool,
             )
-        return self._occupancy_cache[key]
+        return self._cache.occupancy[key]
 
     def surface_mesh(
         self,
@@ -152,16 +179,16 @@ class SimulationAnalysis:
     ) -> Any:
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = _surface_cache_key(threshold_value, step_size=step_size)
-        if key not in self._surface_mesh_cache:
+        if key not in self._cache.surface_mesh:
             from ..geometry import implicit_field_to_mesh
 
-            self._surface_mesh_cache[key] = implicit_field_to_mesh(
+            self._cache.surface_mesh[key] = implicit_field_to_mesh(
                 self.domain,
-                self.implicit_field,
+                self._implicit_field,
                 threshold=threshold_value,
                 step_size=step_size,
             )
-        return self._surface_mesh_cache[key]
+        return self._cache.surface_mesh[key]
 
     def surface_sdf(
         self,
@@ -169,15 +196,15 @@ class SimulationAnalysis:
         threshold: float | None = None,
     ) -> Any:
         key = self.default_threshold if threshold is None else float(threshold)
-        if key not in self._surface_sdf_cache:
+        if key not in self._cache.surface_sdf:
             from ..geometry import implicit_field_to_sdf
 
-            self._surface_sdf_cache[key] = implicit_field_to_sdf(
+            self._cache.surface_sdf[key] = implicit_field_to_sdf(
                 self.domain,
-                self.implicit_field,
+                self._implicit_field,
                 threshold=key,
             )
-        return self._surface_sdf_cache[key]
+        return self._cache.surface_sdf[key]
 
     def mesh_sdf(
         self,
@@ -187,18 +214,18 @@ class SimulationAnalysis:
     ) -> Any:
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = _surface_cache_key(threshold_value, step_size=step_size)
-        if key not in self._mesh_sdf_cache:
+        if key not in self._cache.mesh_sdf:
             from ..geometry import MeshSDF3
 
             mesh = self.surface_mesh(threshold=threshold_value, step_size=step_size)
             if mesh.is_empty:
                 raise ValueError("Cannot construct a mesh SDF from an empty analysis surface.")
-            self._mesh_sdf_cache[key] = MeshSDF3(
+            self._cache.mesh_sdf[key] = MeshSDF3(
                 mesh,
                 require_watertight=True,
                 name="analysis_surface_mesh",
             )
-        return self._mesh_sdf_cache[key]
+        return self._cache.mesh_sdf[key]
 
     def sample_implicit_value(
         self,
@@ -209,7 +236,7 @@ class SimulationAnalysis:
         points, _single = _coerce_points(point)
         values = _sample_scalar_field(
             self.domain,
-            self.implicit_field,
+            self._implicit_field,
             points,
             interpolation=interpolation,
             fill_value=0.0,
@@ -348,7 +375,7 @@ class SimulationAnalysis:
             if field_name == "implicit":
                 result[field_name] = _sample_scalar_field(
                     self.domain,
-                    self.implicit_field,
+                    self._implicit_field,
                     samples,
                     interpolation=interpolation,
                     fill_value=0.0,
@@ -363,7 +390,7 @@ class SimulationAnalysis:
             elif field_name == "occupancy":
                 implicit_samples = _sample_scalar_field(
                     self.domain,
-                    self.implicit_field,
+                    self._implicit_field,
                     samples,
                     interpolation=interpolation,
                     fill_value=0.0,
@@ -402,8 +429,11 @@ class SimulationAnalysis:
             }
 
         slices = tuple(slice(start, stop) for start, stop in index_bounds)
-        implicit_field = self.implicit_field[slices]
-        deposition_index = self.deposition_index.astype(float, copy=False)[slices]
+        implicit_field = self._implicit_field[slices]
+        deposition_index = self.deposition_index_field().astype(
+            float,
+            copy=False,
+        )[slices]
         occupancy = self.occupancy(threshold=threshold_value)[slices]
         voxel_count = float(np.prod(implicit_field.shape))
         occupied_voxel_count = float(np.count_nonzero(occupancy))
@@ -445,9 +475,9 @@ class SimulationAnalysis:
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = (mode, threshold_value)
-        if key not in self._strata_cache:
-            self._strata_cache[key] = strata(self, mode=mode, threshold=threshold_value)
-        return self._strata_cache[key]
+        if key not in self._cache.strata:
+            self._cache.strata[key] = strata(self, mode=mode, threshold=threshold_value)
+        return self._cache.strata[key]
 
     def interface(
         self,
@@ -459,9 +489,11 @@ class SimulationAnalysis:
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = (mode, threshold_value)
-        if key not in self._interface_cache:
-            self._interface_cache[key] = interface(self, mode=mode, threshold=threshold_value)
-        return self._interface_cache[key]
+        if key not in self._cache.interface:
+            self._cache.interface[key] = interface(
+                self.strata(mode=mode, threshold=threshold_value)
+            )
+        return self._cache.interface[key]
 
     def support(
         self,
@@ -474,11 +506,11 @@ class SimulationAnalysis:
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = (build_direction, float(critical_angle_deg), threshold_value)
-        if key not in self._support_cache:
-            self._support_cache[key] = support(
+        if key not in self._cache.support:
+            self._cache.support[key] = support(
                 self,
                 build_direction=build_direction,
                 critical_angle_deg=critical_angle_deg,
                 threshold=threshold_value,
             )
-        return self._support_cache[key]
+        return self._cache.support[key]

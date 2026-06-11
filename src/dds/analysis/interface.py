@@ -2,17 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
-
 import numpy as np
 
-from .models import InterfaceAnalysis, InterfacePairSummary
-from .strata import strata as build_strata
-
-StrataMode = Literal["auto", "layer", "order"]
-
-if TYPE_CHECKING:
-    from .simulation import SimulationAnalysis
+from .models import InterfaceAnalysis, InterfacePairSummary, StratumFieldSet
 
 
 def _contact_for_pair(
@@ -60,14 +52,10 @@ def _contact_for_pair(
 
 
 def interface(
-    source: SimulationAnalysis,
-    *,
-    mode: StrataMode = "auto",
-    threshold: float = 0.5,
+    field_set: StratumFieldSet,
 ) -> InterfaceAnalysis:
     """Compute aggregate contact and overlap metrics across consecutive strata."""
 
-    field_set = build_strata(source, mode=mode, threshold=threshold)
     occupancy_fields = field_set.occupancy_fields
     stratum_ids = field_set.stratum_ids
     shape = field_set.domain.grid_shape

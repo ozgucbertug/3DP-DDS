@@ -98,11 +98,11 @@ class Simulator:
     ) -> SimulationResult:
         """Return an immutable snapshot of the current simulation."""
 
-        coverage = self._coverage_field().copy() if include_coverage else None
+        coverage = self._coverage_field() if include_coverage else None
         return SimulationResult(
             domain=self.domain,
             deposits=tuple(self._deposits),
-            implicit_field=self._implicit_field().copy(),
+            implicit_field=self._implicit_field(),
             coverage=coverage,
             default_threshold=threshold,
         )
