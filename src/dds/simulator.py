@@ -8,7 +8,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain
-from .fields import accumulate_field
+from .fields import accumulate_field, accumulate_fields
 from .kernels import iter_deposit_kernels
 from .primitives import Deposit, DepositInput, iter_deposits
 from .results import SimulationResult
@@ -67,6 +67,24 @@ class Simulator:
             )
         return self._coverage_cache
 
+    def _warm_result_fields(self, *, include_coverage: bool) -> None:
+        if (
+            include_coverage
+            and self._implicit_field_cache is None
+            and self._coverage_cache is None
+        ):
+            fields = accumulate_fields(
+                self.domain,
+                self._deposits,
+                include_coverage=True,
+            )
+            self._implicit_field_cache = fields["implicit"]
+            self._coverage_cache = fields["coverage"]
+            return
+        self._implicit_field()
+        if include_coverage:
+            self._coverage_field()
+
     def add_deposit(self, deposit: DepositInput) -> None:
         """Add one deposit, updating any warm dense caches."""
 
@@ -98,11 +116,13 @@ class Simulator:
     ) -> SimulationResult:
         """Return an immutable snapshot of the current simulation."""
 
-        coverage = self._coverage_field() if include_coverage else None
+        self._warm_result_fields(include_coverage=include_coverage)
+        coverage = self._coverage_cache if include_coverage else None
+        assert self._implicit_field_cache is not None
         return SimulationResult(
             domain=self.domain,
             deposits=tuple(self._deposits),
-            implicit_field=self._implicit_field(),
+            implicit_field=self._implicit_field_cache,
             coverage=coverage,
             default_threshold=threshold,
         )

@@ -398,6 +398,29 @@ def test_simulator_result_matches_stateless_simulate() -> None:
     assert cached.default_threshold == pytest.approx(0.5)
 
 
+def test_simulator_cold_dual_field_result_samples_each_deposit_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.fields
+
+    domain = make_domain()
+    deposits = _two_deposits()
+    calls = 0
+    original = dds.fields.iter_deposit_kernels
+
+    def tracked(*args: object, **kwargs: object):
+        nonlocal calls
+        calls += 1
+        yield from original(*args, **kwargs)
+
+    monkeypatch.setattr(dds.fields, "iter_deposit_kernels", tracked)
+
+    result = Simulator(domain, deposits).result(include_coverage=True)
+
+    assert result.coverage is not None
+    assert calls == len(deposits)
+
+
 def test_simulate_can_include_coverage() -> None:
     domain = make_domain()
     profile = make_profile(width=2.0, height=2.0)
