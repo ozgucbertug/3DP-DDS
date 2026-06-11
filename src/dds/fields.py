@@ -9,7 +9,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain
-from .kernels import SampledKernel, iter_deposit_kernels
+from .kernels import _SampledKernel, iter_deposit_kernels
 from .primitives import Deposit, DepositInput, iter_deposits
 
 FieldName: TypeAlias = Literal["implicit", "coverage"]
@@ -17,7 +17,7 @@ FieldName: TypeAlias = Literal["implicit", "coverage"]
 
 def _apply_kernel_to_field(
     fields: dict[FieldName, npt.NDArray[np.float64]],
-    sampled: SampledKernel,
+    sampled: _SampledKernel,
 ) -> None:
     if "implicit" in fields:
         np.maximum(
@@ -31,7 +31,7 @@ def _apply_kernel_to_field(
 
 def _apply_kernel_to_index_field(
     index_field: npt.NDArray[np.intp],
-    sampled: SampledKernel,
+    sampled: _SampledKernel,
     deposit_index: int,
 ) -> None:
     touched = sampled.values > 0.0

@@ -292,6 +292,10 @@ coverage = result.coverage
 `implicit_field` is the canonical union-like fabricated geometry used for
 occupancy, surfaces, SDFs, and support analysis.
 
+It is not itself an SDF: values are clipped to `[0, 1]`, remain nonnegative,
+and define the nominal surface at `0.5`. Use
+`result.analysis.surface_sdf()` when signed metric distance is required.
+
 Optional `coverage` adds kernel contributions. It is useful for locating path
 overlap, but it is not physical density, mass, volume fraction, or material
 flow.

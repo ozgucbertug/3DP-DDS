@@ -24,16 +24,16 @@ TileShape = tuple[int, int, int]
 
 
 @dataclass(frozen=True, slots=True)
-class SampledKernel:
-    """A local kernel sample and its target array window."""
+class _SampledKernel:
+    """Private local kernel sample and its target array window."""
 
     slices: tuple[slice, slice, slice]
     values: npt.NDArray[np.float64]
 
 
 @dataclass(frozen=True, slots=True)
-class ResolvedBeadProfile:
-    """Resolved bead geometry and density transition settings."""
+class _ResolvedBeadProfile:
+    """Private resolved bead geometry and transition settings."""
 
     width: float
     height: float
@@ -44,10 +44,10 @@ class ResolvedBeadProfile:
     support_padding: float
 
 
-def resolve_bead_profile(
+def _resolve_bead_profile(
     profile: BeadProfile,
     domain: Domain,
-) -> ResolvedBeadProfile:
+) -> _ResolvedBeadProfile:
     """Resolve transition settings for an explicit bead profile."""
 
     width = profile.width
@@ -56,7 +56,7 @@ def resolve_bead_profile(
         raise ValueError("Resolved bead width and height must both be positive.")
     rounding_radius = min(width, height) / 2.0
     transition_width = max(min(domain.voxel_size), rounding_radius)
-    return ResolvedBeadProfile(
+    return _ResolvedBeadProfile(
         width=float(width),
         height=float(height),
         radius=float(width / 2.0),
@@ -67,11 +67,11 @@ def resolve_bead_profile(
     )
 
 
-def density_from_signed_distance(
+def _implicit_values_from_signed_distance(
     signed_distance: npt.NDArray[np.float64],
     transition_width: float,
 ) -> npt.NDArray[np.float64]:
-    """Map signed distance to a dense accumulation value with a 0.5 isosurface."""
+    """Map signed distance to bounded implicit values with a 0.5 isosurface."""
 
     if transition_width <= 0.0:
         raise ValueError("transition_width must be positive.")
@@ -83,7 +83,7 @@ def rounded_cylinder_signed_distance(
     *,
     target: npt.NDArray[np.float64],
     axis: npt.NDArray[np.float64],
-    profile: ResolvedBeadProfile,
+    profile: _ResolvedBeadProfile,
 ) -> npt.NDArray[np.float64]:
     """Evaluate the signed distance to a top-referenced rounded cylinder."""
 
@@ -143,9 +143,9 @@ def _iter_index_tiles(
 def _sample_point_on_bounds(
     domain: Domain,
     deposit: PointDeposit,
-    profile: ResolvedBeadProfile,
+    profile: _ResolvedBeadProfile,
     index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
-) -> SampledKernel:
+) -> _SampledKernel:
     xs, ys, zs = domain.grid_centers(index_bounds)
     points = np.stack((xs, ys, zs), axis=-1)
     signed_distance = rounded_cylinder_signed_distance(
@@ -154,8 +154,8 @@ def _sample_point_on_bounds(
         axis=deposit.target.normal.to_array(),
         profile=profile,
     )
-    values = density_from_signed_distance(signed_distance, profile.transition_width)
-    return SampledKernel(
+    values = _implicit_values_from_signed_distance(signed_distance, profile.transition_width)
+    return _SampledKernel(
         slices=(
             slice(*index_bounds[0]),
             slice(*index_bounds[1]),
@@ -168,9 +168,9 @@ def _sample_point_on_bounds(
 def _sample_line_on_bounds(
     domain: Domain,
     deposit: LineDeposit,
-    profile: ResolvedBeadProfile,
+    profile: _ResolvedBeadProfile,
     index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
-) -> SampledKernel:
+) -> _SampledKernel:
     start = deposit.start.position.to_array()
     end = deposit.end.position.to_array()
     if np.allclose(start, end):
@@ -197,8 +197,8 @@ def _sample_line_on_bounds(
         axis=axes,
         profile=profile,
     ).reshape(xs.shape)
-    values = density_from_signed_distance(signed_distance, profile.transition_width)
-    return SampledKernel(
+    values = _implicit_values_from_signed_distance(signed_distance, profile.transition_width)
+    return _SampledKernel(
         slices=(
             slice(*index_bounds[0]),
             slice(*index_bounds[1]),
@@ -212,8 +212,8 @@ def _iter_point_kernels(
     domain: Domain,
     deposit: PointDeposit,
     tile_shape: TileShape,
-) -> Iterator[SampledKernel]:
-    profile = resolve_bead_profile(deposit.profile, domain)
+) -> Iterator[_SampledKernel]:
+    profile = _resolve_bead_profile(deposit.profile, domain)
     support_min, support_max = _point_target_support_bounds(
         deposit.target.position,
         deposit.target.normal,
@@ -237,8 +237,8 @@ def _iter_line_kernels(
     domain: Domain,
     deposit: LineDeposit,
     tile_shape: TileShape,
-) -> Iterator[SampledKernel]:
-    profile = resolve_bead_profile(deposit.profile, domain)
+) -> Iterator[_SampledKernel]:
+    profile = _resolve_bead_profile(deposit.profile, domain)
     support_min, support_max = deposit.support_bounds(
         padding=profile.support_padding,
     )
@@ -255,9 +255,9 @@ def _iter_polyline_kernels(
     domain: Domain,
     deposit: PolylineDeposit,
     tile_shape: TileShape,
-) -> Iterator[SampledKernel]:
+) -> Iterator[_SampledKernel]:
     serial = count()
-    heap: list[tuple[tuple[tuple[int, int], ...], int, SampledKernel, Iterator[SampledKernel]]] = []
+    heap: list[tuple[tuple[tuple[int, int], ...], int, _SampledKernel, Iterator[_SampledKernel]]] = []
     for segment in deposit.segments():
         iterator = _iter_line_kernels(domain, segment, tile_shape)
         sampled = next(iterator, None)
@@ -284,7 +284,7 @@ def _iter_polyline_kernels(
                     (next_bounds, next(serial), next_overlapping, overlapping_iterator),
                 )
 
-        yield SampledKernel(
+        yield _SampledKernel(
             slices=(
                 slice(*bounds[0]),
                 slice(*bounds[1]),
@@ -299,7 +299,7 @@ def iter_deposit_kernels(
     deposit: PointDeposit | LineDeposit | PolylineDeposit,
     *,
     tile_shape: Sequence[int] = (32, 32, 32),
-) -> Iterator[SampledKernel]:
+) -> Iterator[_SampledKernel]:
     """Yield nonempty, bounded kernel tiles for one deposition event."""
 
     resolved_tile_shape = validate_tile_shape(tile_shape)

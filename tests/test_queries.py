@@ -122,6 +122,17 @@ def test_occupancy_does_not_construct_deposition_indices(
     assert calls == 1
 
 
+def test_implicit_field_and_surface_sdf_have_distinct_semantics() -> None:
+    result = make_result()
+    inside = (2.25, 2.25, 0.25)
+    outside = (9.0, 9.0, 3.5)
+
+    assert np.all(result.implicit_field >= 0.0)
+    assert result.analysis.sample_implicit_value(inside) >= 0.5
+    assert result.analysis.signed_distance_at(inside) < 0.0
+    assert result.analysis.signed_distance_at(outside) > 0.0
+
+
 def test_result_analysis_is_cached_and_simulator_results_are_isolated() -> None:
     simulator = Simulator(make_domain())
     simulator.add_deposit(

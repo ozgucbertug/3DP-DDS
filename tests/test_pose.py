@@ -7,11 +7,13 @@ from scipy.spatial.transform import Rotation
 from dds import (
     BeadProfile,
     DepositionTarget,
+    Domain,
     LineDeposit,
     Point3D,
     PointDeposit,
     PolylineDeposit,
     Pose3D,
+    simulate,
 )
 
 
@@ -114,6 +116,44 @@ def test_roll_about_local_deposition_axis_does_not_change_target() -> None:
     )
 
     assert DepositionTarget.from_pose(rolled) == DepositionTarget.from_pose(unrolled)
+
+
+def test_roll_invariance_and_axis_direction_are_reflected_in_geometry() -> None:
+    domain = Domain.from_bounds(
+        xmin=-2.0,
+        xmax=4.0,
+        ymin=-2.0,
+        ymax=4.0,
+        zmin=-2.0,
+        zmax=4.0,
+        voxel_size=0.25,
+    )
+    profile = BeadProfile(width=1.0, height=2.0)
+    base_pose = Pose3D((1.0, 1.0, 1.0), Rotation.identity())
+    rolled_pose = Pose3D(
+        (1.0, 1.0, 1.0),
+        Rotation.from_euler("z", 123.0, degrees=True),
+    )
+    tilted_pose = Pose3D(
+        (1.0, 1.0, 1.0),
+        Rotation.from_euler("y", 90.0, degrees=True),
+    )
+
+    base = simulate(
+        domain,
+        PointDeposit(target=base_pose, profile=profile),
+    ).implicit_field
+    rolled = simulate(
+        domain,
+        PointDeposit(target=rolled_pose, profile=profile),
+    ).implicit_field
+    tilted = simulate(
+        domain,
+        PointDeposit(target=tilted_pose, profile=profile),
+    ).implicit_field
+
+    np.testing.assert_allclose(rolled, base)
+    assert not np.allclose(tilted, base)
 
 
 def test_target_rejects_zero_and_nonfinite_normals() -> None:

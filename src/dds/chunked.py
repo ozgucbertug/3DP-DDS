@@ -11,7 +11,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .domain import Domain, IndexBounds
-from .kernels import SampledKernel, TileShape, iter_deposit_kernels, validate_tile_shape
+from .kernels import _SampledKernel, TileShape, iter_deposit_kernels, validate_tile_shape
 from .primitives import DepositInput, iter_deposits
 
 if TYPE_CHECKING:
@@ -81,7 +81,7 @@ class ChunkedField:
             self._chunks[index] = chunk
         return chunk
 
-    def add_kernel(self, sampled: SampledKernel) -> bool:
+    def add_kernel(self, sampled: _SampledKernel) -> bool:
         """Accumulate one sampled kernel tile and return whether it was nonempty."""
 
         starts = tuple(int(axis_slice.start) for axis_slice in sampled.slices)

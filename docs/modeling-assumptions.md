@@ -20,6 +20,10 @@
   without an intermediate orientation.
 - The implicit field is the union-like fabricated geometry used for
   occupancy, surface extraction, SDF construction, and support analysis.
+- The stored implicit field is not itself a signed-distance field. It is
+  bounded to `[0, 1]`, is nonnegative, and uses `0.5` as the nominal surface.
+  `SimulationAnalysis.surface_sdf()` derives a signed, world-unit distance
+  representation when metric distance or surface normals are needed.
 - Changing voxel size changes discretization, not the specified bead support
   bounds or other world-space geometry.
 
