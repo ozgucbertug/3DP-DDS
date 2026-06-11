@@ -5,7 +5,7 @@ import pytest
 
 import dds.mesh_analysis as mesh_analysis
 from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate
-from dds.analysis.support import _support_shadow_field
+from dds.analysis.support import _longest_true_run, _support_shadow_field
 
 
 def _cantilever_result():
@@ -91,3 +91,84 @@ def test_support_span_uses_longest_contiguous_shadow_run() -> None:
 
     np.testing.assert_array_equal(np.flatnonzero(shadow[0, 0]), np.asarray([0, 1, 4, 5, 6]))
     assert max_span == pytest.approx(3.0)
+
+
+@pytest.mark.parametrize(
+    ("values", "expected"),
+    [
+        (np.zeros((3, 7), dtype=bool), 0),
+        (np.ones((2, 5), dtype=bool), 5),
+        (
+            np.asarray(
+                [
+                    [False, True, True, False, True, True, True],
+                    [True, True, False, True, False, False, False],
+                ],
+                dtype=bool,
+            ),
+            3,
+        ),
+    ],
+)
+def test_longest_true_run_handles_edge_cases(
+    values: np.ndarray,
+    expected: int,
+) -> None:
+    assert _longest_true_run(values) == expected
+
+
+def test_longest_true_run_matches_scalar_reference_for_random_rows() -> None:
+    values = np.random.default_rng(42).random((128, 37)) < 0.35
+
+    expected = 0
+    for row in values:
+        current = 0
+        for value in row:
+            current = current + 1 if value else 0
+            expected = max(expected, current)
+
+    assert _longest_true_run(values) == expected
+
+
+@pytest.mark.parametrize(
+    ("build_direction", "axis", "expected_indices"),
+    [
+        ("+X", 0, [0, 1]),
+        ("-X", 0, [3, 4]),
+        ("+Y", 1, [0, 1]),
+        ("-Y", 1, [3, 4]),
+        ("+Z", 2, [0, 1]),
+        ("-Z", 2, [3, 4]),
+    ],
+)
+def test_support_shadow_handles_all_axis_aligned_build_directions(
+    build_direction: str,
+    axis: int,
+    expected_indices: list[int],
+) -> None:
+    domain = Domain.from_bounds(
+        xmin=0.0,
+        xmax=5.0,
+        ymin=0.0,
+        ymax=5.0,
+        zmin=0.0,
+        zmax=5.0,
+        voxel_size=1.0,
+    )
+    occupancy = np.zeros(domain.grid_shape, dtype=bool)
+    centroids = np.asarray([[2.5, 2.5, 2.5]])
+
+    shadow, max_span = _support_shadow_field(
+        occupancy,
+        centroids,
+        domain=domain,
+        build_direction=build_direction,  # type: ignore[arg-type]
+    )
+
+    projection_axes = tuple(index for index in range(3) if index != axis)
+    projected = np.any(shadow > 0.0, axis=projection_axes)
+    np.testing.assert_array_equal(
+        np.flatnonzero(projected),
+        np.asarray(expected_indices),
+    )
+    assert max_span == pytest.approx(2.0)

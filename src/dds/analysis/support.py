@@ -34,15 +34,13 @@ def _axis_aligned_projection_axis(
 
 
 def _longest_true_run(values: npt.NDArray[np.bool_]) -> int:
-    padded = np.pad(values, ((0, 0), (1, 1)), constant_values=False)
-    transitions = np.diff(padded.astype(np.int8), axis=1)
-    longest = 0
-    for row in transitions:
-        starts = np.flatnonzero(row == 1)
-        stops = np.flatnonzero(row == -1)
-        if starts.size:
-            longest = max(longest, int(np.max(stops - starts)))
-    return longest
+    current = np.zeros(values.shape[0], dtype=np.intp)
+    longest = np.zeros(values.shape[0], dtype=np.intp)
+    for depth_index in range(values.shape[1]):
+        current += 1
+        current[~values[:, depth_index]] = 0
+        np.maximum(longest, current, out=longest)
+    return int(longest.max(initial=0))
 
 
 def _support_shadow_field(
@@ -74,7 +72,7 @@ def _support_shadow_field(
     centroid_grid[valid_indices[:, 0], valid_indices[:, 1], valid_indices[:, 2]] = True
 
     # Bring the build axis to the last position for a uniform scan loop.
-    occ = np.moveaxis(occupancy, axis, -1)   # (..., depth)
+    occ = np.moveaxis(occupancy, axis, -1)  # (..., depth)
     cen = np.moveaxis(centroid_grid, axis, -1)
     shd = np.zeros(occ.shape, dtype=bool)
 
@@ -93,14 +91,11 @@ def _support_shadow_field(
             below = cen[..., k - 1] | shd[..., k - 1]
             shd[..., k] = below & ~occ[..., k]
 
-    shadow = np.moveaxis(shd, -1, axis).astype(float)
-
     # max_span: maximum per-column shadow depth.
-    shadow_bool = np.moveaxis(shadow.astype(bool), axis, -1)
-    columns = shadow_bool.reshape(-1, shadow_bool.shape[-1])
+    columns = shd.reshape(-1, shd.shape[-1])
     max_span = float(_longest_true_run(columns)) * voxel_step
 
-    return shadow, max_span
+    return np.moveaxis(shd, -1, axis).astype(float), max_span
 
 
 def support(

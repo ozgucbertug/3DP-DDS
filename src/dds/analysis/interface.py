@@ -12,8 +12,9 @@ def _contact_for_pair(
     next_field: np.ndarray,
     *,
     voxel_size: tuple[float, float, float],
+    overlap: np.ndarray | None = None,
 ) -> tuple[np.ndarray, int, float]:
-    contact = previous & next_field
+    contact = (previous & next_field) if overlap is None else overlap.copy()
     face_count = 0
     contact_area = 0.0
     face_areas = (
@@ -35,18 +36,16 @@ def _contact_for_pair(
         touches_forward = previous[tuple(prev_forward)] & next_field[tuple(next_backward)]
         touches_backward = previous[tuple(prev_backward)] & next_field[tuple(next_forward)]
 
-        if np.any(touches_forward):
-            face_count += int(np.count_nonzero(touches_forward))
-            contact_area += face_area * float(np.count_nonzero(touches_forward))
-            contribution = np.zeros_like(next_field, dtype=bool)
-            contribution[tuple(next_backward)] = touches_forward
-            contact |= contribution
-        if np.any(touches_backward):
-            face_count += int(np.count_nonzero(touches_backward))
-            contact_area += face_area * float(np.count_nonzero(touches_backward))
-            contribution = np.zeros_like(next_field, dtype=bool)
-            contribution[tuple(next_forward)] = touches_backward
-            contact |= contribution
+        forward_count = int(np.count_nonzero(touches_forward))
+        if forward_count:
+            face_count += forward_count
+            contact_area += face_area * float(forward_count)
+            contact[tuple(next_backward)] |= touches_forward
+        backward_count = int(np.count_nonzero(touches_backward))
+        if backward_count:
+            face_count += backward_count
+            contact_area += face_area * float(backward_count)
+            contact[tuple(next_forward)] |= touches_backward
 
     return contact, face_count, contact_area
 
@@ -77,7 +76,12 @@ def interface(
         next_field = occupancy_fields[index + 1]
 
         overlap = previous & next_field
-        pair_contact_mask, face_count, contact_area = _contact_for_pair(previous, next_field, voxel_size=voxel_size)
+        pair_contact_mask, face_count, contact_area = _contact_for_pair(
+            previous,
+            next_field,
+            voxel_size=voxel_size,
+            overlap=overlap,
+        )
         pair_unsupported_next = next_field & ~pair_contact_mask
 
         overlap_count = int(np.count_nonzero(overlap))

@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, simulate
+from dds.analysis.interface import _contact_for_pair
 
 
 def make_domain() -> Domain:
@@ -59,3 +60,22 @@ def test_interface_analysis_falls_back_to_deposit_order() -> None:
     assert analysis.unsupported_next_mask.dtype == np.bool_
     assert analysis.contact_area >= 0.0
     assert 0.0 <= analysis.overlap_fraction <= 1.0
+
+
+def test_contact_for_pair_reports_exact_adjacent_face_geometry() -> None:
+    previous = np.zeros((3, 3, 3), dtype=bool)
+    next_field = np.zeros_like(previous)
+    previous[1, 1, 1] = True
+    next_field[2, 1, 1] = True
+
+    contact, face_count, contact_area = _contact_for_pair(
+        previous,
+        next_field,
+        voxel_size=(2.0, 3.0, 4.0),
+    )
+
+    expected = np.zeros_like(previous)
+    expected[2, 1, 1] = True
+    np.testing.assert_array_equal(contact, expected)
+    assert face_count == 1
+    assert contact_area == 12.0
