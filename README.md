@@ -62,10 +62,10 @@ python -m pip install -e ".[all]"
 from dds import (
     BeadProfile,
     DepositionMetadata,
+    DepositionTarget,
     Domain,
     LineDeposit,
     PointDeposit,
-    Pose3D,
     simulate,
 )
 
@@ -88,9 +88,9 @@ metadata = DepositionMetadata(
 
 deposits = [
     PointDeposit(
-        target=Pose3D(
+        target=DepositionTarget(
             position=(2.0, 2.0, 0.6),
-            axis=(0.0, 0.0, 1.0),
+            normal=(0.0, 0.0, 1.0),
         ),
         profile=profile,
         metadata=metadata,
@@ -184,14 +184,17 @@ The core geometry types separate positions, directions, poses, and paths:
 
 - `Point3D`: a Cartesian position.
 - `Vector3D`: a direction or displacement.
-- `Pose3D`: a target position and normalized bead axis.
+- `Pose3D`: a complete rigid transform composed of a position and SciPy
+  `Rotation`.
+- `DepositionTarget`: the top position and normalized deposition normal
+  consumed by bead kernels.
 - `Line3D`: a finite line between two points.
 - `Polyline3D`: a connected sequence of points.
 
 Deposition types combine that geometry with bead dimensions and metadata:
 
-- `PointDeposit`: one compact bead at a pose.
-- `LineDeposit`: a bead swept between two poses.
+- `PointDeposit`: one compact bead at a target.
+- `LineDeposit`: a bead swept between two targets.
 - `PolylineDeposit`: one ordered, multi-segment deposition event.
 - `DepositionMetadata`: an optional layer ID and immutable JSON-like
   provenance.
@@ -200,10 +203,10 @@ Deposition types combine that geometry with bead dimensions and metadata:
 from dds import (
     BeadProfile,
     DepositionMetadata,
+    DepositionTarget,
     LineDeposit,
     PointDeposit,
     PolylineDeposit,
-    Pose3D,
 )
 
 profile = BeadProfile(width=1.5, height=0.6)
@@ -212,29 +215,29 @@ metadata = DepositionMetadata(
     user_data={"pass": "contour", "material_id": "clay"},
 )
 
-# A coordinate triplet is interpreted as a +Z pose.
+# A coordinate triplet is interpreted as a world-+Z target.
 point = PointDeposit(
     target=(5.0, 5.0, 0.6),
     profile=profile,
     metadata=metadata,
 )
 
-# Explicit poses support non-vertical deposition axes.
+# Explicit targets support non-vertical deposition normals.
 line = LineDeposit(
-    start=Pose3D(
+    start=DepositionTarget(
         position=(5.0, 5.0, 0.6),
-        axis=(0.0, 0.0, 1.0),
+        normal=(0.0, 0.0, 1.0),
     ),
-    end=Pose3D(
+    end=DepositionTarget(
         position=(15.0, 5.0, 1.6),
-        axis=(0.1, 0.0, 0.995),
+        normal=(0.1, 0.0, 0.995),
     ),
     profile=profile,
     metadata=metadata,
 )
 
 polyline = PolylineDeposit(
-    poses=(
+    targets=(
         (5.0, 5.0, 0.6),
         (15.0, 5.0, 0.6),
         (15.0, 15.0, 0.6),
@@ -244,8 +247,27 @@ polyline = PolylineDeposit(
 )
 ```
 
-Axes are normalized automatically. Antiparallel axes on consecutive line
+Normals are normalized automatically. Antiparallel normals on consecutive line
 endpoints are rejected because their interpolation is ambiguous.
+
+Use a full pose when robot orientation is available:
+
+```python
+from scipy.spatial.transform import Rotation
+
+from dds import DepositionTarget, Pose3D
+
+pose = Pose3D(
+    position=(10.0, 20.0, 30.0),
+    orientation=Rotation.from_euler("xyz", [0.0, 45.0, 90.0], degrees=True),
+)
+target = DepositionTarget.from_pose(pose)
+```
+
+By default, conversion transforms tool-local `+Z` into the world deposition
+normal. Use `DepositionTarget.from_pose(pose, local_axis=...)` for another
+tool-local deposition axis. Roll about that selected axis is intentionally
+discarded because the current bead model is rotationally symmetric.
 
 ## Simulation workflows
 
@@ -495,8 +517,8 @@ raise `ValueError`; there is currently no migration layer.
 
 ## Target workflows and YAML
 
-`dds.targets` converts ordered poses into point, line, or polyline deposits.
-`dds.formats.yaml` loads target poses from YAML and requires the `formats`
+`dds.targets` converts ordered deposition targets into point, line, or
+polyline deposits. `dds.formats.yaml` loads targets from YAML and requires the `formats`
 extra.
 
 ```python

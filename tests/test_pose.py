@@ -4,7 +4,15 @@ import numpy as np
 import pytest
 from scipy.spatial.transform import Rotation
 
-from dds import DepositionTarget, Pose3D
+from dds import (
+    BeadProfile,
+    DepositionTarget,
+    LineDeposit,
+    Point3D,
+    PointDeposit,
+    PolylineDeposit,
+    Pose3D,
+)
 
 
 def test_pose_accepts_scipy_rotation_representations() -> None:
@@ -113,3 +121,29 @@ def test_target_rejects_zero_and_nonfinite_normals() -> None:
         DepositionTarget((0.0, 0.0, 0.0), (0.0, 0.0, 0.0))
     with pytest.raises(ValueError, match="finite"):
         DepositionTarget((0.0, 0.0, 0.0), (0.0, np.nan, 1.0))
+
+
+def test_deposit_constructors_normalize_all_supported_target_inputs() -> None:
+    profile = BeadProfile(width=1.0, height=0.5)
+    pose = Pose3D(
+        (1.0, 2.0, 3.0),
+        Rotation.from_euler("x", 90.0, degrees=True),
+    )
+    target = DepositionTarget((4.0, 5.0, 6.0), (1.0, 0.0, 0.0))
+
+    point = PointDeposit(target=pose, profile=profile)
+    line = LineDeposit(
+        start=Point3D(0.0, 0.0, 1.0),
+        end=target,
+        profile=profile,
+    )
+    polyline = PolylineDeposit(
+        targets=((0.0, 0.0, 1.0), pose, target),
+        profile=profile,
+    )
+
+    assert isinstance(point.target, DepositionTarget)
+    assert point.target.normal.to_tuple() == pytest.approx((0.0, -1.0, 0.0))
+    assert line.start.normal.to_tuple() == (0.0, 0.0, 1.0)
+    assert line.end is target
+    assert all(isinstance(value, DepositionTarget) for value in polyline.targets)

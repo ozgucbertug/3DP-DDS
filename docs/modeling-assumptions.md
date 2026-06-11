@@ -5,12 +5,18 @@
 ## Geometry model
 
 - Deposit targets are top-referenced nozzle positions.
+- `Pose3D` is an active local-to-parent rigid transform backed by
+  `scipy.spatial.transform.Rotation`.
+- A pose becomes a deposition target by transforming tool-local `+Z`, unless
+  the caller explicitly supplies another local axis.
+- Tool roll is discarded after conversion because the current bead profile is
+  rotationally symmetric about the deposition normal.
 - `BeadProfile.width` and `BeadProfile.height` define explicit world-space bead
   geometry and are required for every deposit.
 - A point is one bead target, a line is a swept bead, and a polyline is one
   ordered multi-segment fabrication event.
-- Endpoint bead axes are normalized and interpolated along line segments.
-- Antiparallel endpoint axes are rejected because interpolation is ambiguous
+- Endpoint normals are normalized and interpolated along line segments.
+- Antiparallel endpoint normals are rejected because interpolation is ambiguous
   without an intermediate orientation.
 - The max-envelope field is the union-like fabricated geometry used for
   occupancy, surface extraction, SDF construction, and support analysis.

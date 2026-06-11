@@ -5,22 +5,26 @@ results, derived analysis, persistence, and optional integrations.
 
 ## Data flow
 
-1. `Point3D`, `Pose3D`, and geometric wrappers describe world-space geometry.
-2. Point, line, and polyline deposits combine geometry with an explicit
+1. `Pose3D` represents a complete rigid transform using SciPy `Rotation`.
+2. `DepositionTarget` reduces a pose to the top position and normal consumed
+   by the rotationally symmetric bead kernels.
+3. Point, line, and polyline deposits normalize triplets, points, poses, or
+   targets into concrete `DepositionTarget` fields and combine them with an explicit
    `BeadProfile` and immutable `DepositionMetadata`.
-3. `Domain` maps world coordinates to an aligned voxel grid and records a
+4. `Domain` maps world coordinates to an aligned voxel grid and records a
    `length_unit`.
-4. Private kernel iterators sample bounded, globally aligned tiles.
-5. Dense accumulation or standalone `ChunkedField` storage composes those
+5. Private kernel iterators sample bounded, globally aligned tiles.
+6. Dense accumulation or standalone `ChunkedField` storage composes those
    tiles into a max envelope and optional coverage diagnostic.
-6. `SimulationResult` freezes the deposits and computed arrays.
-7. `SimulationAnalysis`, reached through `result.analysis`, caches derived
+7. `SimulationResult` freezes the deposits and computed arrays.
+8. `SimulationAnalysis`, reached through `result.analysis`, caches derived
    occupancy, index, SDF, mesh, strata, interface, and support products.
 
 ## Module boundaries
 
 - `attributes.py`: bead profile and immutable metadata.
-- `primitives.py`: geometric wrappers and deposition events.
+- `primitives.py`: points, vectors, rigid poses, deposition targets, geometric
+  wrappers, and deposition events.
 - `domain.py`: aligned grid geometry and coordinate transforms.
 - `kernels.py`: private tiled sampling implementation.
 - `fields.py`: dense, chunked, and low-level in-place accumulation.
