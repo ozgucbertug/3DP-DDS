@@ -165,6 +165,22 @@ def test_line_deposit_produces_continuous_occupied_region() -> None:
     assert all(bool(occupancy[x, 2, 2]) for x in range(1, 7))
 
 
+def test_line_deposit_with_equal_endpoint_axes_has_stable_field_values() -> None:
+    domain = make_domain()
+    axis = (0.0, 0.0, 1.0)
+    deposit = LineDeposit(
+        start=DepositionTarget((1.5, 2.5, 3.5), axis),
+        end=DepositionTarget((6.5, 2.5, 3.5), axis),
+        profile=make_profile(width=2.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    np.testing.assert_allclose(field[1:7, 2, 2], 1.0, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(field[1:7, 2, 3], 0.5, rtol=0.0, atol=0.0)
+    assert field[0, 0, 0] == pytest.approx(0.0)
+
+
 def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> None:
     domain = Domain.from_bounds(
         xmin=-3.0,
@@ -190,6 +206,35 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
     density = Simulator(domain, [deposit]).result().implicit_field
 
     assert density[domain.world_to_index((0.875, 0.625, 3.125))] > 0.0
+    assert float(density.max()) == pytest.approx(1.0)
+    assert float(density.sum()) == pytest.approx(
+        163.88229860627575,
+        rel=0.0,
+        abs=1e-12,
+    )
+
+
+def test_line_deposit_remains_continuous_across_kernel_tile_boundaries() -> None:
+    domain = Domain.from_bounds(
+        xmin=0.0,
+        xmax=80.0,
+        ymin=0.0,
+        ymax=8.0,
+        zmin=0.0,
+        zmax=8.0,
+        voxel_size=1.0,
+    )
+    deposit = LineDeposit(
+        start=(4.5, 3.5, 4.5),
+        end=(68.5, 3.5, 4.5),
+        profile=make_profile(width=2.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    np.testing.assert_allclose(field[4:69, 3, 3], 1.0, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(field[4:69, 3, 4], 0.5, rtol=0.0, atol=0.0)
+    assert field[31, 3, 3] == field[32, 3, 3] == pytest.approx(1.0)
 
 
 def test_line_deposit_rejects_antiparallel_endpoint_axes() -> None:
@@ -230,11 +275,15 @@ def test_deposition_index_accumulates_for_overlapping_deposits() -> None:
 def test_thresholding_changes_occupied_voxel_count() -> None:
     domain = make_domain()
     deposit = PointDeposit(target=(2.5, 2.5, 4.0), profile=make_profile(width=3.0, height=3.0), metadata=make_metadata())
+    result = Simulator(domain, [deposit]).result()
 
-    low_threshold = Simulator(domain, [deposit]).result().analysis.occupancy(threshold=0.1)
-    high_threshold = Simulator(domain, [deposit]).result().analysis.occupancy(threshold=0.8)
+    low_threshold = result.analysis.occupancy(threshold=0.1)
+    high_threshold = result.analysis.occupancy(threshold=0.8)
 
-    assert int(low_threshold.sum()) >= int(high_threshold.sum())
+    np.testing.assert_array_equal(low_threshold, result.implicit_field >= 0.1)
+    np.testing.assert_array_equal(high_threshold, result.implicit_field >= 0.8)
+    assert int(low_threshold.sum()) > int(high_threshold.sum())
+    assert np.any(low_threshold & ~high_threshold)
 
 
 def test_deposits_outside_bounds_are_skipped_and_partial_overlap_is_kept() -> None:
@@ -262,10 +311,27 @@ def test_zero_length_line_matches_point_deposit() -> None:
     point = PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=metadata)
     zero_length_line = LineDeposit(start=(2.5, 2.5, 3.5), end=(2.5, 2.5, 3.5), profile=profile, metadata=metadata)
 
-    point_field = Simulator(domain, [point]).result().analysis.deposition_index_field()
-    line_field = Simulator(domain, [zero_length_line]).result().analysis.deposition_index_field()
+    point_result = Simulator(domain, [point]).result(include_coverage=True)
+    line_result = Simulator(domain, [zero_length_line]).result(include_coverage=True)
 
-    np.testing.assert_allclose(point_field, line_field)
+    np.testing.assert_allclose(
+        point_result.implicit_field,
+        line_result.implicit_field,
+        rtol=0.0,
+        atol=0.0,
+    )
+    assert point_result.coverage is not None
+    assert line_result.coverage is not None
+    np.testing.assert_allclose(
+        point_result.coverage,
+        line_result.coverage,
+        rtol=0.0,
+        atol=0.0,
+    )
+    np.testing.assert_array_equal(
+        point_result.analysis.occupancy(threshold=0.5),
+        line_result.analysis.occupancy(threshold=0.5),
+    )
 
 
 def test_simulator_queries_use_nearest_grid_samples_and_safe_defaults() -> None:
