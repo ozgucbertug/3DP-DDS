@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, DepositionTarget, Domain, simulate
+from dds import BeadProfile, DepositionTarget, Domain, simulate
 from dds.formats.yaml import load_targets, parse_plane_string
 from dds.targets import (
     line_deposits_from_targets,
@@ -76,14 +76,12 @@ targets:
 def test_point_target_workflow_creates_top_referenced_deposits() -> None:
     targets = (DepositionTarget((1.0, 2.0, 3.0)),)
     profile = BeadProfile(width=4.0, height=2.0)
-    metadata = DepositionMetadata(layer_id=7)
 
-    deposits = point_deposits_from_targets(targets, profile=profile, metadata=metadata)
+    deposits = point_deposits_from_targets(targets, profile=profile)
 
     assert len(deposits) == 1
     assert deposits[0].target.position.to_tuple() == (1.0, 2.0, 3.0)
     assert deposits[0].profile == profile
-    assert deposits[0].metadata.layer_id == 7
 
 
 def test_line_and_toolpath_workflows_follow_target_order() -> None:

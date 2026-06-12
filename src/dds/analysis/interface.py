@@ -1,4 +1,4 @@
-"""Interface contact and overlap analysis for layered or ordered deposition."""
+"""Interface contact and overlap analysis for ordered deposition."""
 
 from __future__ import annotations
 
@@ -108,7 +108,6 @@ def interface(
 
     aggregate_overlap_fraction = float(total_overlap_voxels / total_next_voxels) if total_next_voxels > 0 else 0.0
     return InterfaceAnalysis(
-        stratification_mode=field_set.mode,
         stratum_ids=stratum_ids,
         contact_mask=contact_mask,
         overlap_mask=overlap_mask,

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Literal
 
-from .attributes import BeadProfile, DepositionMetadata
+from .attributes import BeadProfile
 from .primitives import DepositionTarget, LineDeposit, PointDeposit, PolylineDeposit
 
 OriginReference = Literal["top", "center"]
@@ -35,12 +35,10 @@ def point_deposits_from_targets(
     targets: Sequence[DepositionTarget],
     *,
     profile: BeadProfile,
-    metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[PointDeposit, ...]:
     """Convert ordered targets into point deposits."""
 
-    metadata_value = metadata or DepositionMetadata()
     return tuple(
         PointDeposit(
             target=_target_from_origin(
@@ -49,7 +47,6 @@ def point_deposits_from_targets(
                 origin_reference=origin_reference,
             ),
             profile=profile,
-            metadata=metadata_value,
         )
         for target in targets
     )
@@ -59,14 +56,12 @@ def line_deposits_from_targets(
     targets: Sequence[DepositionTarget],
     *,
     profile: BeadProfile,
-    metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> tuple[LineDeposit, ...]:
     """Convert ordered targets into consecutive line deposits."""
 
     if len(targets) < 2:
         raise ValueError("line_deposits_from_targets requires at least two targets")
-    metadata_value = metadata or DepositionMetadata()
     normalized_targets = tuple(
         _target_from_origin(
             target,
@@ -80,7 +75,6 @@ def line_deposits_from_targets(
             start=start,
             end=end,
             profile=profile,
-            metadata=metadata_value,
         )
         for start, end in zip(
             normalized_targets[:-1],
@@ -94,7 +88,6 @@ def toolpath_from_targets(
     targets: Sequence[DepositionTarget],
     *,
     profile: BeadProfile,
-    metadata: DepositionMetadata | None = None,
     origin_reference: OriginReference = "top",
 ) -> PolylineDeposit:
     """Convert ordered targets into one polyline deposit."""
@@ -111,5 +104,4 @@ def toolpath_from_targets(
             for target in targets
         ),
         profile=profile,
-        metadata=metadata or DepositionMetadata(),
     )

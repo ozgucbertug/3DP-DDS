@@ -11,7 +11,6 @@ import pytest
 
 from dds import (
     BeadProfile,
-    DepositionMetadata,
     Domain,
     LineDeposit,
     PointDeposit,
@@ -62,37 +61,35 @@ def make_profile() -> BeadProfile:
     return BeadProfile(width=2.0, height=2.0)
 
 
-def test_simulation_result_strata_prefers_real_layers_in_auto_mode() -> None:
+def test_simulation_result_strata_uses_deposit_order() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata(layer_id=0)),
-        PointDeposit(target=(4.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata(layer_id=0)),
-        PointDeposit(target=(2.5, 2.5, 4.5), profile=profile, metadata=DepositionMetadata(layer_id=1)),
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile),
+        PointDeposit(target=(4.5, 2.5, 2.5), profile=profile),
+        PointDeposit(target=(2.5, 2.5, 4.5), profile=profile),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    field_set = result.analysis.strata(mode="auto", threshold=0.5)
+    field_set = result.analysis.strata(threshold=0.5)
 
-    assert field_set.mode == "layer"
-    assert field_set.stratum_ids == (0, 1)
+    assert field_set.stratum_ids == (0, 1, 2)
     assert field_set.implicit_field(0).shape == domain.grid_shape
     assert field_set.occupancy(1).dtype == np.bool_
-    assert np.max(field_set.label_field) == pytest.approx(2.0)
+    assert np.max(field_set.label_field) == pytest.approx(3.0)
 
 
-def test_simulation_result_strata_falls_back_to_order_without_real_layers() -> None:
+def test_simulation_result_strata_labels_ordered_deposits() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
-        PointDeposit(target=(4.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile),
+        PointDeposit(target=(4.5, 2.5, 2.5), profile=profile),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    field_set = result.analysis.strata(mode="auto", threshold=0.5)
+    field_set = result.analysis.strata(threshold=0.5)
 
-    assert field_set.mode == "order"
     assert field_set.stratum_ids == (0, 1)
     assert np.max(field_set.label_field) == pytest.approx(2.0)
 
@@ -120,7 +117,7 @@ def test_deposition_order_field_matches_order_strata(threshold: float) -> None:
     analysis = simulate(domain, deposits, threshold=threshold).analysis
 
     order_field = analysis.deposition_order_field()
-    strata_labels = analysis.strata(mode="order").label_field
+    strata_labels = analysis.strata().label_field
 
     assert order_field.dtype == np.intp
     np.testing.assert_array_equal(order_field, strata_labels)
@@ -160,29 +157,20 @@ def test_deposition_order_field_is_cached_per_threshold_and_read_only() -> None:
         default_field[0, 0, 0] = 1
 
 
-def test_layer_density_and_occupancy_require_real_layer_ids() -> None:
+def test_stratum_density_and_occupancy_use_deposit_index() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata(layer_id=3)),
+        PointDeposit(target=(2.5, 2.5, 2.5), profile=profile),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    field_set = result.analysis.strata(mode="layer", threshold=0.5)
-    density = field_set.implicit_field(3)
-    occupancy = field_set.occupancy(3)
+    field_set = result.analysis.strata(threshold=0.5)
+    density = field_set.implicit_field(0)
+    occupancy = field_set.occupancy(0)
 
     assert density.shape == domain.grid_shape
     assert occupancy.dtype == np.bool_
-
-    missing_layer_result = simulate(
-        domain,
-        [PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata())],
-        threshold=0.5,
-    )
-    with pytest.raises(ValueError):
-        missing_layer_result.analysis.strata(mode="layer", threshold=0.5)
-
 
 def test_simulator_result_requests_coverage() -> None:
     domain = make_domain()
@@ -190,8 +178,8 @@ def test_simulator_result_requests_coverage() -> None:
     simulator = Simulator(
         domain,
         [
-            PointDeposit(target=(2.5, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
-            PointDeposit(target=(3.0, 2.5, 2.5), profile=profile, metadata=DepositionMetadata()),
+            PointDeposit(target=(2.5, 2.5, 2.5), profile=profile),
+            PointDeposit(target=(3.0, 2.5, 2.5), profile=profile),
         ],
     )
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, simulate
+from dds import BeadProfile, Domain, PointDeposit, simulate
 from dds.analysis.interface import _contact_for_pair
 
 
@@ -22,37 +22,35 @@ def make_profile() -> BeadProfile:
     return BeadProfile(width=2.0, height=2.0)
 
 
-def test_interface_analysis_uses_real_layers_when_available() -> None:
+def test_interface_analysis_compares_ordered_deposits() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata(layer_id=0)),
-        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata(layer_id=1)),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    analysis = result.analysis.interface(mode="auto", threshold=0.5)
+    analysis = result.analysis.interface(threshold=0.5)
 
-    assert analysis.stratification_mode == "layer"
     assert analysis.stratum_ids == (0, 1)
     assert analysis.contact_mask.any()
     assert analysis.overlap_voxel_count > 0
     assert len(analysis.pair_summaries) == 1
 
 
-def test_interface_analysis_falls_back_to_deposit_order() -> None:
+def test_interface_analysis_reports_each_adjacent_deposit_pair() -> None:
     domain = make_domain()
     profile = make_profile()
     deposits = [
-        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata()),
-        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata()),
-        PointDeposit(target=(4.5, 2.5, 3.5), profile=profile, metadata=DepositionMetadata()),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile),
+        PointDeposit(target=(2.5, 2.5, 3.5), profile=profile),
+        PointDeposit(target=(4.5, 2.5, 3.5), profile=profile),
     ]
     result = simulate(domain, deposits, threshold=0.5)
 
-    analysis = result.analysis.interface(mode="auto", threshold=0.5)
+    analysis = result.analysis.interface(threshold=0.5)
 
-    assert analysis.stratification_mode == "order"
     assert analysis.stratum_ids == (0, 1, 2)
     assert len(analysis.pair_summaries) == 2
     assert analysis.contact_mask.dtype == np.bool_

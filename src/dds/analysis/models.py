@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -12,15 +11,12 @@ from ..domain import Domain
 from ..geometry.mesh import TriangleMesh
 from ..utils import readonly_array
 
-StratificationMode = Literal["layer", "order"]
-
 
 @dataclass(slots=True, frozen=True)
 class StratumFieldSet:
-    """Implicit and occupancy fields partitioned by layer or deposit order."""
+    """Implicit and occupancy fields partitioned by deposit order."""
 
     domain: Domain
-    mode: StratificationMode
     threshold: float
     stratum_ids: tuple[int, ...]
     implicit_fields: tuple[npt.NDArray[np.float64], ...]
@@ -66,7 +62,7 @@ class StratumFieldSet:
 
 @dataclass(slots=True, frozen=True)
 class InterfacePairSummary:
-    """Summary metrics for one adjacent layer or ordered-deposit pair."""
+    """Summary metrics for one adjacent ordered-deposit pair."""
 
     previous_id: int
     next_id: int
@@ -80,7 +76,6 @@ class InterfacePairSummary:
 class InterfaceAnalysis:
     """Typed interface/contact analysis result."""
 
-    stratification_mode: StratificationMode
     stratum_ids: tuple[int, ...]
     contact_mask: npt.NDArray[np.bool_]
     overlap_mask: npt.NDArray[np.bool_]

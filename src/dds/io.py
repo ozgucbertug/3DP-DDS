@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from .primitives import Deposit
     from .results import SimulationResult
 
-_CHECKPOINT_VERSION = 7
+_CHECKPOINT_VERSION = 8
 
 
 def _json_default(value: Any) -> Any:
@@ -91,7 +91,6 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "type": "PointDeposit",
             "target": deposit.target.to_dict(),
             "profile": deposit.profile.to_dict(),
-            "metadata": deposit.metadata.to_dict(),
         }
     if isinstance(deposit, LineDeposit):
         return {
@@ -99,14 +98,12 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "start": deposit.start.to_dict(),
             "end": deposit.end.to_dict(),
             "profile": deposit.profile.to_dict(),
-            "metadata": deposit.metadata.to_dict(),
         }
     if isinstance(deposit, PolylineDeposit):
         return {
             "type": "PolylineDeposit",
             "targets": [target.to_dict() for target in deposit.targets],
             "profile": deposit.profile.to_dict(),
-            "metadata": deposit.metadata.to_dict(),
         }
     raise TypeError(f"Cannot serialise deposit of type {type(deposit).__name__!r}.")
 
@@ -114,7 +111,7 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
 def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
     """Reconstruct a leaf deposit from a plain dict produced by :func:`_deposit_to_dict`."""
 
-    from .attributes import BeadProfile, DepositionMetadata
+    from .attributes import BeadProfile
     from .primitives import DepositionTarget, LineDeposit, PointDeposit, PolylineDeposit
 
     deposit_type = d.get("type")
@@ -122,7 +119,6 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
         raise ValueError(f"Unknown deposit type {deposit_type!r}.")
 
     profile = BeadProfile(**d["profile"])
-    metadata = DepositionMetadata(**d["metadata"])
 
     if deposit_type == "PointDeposit":
         return PointDeposit(
@@ -131,7 +127,6 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
                 normal=tuple(d["target"]["normal"]),
             ),
             profile=profile,
-            metadata=metadata,
         )
     if deposit_type == "LineDeposit":
         return LineDeposit(
@@ -144,7 +139,6 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
                 normal=tuple(d["end"]["normal"]),
             ),
             profile=profile,
-            metadata=metadata,
         )
     if deposit_type == "PolylineDeposit":
         return PolylineDeposit(
@@ -156,7 +150,6 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
                 for target in d["targets"]
             ),
             profile=profile,
-            metadata=metadata,
         )
     raise AssertionError("unreachable")
 

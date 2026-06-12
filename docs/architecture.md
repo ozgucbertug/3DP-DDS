@@ -9,8 +9,8 @@ results, derived analysis, persistence, and optional integrations.
 2. `DepositionTarget` reduces a pose to the top position and normal consumed
    by the rotationally symmetric bead kernels.
 3. Point, line, and polyline deposits normalize triplets, points, poses, or
-   targets into concrete `DepositionTarget` fields and combine them with an explicit
-   `BeadProfile` and immutable `DepositionMetadata`.
+   targets into concrete `DepositionTarget` fields and combine them with an
+   explicit `BeadProfile`.
 4. `Domain` maps world coordinates to an aligned voxel grid and records a
    `length_unit`.
 5. Private kernel iterators sample bounded, globally aligned tiles.
@@ -22,7 +22,7 @@ results, derived analysis, persistence, and optional integrations.
 
 ## Module boundaries
 
-- `attributes.py`: bead profile and immutable metadata.
+- `attributes.py`: bead profile.
 - `primitives.py`: points, vectors, rigid poses, deposition targets, geometric
   wrappers, and deposition events.
 - `domain.py`: aligned grid geometry and coordinate transforms.

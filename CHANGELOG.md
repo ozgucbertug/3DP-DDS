@@ -22,10 +22,12 @@ All notable changes will be documented in this file.
 - The simulation workbench now consumes the retained viewer for optional
   toolpath, target-normal, and world-frame overlays.
 - Mesh and point-cloud conversion and file I/O now consistently use trimesh.
-- Mesh metrics, normals, proximity queries, metadata, and visual colors now
+- Mesh metrics, normals, proximity queries, and visual colors now
   delegate to trimesh rather than duplicating geometry calculations.
+- Deposits are sequenced exclusively by collection order; deposit, mesh, and
+  point-cloud metadata containers have been removed.
 
 ### Fixed
 
-- Domain alignment, deposit bounds, serialization, metadata immutability, and
-  orientation interpolation invariants.
+- Domain alignment, deposit bounds, serialization, and orientation
+  interpolation invariants.

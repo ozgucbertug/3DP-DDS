@@ -4,19 +4,18 @@ import numpy as np
 import pytest
 
 import dds.mesh_analysis as mesh_analysis
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, simulate
+from dds import BeadProfile, Domain, LineDeposit, PointDeposit, simulate
 from dds.analysis.support import _longest_true_run, _support_shadow_field
 
 
 def _cantilever_result():
     profile = BeadProfile(width=1.2, height=0.8)
     deposits = [
-        PointDeposit(target=(2.0, 2.0, 1.0), profile=profile, metadata=DepositionMetadata(layer_id=0)),
+        PointDeposit(target=(2.0, 2.0, 1.0), profile=profile),
         LineDeposit(
             start=(2.0, 2.0, 1.0),
             end=(6.0, 2.0, 1.0),
             profile=profile,
-            metadata=DepositionMetadata(layer_id=0),
         ),
     ]
     domain = Domain.from_bounds(

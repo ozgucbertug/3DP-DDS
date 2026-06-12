@@ -49,7 +49,6 @@ def test_yaml_simulation_example_exposes_tyro_help() -> None:
     assert "--origin-reference" in result.stdout
     assert "--include-coverage" in result.stdout
     assert "--analysis {none,interface,support,all}" in result.stdout
-    assert "--stratification {auto,layer,order}" in result.stdout
     assert "--build-direction {+X,-X,+Y,-Y,+Z,-Z}" in result.stdout
     assert "--view" in result.stdout
     assert "--view-mode {surface,occupancy,implicit}" in result.stdout
@@ -64,7 +63,6 @@ def test_yaml_simulation_config_is_ide_friendly() -> None:
     assert config.origin_reference == "top"
     assert config.include_coverage is False
     assert config.analysis == "none"
-    assert config.stratification == "auto"
     assert config.build_direction == "+Z"
     assert config.bead_width == pytest.approx(18.0)
     assert config.bead_height == pytest.approx(12.0)

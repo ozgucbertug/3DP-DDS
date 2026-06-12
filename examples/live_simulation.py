@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from dds import BeadProfile, DepositionMetadata, Domain, PointDeposit, Simulator
+from dds import BeadProfile, Domain, PointDeposit, Simulator
 from dds.cli import run_cli
 from dds.formats.yaml import load_targets
 from dds.targets import point_deposits_from_targets
@@ -78,7 +78,6 @@ def build_live_simulation(
     deposits = point_deposits_from_targets(
         targets,
         profile=profile,
-        metadata=DepositionMetadata(),
         origin_reference=config.origin_reference,
     )
     domain = Domain.from_deposits(

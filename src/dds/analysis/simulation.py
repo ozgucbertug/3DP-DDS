@@ -113,8 +113,8 @@ class _AnalysisCache:
     surface_mesh: dict[tuple[float, int], Any] = field(default_factory=dict)
     surface_sdf: dict[float, Any] = field(default_factory=dict)
     mesh_sdf: dict[tuple[float, int], Any] = field(default_factory=dict)
-    strata: dict[tuple[str, float], StratumFieldSet] = field(default_factory=dict)
-    interface: dict[tuple[str, float], InterfaceAnalysis] = field(default_factory=dict)
+    strata: dict[float, StratumFieldSet] = field(default_factory=dict)
+    interface: dict[float, InterfaceAnalysis] = field(default_factory=dict)
     support: dict[
         tuple[BuildDirection, float, float],
         SupportAnalysis,
@@ -516,32 +516,31 @@ class SimulationAnalysis:
     def strata(
         self,
         *,
-        mode: Literal["auto", "layer", "order"] = "auto",
         threshold: float | None = None,
     ) -> StratumFieldSet:
         from .strata import strata
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
-        key = (mode, threshold_value)
-        if key not in self._cache.strata:
-            self._cache.strata[key] = strata(self, mode=mode, threshold=threshold_value)
-        return self._cache.strata[key]
+        if threshold_value not in self._cache.strata:
+            self._cache.strata[threshold_value] = strata(
+                self,
+                threshold=threshold_value,
+            )
+        return self._cache.strata[threshold_value]
 
     def interface(
         self,
         *,
-        mode: Literal["auto", "layer", "order"] = "auto",
         threshold: float | None = None,
     ) -> InterfaceAnalysis:
         from .interface import interface
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
-        key = (mode, threshold_value)
-        if key not in self._cache.interface:
-            self._cache.interface[key] = interface(
-                self.strata(mode=mode, threshold=threshold_value)
+        if threshold_value not in self._cache.interface:
+            self._cache.interface[threshold_value] = interface(
+                self.strata(threshold=threshold_value)
             )
-        return self._cache.interface[key]
+        return self._cache.interface[threshold_value]
 
     def support(
         self,

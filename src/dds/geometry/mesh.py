@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
-from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -32,7 +30,6 @@ class TriangleMesh:
 
     vertices: npt.NDArray[np.float64]
     faces: npt.NDArray[np.int64]
-    metadata: Mapping[str, Any] = field(default_factory=dict)
     vertex_colors: npt.NDArray[np.uint8] | None = None
     face_colors: npt.NDArray[np.uint8] | None = None
 
@@ -63,16 +60,16 @@ class TriangleMesh:
         faces.setflags(write=False)
         object.__setattr__(self, "vertices", vertices)
         object.__setattr__(self, "faces", faces)
-        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
         object.__setattr__(self, "vertex_colors", vertex_colors)
         object.__setattr__(self, "face_colors", face_colors)
 
     @classmethod
-    def empty(cls, *, metadata: dict[str, Any] | None = None) -> "TriangleMesh":
+    def empty(cls) -> "TriangleMesh":
         """Return an empty triangle mesh."""
 
         return cls(
-            vertices=np.empty((0, 3), dtype=float), faces=np.empty((0, 3), dtype=np.int64), metadata=metadata or {}
+            vertices=np.empty((0, 3), dtype=float),
+            faces=np.empty((0, 3), dtype=np.int64),
         )
 
     @property
@@ -106,25 +103,16 @@ class TriangleMesh:
             faces=self.faces.copy(),
             vertex_colors=(None if self.vertex_colors is None else self.vertex_colors.copy()),
             face_colors=None if self.face_colors is None else self.face_colors.copy(),
-            metadata=dict(self.metadata),
             process=False,
         )
 
     @classmethod
-    def from_trimesh(
-        cls,
-        mesh: Any,
-        *,
-        metadata: Mapping[str, Any] | None = None,
-    ) -> "TriangleMesh":
+    def from_trimesh(cls, mesh: Any) -> "TriangleMesh":
         """Build a TriangleMesh from a trimesh.Trimesh object."""
 
         trimesh = load_trimesh()
         if not isinstance(mesh, trimesh.Trimesh):
             raise TypeError("mesh must be a trimesh.Trimesh")
-        resolved_metadata = dict(mesh.metadata)
-        if metadata is not None:
-            resolved_metadata.update(metadata)
         vertex_colors = None
         face_colors = None
         if mesh.visual.defined and mesh.visual.kind == "vertex":
@@ -134,7 +122,6 @@ class TriangleMesh:
         return cls(
             vertices=np.asarray(mesh.vertices, dtype=float),
             faces=np.asarray(mesh.faces, dtype=np.int64),
-            metadata=resolved_metadata,
             vertex_colors=vertex_colors,
             face_colors=face_colors,
         )
@@ -165,7 +152,7 @@ def read_mesh(path: str | Path) -> TriangleMesh:
         loaded = loaded.to_mesh()
     if not isinstance(loaded, trimesh.Trimesh) or len(loaded.faces) == 0:
         raise ValueError(f"File {source} does not contain a triangle mesh.")
-    return TriangleMesh.from_trimesh(loaded, metadata={"path": str(source)})
+    return TriangleMesh.from_trimesh(loaded)
 
 
 def write_mesh(path: str | Path, mesh: TriangleMesh) -> Path:
@@ -216,9 +203,9 @@ def extract_mesh_from_field(
 
     field = validate_field_shape(domain, values, field_name="values")
     if field.size == 0:
-        return TriangleMesh.empty(metadata={"level": level, "gradient_direction": gradient_direction})
+        return TriangleMesh.empty()
     if float(np.min(field)) > level or float(np.max(field)) < level:
-        return TriangleMesh.empty(metadata={"level": level, "gradient_direction": gradient_direction})
+        return TriangleMesh.empty()
 
     measure = _load_skimage_measure()
     try:
@@ -231,14 +218,13 @@ def extract_mesh_from_field(
             allow_degenerate=False,
         )
     except ValueError:
-        return TriangleMesh.empty(metadata={"level": level, "gradient_direction": gradient_direction})
+        return TriangleMesh.empty()
 
     origin = np.asarray(domain.min_corner, dtype=float) + 0.5 * np.asarray(domain.voxel_size, dtype=float)
     vertices = np.asarray(vertices, dtype=float) + origin
     return TriangleMesh(
         vertices=vertices,
         faces=np.asarray(faces, dtype=np.int64),
-        metadata={"level": level, "gradient_direction": gradient_direction, "step_size": step_size},
     )
 
 

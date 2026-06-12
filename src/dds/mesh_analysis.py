@@ -48,7 +48,7 @@ def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
     if tri_mesh.is_watertight and not tri_mesh.is_volume:
         tri_mesh.invert()
         trimesh.repair.fix_normals(tri_mesh)
-    return TriangleMesh.from_trimesh(tri_mesh, metadata=mesh.metadata)
+    return TriangleMesh.from_trimesh(tri_mesh)
 
 
 def compute_face_data(mesh: TriangleMesh) -> FaceData:

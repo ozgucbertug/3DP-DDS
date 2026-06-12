@@ -1,6 +1,6 @@
 """Public API for the dds package."""
 
-from .attributes import BeadProfile, DepositionMetadata
+from .attributes import BeadProfile
 from .chunked import ChunkedField
 from .domain import Domain
 from .primitives import (
@@ -23,7 +23,6 @@ __all__ = [
     "BeadProfile",
     "Deposit",
     "DepositInput",
-    "DepositionMetadata",
     "DepositionTarget",
     "Domain",
     "Line3D",

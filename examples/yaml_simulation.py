@@ -7,7 +7,6 @@ from typing import Literal
 import dds.viz
 from dds import (
     BeadProfile,
-    DepositionMetadata,
     Domain,
     SimulationResult,
     Simulator,
@@ -36,7 +35,6 @@ class YamlSimulationConfig:
     origin_reference: Literal["top", "center"] = "top"
     include_coverage: bool = False
     analysis: Literal["none", "interface", "support", "all"] = "none"
-    stratification: Literal["auto", "layer", "order"] = "auto"
     build_direction: Literal["+X", "-X", "+Y", "-Y", "+Z", "-Z"] = "+Z"
     write_mesh_output: bool = False
     mesh_step_size: int = 1
@@ -49,12 +47,10 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
 
     config = config or YamlSimulationConfig()
     profile = BeadProfile(width=config.bead_width, height=config.bead_height)
-    metadata = DepositionMetadata()
     targets = load_targets(config.yaml_path)
     deposits = point_deposits_from_targets(
         targets,
         profile=profile,
-        metadata=metadata,
         origin_reference=config.origin_reference,
     )
     domain = Domain.from_deposits(
@@ -85,8 +81,7 @@ def run_simulation(config: YamlSimulationConfig | None = None) -> SimulationResu
         print(f"Max nonphysical coverage: {float(result.coverage.max()):.4f}")
 
     if config.analysis in {"interface", "all"}:
-        interface_analysis = result.analysis.interface(mode=config.stratification, threshold=config.threshold)
-        print(f"Interface stratification: {interface_analysis.stratification_mode}")
+        interface_analysis = result.analysis.interface(threshold=config.threshold)
         print(f"Interface strata: {interface_analysis.stratum_ids}")
         print(f"Contact area: {interface_analysis.contact_area:.4f}")
         print(f"Contact face count: {interface_analysis.contact_face_count}")

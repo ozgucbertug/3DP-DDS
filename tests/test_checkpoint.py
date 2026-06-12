@@ -7,7 +7,6 @@ import pytest
 
 from dds import (
     BeadProfile,
-    DepositionMetadata,
     DepositionTarget,
     Domain,
     LineDeposit,
@@ -31,13 +30,11 @@ def make_result(*, include_coverage: bool = False) -> SimulationResult:
         PointDeposit(
             target=(2.5, 2.5, 3.5),
             profile=BeadProfile(width=2.0, height=2.0),
-            metadata=DepositionMetadata(layer_id=0, user_data={"material_id": "PLA"}),
         ),
         LineDeposit(
             start=(1.5, 5.0, 3.5),
             end=(8.5, 5.0, 3.5),
             profile=BeadProfile(width=1.5, height=1.0),
-            metadata=DepositionMetadata(layer_id=1),
         ),
     ]
     return simulate(domain, deposits, include_coverage=include_coverage, threshold=0.3)
@@ -52,15 +49,12 @@ def test_point_deposit_serialization_round_trip() -> None:
     original = PointDeposit(
         target=DepositionTarget((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
         profile=BeadProfile(width=1.5, height=0.8),
-        metadata=DepositionMetadata(layer_id=5, user_data={"tag": "A"}),
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert isinstance(restored, PointDeposit)
     assert restored.target.position == original.target.position
     assert restored.target.normal == original.target.normal
     assert restored.profile == original.profile
-    assert restored.metadata.layer_id == original.metadata.layer_id
-    assert restored.metadata.user_data == {"tag": "A"}
 
 
 def test_line_deposit_serialization_round_trip() -> None:
@@ -86,10 +80,6 @@ def test_polyline_deposit_serialization_round_trip() -> None:
             DepositionTarget((1.0, 1.0, 1.0)),
         ),
         profile=BeadProfile(width=1.0, height=0.5),
-        metadata=DepositionMetadata(
-            layer_id=2,
-            user_data={"material_id": "clay", "feedrate": 20.0},
-        ),
     )
 
     restored = _deposit_from_dict(_deposit_to_dict(original))
@@ -99,7 +89,6 @@ def test_polyline_deposit_serialization_round_trip() -> None:
     assert restored.targets[1].normal.to_tuple() == pytest.approx(
         original.targets[1].normal.to_tuple()
     )
-    assert restored.metadata.user_data["material_id"] == "clay"
 
 
 def test_line_deposit_default_poses_round_trip() -> None:
@@ -127,7 +116,6 @@ def test_deposit_from_dict_raises_for_unknown_type() -> None:
             {
                     "type": "GhostDeposit",
                     "profile": {"width": 1.0, "height": 1.0},
-                    "metadata": {},
                 }
             )
 
@@ -193,8 +181,6 @@ def test_checkpoint_round_trip_deposits(tmp_path) -> None:
     assert isinstance(point_loaded, PointDeposit)
     assert point_loaded.target == point_orig.target
     assert point_loaded.profile == point_orig.profile
-    assert point_loaded.metadata.layer_id == point_orig.metadata.layer_id
-    assert point_loaded.metadata.user_data == point_orig.metadata.user_data
 
 
 def test_checkpoint_extension_appended_automatically(tmp_path) -> None:

@@ -1,75 +1,36 @@
-"""Stratified dense-field access for layered or ordered deposition workflows."""
+"""Dense-field access partitioned by deposition order."""
 
 from __future__ import annotations
 
-from collections import defaultdict
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from ..fields import accumulate_fields
 from ..occupancy import occupancy_from_implicit_field
-from ..primitives import Deposit, iter_deposits
-from .models import StratificationMode, StratumFieldSet
+from ..primitives import iter_deposits
+from .models import StratumFieldSet
 
 if TYPE_CHECKING:
     from .simulation import SimulationAnalysis
 
-StrataMode = Literal["auto", "layer", "order"]
-
-
-def _real_layer_ids(deposits: Iterable[Deposit]) -> tuple[int, ...]:
-    values = sorted({deposit.metadata.layer_id for deposit in deposits if deposit.metadata.layer_id is not None})
-    return tuple(int(value) for value in values)
-
-
-def _resolve_mode(result: SimulationAnalysis, mode: StrataMode) -> StratificationMode:
-    if mode == "auto":
-        return "layer" if len(_real_layer_ids(result.deposits)) >= 2 else "order"
-    if mode not in {"layer", "order"}:
-        raise ValueError("mode must be 'auto', 'layer', or 'order'.")
-    return mode
-
-
-def _group_deposits(
-    deposits: tuple[Deposit, ...],
-    *,
-    mode: StratificationMode,
-) -> tuple[tuple[int, tuple[Deposit, ...]], ...]:
-    if mode == "order":
-        return tuple((index, (deposit,)) for index, deposit in enumerate(deposits))
-
-    grouped: dict[int, list[Deposit]] = defaultdict(list)
-    for deposit in deposits:
-        if deposit.metadata.layer_id is None:
-            continue
-        grouped[int(deposit.metadata.layer_id)].append(deposit)
-    if not grouped:
-        raise ValueError("Requested layer stratification but deposits do not define at least one layer_id.")
-    return tuple((layer_id, tuple(grouped[layer_id])) for layer_id in sorted(grouped))
-
-
 def strata(
     source: SimulationAnalysis,
     *,
-    mode: StrataMode = "auto",
     threshold: float = 0.5,
 ) -> StratumFieldSet:
-    """Build implicit and occupancy fields for each deposition stratum."""
+    """Build implicit and occupancy fields for each ordered deposit."""
 
-    resolved_mode = _resolve_mode(source, mode)
     deposit_tuple = tuple(iter_deposits(source.deposits))
-    groups = _group_deposits(deposit_tuple, mode=resolved_mode)
     label_field = np.zeros(source.domain.grid_shape, dtype=float)
     implicit_fields: list[np.ndarray] = []
     occupancy_fields: list[np.ndarray] = []
     stratum_ids: list[int] = []
 
-    for position, (stratum_id, grouped_deposits) in enumerate(groups, start=1):
+    for stratum_id, deposit in enumerate(deposit_tuple):
         implicit_field = accumulate_fields(
             source.domain,
-            grouped_deposits,
+            (deposit,),
         )["implicit"]
         occupancy = occupancy_from_implicit_field(
             implicit_field,
@@ -77,12 +38,11 @@ def strata(
         )
         implicit_fields.append(implicit_field)
         occupancy_fields.append(occupancy)
-        label_field[occupancy] = float(position)
-        stratum_ids.append(int(stratum_id))
+        label_field[occupancy] = float(stratum_id + 1)
+        stratum_ids.append(stratum_id)
 
     return StratumFieldSet(
         domain=source.domain,
-        mode=resolved_mode,
         threshold=float(threshold),
         stratum_ids=tuple(stratum_ids),
         implicit_fields=tuple(implicit_fields),

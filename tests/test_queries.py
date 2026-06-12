@@ -5,7 +5,7 @@ from dataclasses import FrozenInstanceError
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator
+from dds import BeadProfile, Domain, LineDeposit, PointDeposit, Simulator
 from dds.analysis import SimulationAnalysis
 
 
@@ -23,14 +23,12 @@ def make_domain() -> Domain:
 
 def make_result():
     profile = BeadProfile(width=1.2, height=0.8)
-    metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile, metadata=metadata),
+        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile),
         LineDeposit(
             start=(2.25, 2.25, 0.65),
             end=(6.25, 2.25, 0.65),
             profile=profile,
-            metadata=metadata,
         ),
     ]
     return Simulator(make_domain(), deposits).result()

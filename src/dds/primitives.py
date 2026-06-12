@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable, Iterator, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, TypeAlias, cast
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from .attributes import BeadProfile, DepositionMetadata
+from .attributes import BeadProfile
 from .utils import ensure_finite_scalar
 
 Coordinate3D: TypeAlias = Sequence[float]
@@ -354,14 +354,9 @@ def _point_target_support_bounds(
     return center - extent, center + extent
 
 
-def _validate_deposit_attributes(
-    profile: BeadProfile,
-    metadata: DepositionMetadata,
-) -> None:
+def _validate_deposit_profile(profile: BeadProfile) -> None:
     if not isinstance(profile, BeadProfile):
         raise TypeError("profile must be a BeadProfile")
-    if not isinstance(metadata, DepositionMetadata):
-        raise TypeError("metadata must be DepositionMetadata")
 
 
 @dataclass(frozen=True, slots=True, init=False)
@@ -370,19 +365,15 @@ class PointDeposit:
 
     target: DepositionTarget
     profile: BeadProfile
-    metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
 
     def __init__(
         self,
         target: TargetLike,
         profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
     ) -> None:
-        resolved_metadata = DepositionMetadata() if metadata is None else metadata
-        _validate_deposit_attributes(profile, resolved_metadata)
+        _validate_deposit_profile(profile)
         object.__setattr__(self, "target", DepositionTarget.from_value(target))
         object.__setattr__(self, "profile", profile)
-        object.__setattr__(self, "metadata", resolved_metadata)
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
         minimum, maximum = _point_target_support_bounds(
@@ -404,19 +395,16 @@ class LineDeposit:
     start: DepositionTarget
     end: DepositionTarget
     profile: BeadProfile
-    metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
 
     def __init__(
         self,
         start: TargetLike,
         end: TargetLike,
         profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
     ) -> None:
         resolved_start = DepositionTarget.from_value(start)
         resolved_end = DepositionTarget.from_value(end)
-        resolved_metadata = DepositionMetadata() if metadata is None else metadata
-        _validate_deposit_attributes(profile, resolved_metadata)
+        _validate_deposit_profile(profile)
         if (
             float(
                 np.dot(
@@ -430,7 +418,6 @@ class LineDeposit:
         object.__setattr__(self, "start", resolved_start)
         object.__setattr__(self, "end", resolved_end)
         object.__setattr__(self, "profile", profile)
-        object.__setattr__(self, "metadata", resolved_metadata)
 
     @property
     def line(self) -> Line3D:
@@ -458,13 +445,11 @@ class PolylineDeposit:
 
     targets: tuple[DepositionTarget, ...]
     profile: BeadProfile
-    metadata: DepositionMetadata = field(default_factory=DepositionMetadata)
 
     def __init__(
         self,
         targets: Iterable[TargetLike],
         profile: BeadProfile,
-        metadata: DepositionMetadata | None = None,
     ) -> None:
         resolved_targets = tuple(
             DepositionTarget.from_value(target) for target in targets
@@ -483,11 +468,9 @@ class PolylineDeposit:
                 raise ValueError(
                     "consecutive polyline target normals cannot be antiparallel"
                 )
-        resolved_metadata = DepositionMetadata() if metadata is None else metadata
-        _validate_deposit_attributes(profile, resolved_metadata)
+        _validate_deposit_profile(profile)
         object.__setattr__(self, "targets", resolved_targets)
         object.__setattr__(self, "profile", profile)
-        object.__setattr__(self, "metadata", resolved_metadata)
 
     @property
     def polyline(self) -> Polyline3D:
@@ -499,7 +482,6 @@ class PolylineDeposit:
                 start=start,
                 end=end,
                 profile=self.profile,
-                metadata=self.metadata,
             )
             for start, end in zip(
                 self.targets[:-1],

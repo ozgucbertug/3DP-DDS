@@ -251,7 +251,6 @@ def _iter_line_kernels(
             PointDeposit(
                 target=deposit.start,
                 profile=deposit.profile,
-                metadata=deposit.metadata,
             ),
             tile_shape,
         )

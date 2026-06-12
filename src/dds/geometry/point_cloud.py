@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from types import MappingProxyType
 from typing import Any
 
 import numpy as np
@@ -20,7 +18,6 @@ class PointCloud:
 
     points: npt.NDArray[np.float64]
     colors: npt.NDArray[np.uint8] | None = None
-    metadata: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         points = np.array(self.points, dtype=np.float64, copy=True)
@@ -38,16 +35,12 @@ class PointCloud:
         points.setflags(write=False)
         object.__setattr__(self, "points", points)
         object.__setattr__(self, "colors", colors)
-        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
 
     @classmethod
-    def empty(cls, *, metadata: Mapping[str, Any] | None = None) -> PointCloud:
+    def empty(cls) -> PointCloud:
         """Return an empty point cloud."""
 
-        return cls(
-            points=np.empty((0, 3), dtype=np.float64),
-            metadata=metadata or {},
-        )
+        return cls(points=np.empty((0, 3), dtype=np.float64))
 
     @property
     def is_empty(self) -> bool:
@@ -74,16 +67,10 @@ class PointCloud:
         return trimesh.points.PointCloud(
             vertices=self.points.copy(),
             colors=None if self.colors is None else self.colors.copy(),
-            metadata=dict(self.metadata),
         )
 
     @classmethod
-    def from_trimesh(
-        cls,
-        cloud: Any,
-        *,
-        metadata: Mapping[str, Any] | None = None,
-    ) -> PointCloud:
+    def from_trimesh(cls, cloud: Any) -> PointCloud:
         """Build a PointCloud from a trimesh.points.PointCloud instance."""
 
         trimesh = load_trimesh()
@@ -95,13 +82,9 @@ class PointCloud:
             if colors.ndim == 2 and colors.shape[0] == len(cloud.vertices) and colors.shape[1] in {3, 4}
             else None
         )
-        resolved_metadata = dict(cloud.metadata)
-        if metadata is not None:
-            resolved_metadata.update(metadata)
         return cls(
             points=np.asarray(cloud.vertices, dtype=np.float64),
             colors=resolved_colors,
-            metadata=resolved_metadata,
         )
 
 
@@ -113,7 +96,7 @@ def read_point_cloud(path: str | Path) -> PointCloud:
     loaded = trimesh.load(source)
     if not isinstance(loaded, trimesh.points.PointCloud):
         raise ValueError(f"File {source} does not contain a point cloud.")
-    return PointCloud.from_trimesh(loaded, metadata={"path": str(source)})
+    return PointCloud.from_trimesh(loaded)
 
 
 def write_point_cloud(path: str | Path, cloud: PointCloud) -> Path:

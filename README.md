@@ -61,7 +61,6 @@ python -m pip install -e ".[all]"
 ```python
 from dds import (
     BeadProfile,
-    DepositionMetadata,
     DepositionTarget,
     Domain,
     LineDeposit,
@@ -81,10 +80,6 @@ domain = Domain.from_bounds(
 )
 
 profile = BeadProfile(width=1.2, height=0.6)
-metadata = DepositionMetadata(
-    layer_id=0,
-    user_data={"material_id": "clay"},
-)
 
 deposits = [
     PointDeposit(
@@ -93,13 +88,11 @@ deposits = [
             normal=(0.0, 0.0, 1.0),
         ),
         profile=profile,
-        metadata=metadata,
     ),
     LineDeposit(
         start=(2.0, 2.0, 0.6),
         end=(10.0, 2.0, 0.6),
         profile=profile,
-        metadata=metadata,
     ),
 ]
 
@@ -191,18 +184,15 @@ The core geometry types separate positions, directions, poses, and paths:
 - `Line3D`: a finite line between two points.
 - `Polyline3D`: a connected sequence of points.
 
-Deposition types combine that geometry with bead dimensions and metadata:
+Deposition types combine that geometry with bead dimensions:
 
 - `PointDeposit`: one compact bead at a target.
 - `LineDeposit`: a bead swept between two targets.
 - `PolylineDeposit`: one ordered, multi-segment deposition event.
-- `DepositionMetadata`: an optional layer ID and immutable JSON-like
-  provenance.
 
 ```python
 from dds import (
     BeadProfile,
-    DepositionMetadata,
     DepositionTarget,
     LineDeposit,
     PointDeposit,
@@ -210,16 +200,11 @@ from dds import (
 )
 
 profile = BeadProfile(width=1.5, height=0.6)
-metadata = DepositionMetadata(
-    layer_id=2,
-    user_data={"pass": "contour", "material_id": "clay"},
-)
 
 # A coordinate triplet is interpreted as a world-+Z target.
 point = PointDeposit(
     target=(5.0, 5.0, 0.6),
     profile=profile,
-    metadata=metadata,
 )
 
 # Explicit targets support non-vertical deposition normals.
@@ -233,7 +218,6 @@ line = LineDeposit(
         normal=(0.1, 0.0, 0.995),
     ),
     profile=profile,
-    metadata=metadata,
 )
 
 polyline = PolylineDeposit(
@@ -243,7 +227,6 @@ polyline = PolylineDeposit(
         (15.0, 15.0, 0.6),
     ),
     profile=profile,
-    metadata=metadata,
 )
 ```
 
@@ -456,11 +439,11 @@ inside_mesh = analysis.contains_point(
 )
 ```
 
-Layer, interface, and support analysis are also available:
+Deposit-order interface and support analysis are also available:
 
 ```python
-strata = analysis.strata(mode="layer", threshold=0.5)
-interfaces = analysis.interface(mode="layer", threshold=0.5)
+strata = analysis.strata(threshold=0.5)
+interfaces = analysis.interface(threshold=0.5)
 support = analysis.support(
     build_direction="+Z",
     critical_angle_deg=45.0,
@@ -472,9 +455,8 @@ print(interfaces.contact_area)
 print(support.risk_area)
 ```
 
-Layer stratification requires deposits with `metadata.layer_id`. Use
-`mode="order"` to stratify by deposit order instead. For visualization or
-per-voxel order queries without materializing every stratum, use
+Strata and interfaces follow deposit order. For visualization or per-voxel
+order queries without materializing every stratum, use
 `deposition_order_field()`. It returns a cached, read-only integer field with
 one-based deposit order and zero for untouched voxels.
 
@@ -499,7 +481,7 @@ coverage when it was requested.
 ### Typed checkpoint
 
 A checkpoint is a compressed `.npz` round trip containing the domain, deposit
-sequence, bead profiles, metadata, threshold, and computed fields:
+sequence, bead profiles, threshold, and computed fields:
 
 ```python
 from dds import SimulationResult
@@ -773,11 +755,10 @@ Examples do not write files unless an output directory is supplied.
 ```text
 src/dds/
 ├── analysis/
-│   ├── fields.py       Layer summaries
 │   ├── interface.py    Inter-stratum contact and overlap analysis
 │   ├── models.py       Typed analysis result models
 │   ├── simulation.py   Cached SimulationAnalysis query API
-│   ├── strata.py       Layer and deposit-order field partitioning
+│   ├── strata.py       Deposit-order field partitioning
 │   └── support.py      Overhang and support-shadow analysis
 ├── formats/
 │   └── yaml.py         YAML target adapter (optional: formats)
@@ -790,7 +771,7 @@ src/dds/
 │   ├── shapes.py       Analytic SDF primitives
 │   └── transforms.py   SDF spatial transforms
 ├── __init__.py         Core public API
-├── attributes.py       BeadProfile and DepositionMetadata
+├── attributes.py       BeadProfile
 ├── chunked.py          ChunkedField sparse storage
 ├── cli.py              Tyro-backed CLI helper
 ├── domain.py           Grid definition and coordinate transforms

@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDeposit, Simulator
+from dds import BeadProfile, Domain, LineDeposit, PointDeposit, Simulator
 from dds.geometry import (
     GridSDF3,
     MeshSDF3,
@@ -263,7 +263,6 @@ def test_point_cloud_trimesh_and_io_roundtrip_preserve_points_and_colors(
             ],
             dtype=np.uint8,
         ),
-        metadata={"sensor": "test"},
     )
 
     trimesh_cloud = cloud.to_trimesh()
@@ -275,7 +274,6 @@ def test_point_cloud_trimesh_and_io_roundtrip_preserve_points_and_colors(
     np.testing.assert_array_equal(restored.colors[:, :3], cloud.colors)
     np.testing.assert_allclose(loaded.points, cloud.points)
     np.testing.assert_array_equal(loaded.colors[:, :3], cloud.colors)
-    assert loaded.metadata["path"] == str(path)
 
 
 def test_mesh_reader_rejects_point_cloud_files(tmp_path: Path) -> None:
@@ -291,7 +289,7 @@ def test_mesh_reader_rejects_point_cloud_files(tmp_path: Path) -> None:
 def test_point_cloud_validates_and_owns_arrays() -> None:
     points = np.asarray([(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)])
     colors = np.asarray([(255, 0, 0), (0, 255, 0)], dtype=np.uint8)
-    cloud = PointCloud(points, colors, metadata={"source": "test"})
+    cloud = PointCloud(points, colors)
     points[0, 0] = 9.0
     colors[0, 0] = 0
 
@@ -305,8 +303,6 @@ def test_point_cloud_validates_and_owns_arrays() -> None:
         cloud.points[0, 0] = 2.0
     with pytest.raises(ValueError):
         cloud.colors[0, 0] = 2
-    with pytest.raises(TypeError):
-        cloud.metadata["source"] = "changed"  # type: ignore[index]
     with pytest.raises(ValueError, match="shape"):
         PointCloud(np.zeros((2, 2)))
     with pytest.raises(ValueError, match="shape"):
@@ -364,10 +360,9 @@ def test_deposition_occupancy_to_sdf_and_mesh_is_nonempty() -> None:
         voxel_size=0.5,
     )
     profile = BeadProfile(width=1.2, height=0.8)
-    metadata = DepositionMetadata(layer_id=0)
     deposits = [
-        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile, metadata=metadata),
-        LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile, metadata=metadata),
+        PointDeposit(target=(2.25, 2.25, 0.65), profile=profile),
+        LineDeposit(start=(2.25, 2.25, 0.65), end=(6.25, 2.25, 0.65), profile=profile),
     ]
 
     occupancy = Simulator(domain, deposits).result().analysis.occupancy(threshold=0.5)
@@ -405,14 +400,12 @@ def test_grid_sdf3_sample_different_domain_falls_back_to_interpolation() -> None
 def test_triangle_mesh_and_grid_sdf_own_read_only_arrays() -> None:
     vertices = np.asarray([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]])
     faces = np.asarray([[0, 1, 2]])
-    mesh = TriangleMesh(vertices=vertices, faces=faces, metadata={"source": "test"})
+    mesh = TriangleMesh(vertices=vertices, faces=faces)
     vertices[0, 0] = 9.0
 
     assert mesh.vertices[0, 0] == pytest.approx(0.0)
     with pytest.raises(ValueError):
         mesh.vertices[0, 0] = 2.0
-    with pytest.raises(TypeError):
-        mesh.metadata["source"] = "changed"  # type: ignore[index]
 
     domain = make_domain()
     values = np.zeros(domain.grid_shape)
@@ -426,7 +419,7 @@ def test_triangle_mesh_and_grid_sdf_own_read_only_arrays() -> None:
         sdf.values = np.ones(domain.grid_shape)  # type: ignore[misc]
 
 
-def test_triangle_mesh_trimesh_roundtrip_preserves_metadata_and_colors() -> None:
+def test_triangle_mesh_trimesh_roundtrip_preserves_colors() -> None:
     vertex_colors = np.asarray(
         [(255, 0, 0), (0, 255, 0), (0, 0, 255)],
         dtype=np.uint8,
@@ -436,13 +429,11 @@ def test_triangle_mesh_trimesh_roundtrip_preserves_metadata_and_colors() -> None
             [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
         ),
         faces=np.asarray([(0, 1, 2)]),
-        metadata={"source": "test"},
         vertex_colors=vertex_colors,
     )
 
     restored = TriangleMesh.from_trimesh(mesh.to_trimesh())
 
-    assert restored.metadata["source"] == "test"
     assert restored.vertex_colors is not None
     np.testing.assert_array_equal(restored.vertex_colors[:, :3], vertex_colors)
     assert restored.face_colors is None

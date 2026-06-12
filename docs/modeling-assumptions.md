@@ -34,15 +34,11 @@ not mass, volume fraction, material density, or deposited flow. Coverage may
 depend on discretization and path segmentation and should not be compared
 across resolutions without a separate calibration model.
 
-## Units and provenance
+## Units
 
 `Domain.length_unit` is either `"mm"` or `"m"` and documents the unit used by
 world coordinates, bead dimensions, and voxel size. The library does not
 convert units.
-
-`DepositionMetadata.user_data` stores immutable JSON-like provenance such as
-material identifiers, feedrate records, or experiment labels. The simulator
-does not interpret those values.
 
 ## Current exclusions
 
@@ -51,7 +47,7 @@ The simulator does not model:
 - material flow conservation or extrusion transients;
 - gravity, sagging, curing, cooling, or thermal history;
 - collision, reachability, robot dynamics, or controller timing;
-- bead deformation caused by substrate contact or previous layers;
+- bead deformation caused by substrate contact or previous deposits;
 - uncertainty propagation or experimental parameter calibration.
 
 ## Numerical interpretation

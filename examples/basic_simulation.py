@@ -7,13 +7,12 @@ from typing import Literal
 import dds.viz
 from dds import (
     BeadProfile,
-    DepositionMetadata,
     Domain,
     LineDeposit,
     PointDeposit,
     Simulator,
 )
-from dds.analysis import occupancy_fraction, summarize_layers
+from dds.analysis import occupancy_fraction
 from dds.cli import run_cli
 
 
@@ -31,24 +30,20 @@ def build_example_domain() -> Domain:
 
 def build_example_deposits() -> list[PointDeposit | LineDeposit]:
     profile = BeadProfile(width=1.2, height=0.6)
-    metadata = DepositionMetadata(layer_id=0)
     return [
         PointDeposit(
             target=(2.25, 2.25, 0.55),
             profile=profile,
-            metadata=metadata,
         ),
         LineDeposit(
             start=(2.25, 2.25, 0.55),
             end=(10.25, 2.25, 0.55),
             profile=profile,
-            metadata=metadata,
         ),
         LineDeposit(
             start=(10.25, 2.25, 0.55),
             end=(10.25, 8.25, 0.55),
             profile=profile,
-            metadata=metadata,
         ),
     ]
 
@@ -76,7 +71,6 @@ def main(args: Args) -> None:
     print(f"Occupied voxels: {int(occupancy.sum())}")
     print(f"Occupancy fraction: {occupancy_fraction(occupancy):.4f}")
     print(f"Max deposition index: {float(deposition_index.max()):.4f}")
-    print(f"Layer summary: {summarize_layers(deposits)}")
 
     if args.output_dir is not None:
         written = result.save(
