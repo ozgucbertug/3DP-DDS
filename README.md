@@ -782,10 +782,11 @@ src/dds/
 ├── formats/
 │   └── yaml.py         YAML target adapter (optional: formats)
 ├── geometry/
-│   ├── adapters.py     Dense-field, SDF, and mesh conversions
-│   ├── mesh.py         Triangle mesh extraction and representation
+│   ├── _utils.py       Shared optional imports and validation
+│   ├── mesh.py         Triangle meshes, I/O, and extraction
 │   ├── ops.py          SDF Boolean and morphological operations
-│   ├── sdf.py          SDF3, GridSDF3, and MeshSDF3
+│   ├── point_cloud.py  Point clouds, I/O, and conversion
+│   ├── sdf.py          SDF types and dense-field conversion
 │   ├── shapes.py       Analytic SDF primitives
 │   └── transforms.py   SDF spatial transforms
 ├── __init__.py         Core public API

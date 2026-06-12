@@ -7,8 +7,11 @@ from typing import Any, Callable
 
 import numpy as np
 import numpy.typing as npt
+from scipy import ndimage
 
 from ..domain import Domain
+from ._utils import validate_field_shape
+from .mesh import TriangleMesh, _ensure_watertight
 
 SDFCallable = Callable[[npt.NDArray[np.float64]], npt.ArrayLike]
 
@@ -212,3 +215,95 @@ class GridSDF3(SDF3):
         if domain == self.domain:
             return self.values.copy()
         return super().sample(domain)
+
+
+class MeshSDF3(SDF3):
+    """A mesh-backed signed-distance wrapper built on trimesh proximity queries."""
+
+    def __init__(
+        self,
+        mesh: TriangleMesh,
+        *,
+        require_watertight: bool = True,
+        name: str = "mesh_sdf",
+    ) -> None:
+        self.mesh = mesh
+        self._trimesh = mesh.to_trimesh()
+        # trimesh signed-distance semantics assume a positive-volume orientation.
+        if self._trimesh.is_watertight and not self._trimesh.is_volume:
+            self._trimesh.invert()
+        _ensure_watertight(
+            self._trimesh,
+            require_watertight=require_watertight,
+            context="signed-distance queries",
+        )
+        super().__init__(self._evaluate_mesh, name=name)
+
+    def _evaluate_mesh(self, points: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+        distances = self._trimesh.nearest.signed_distance(points)
+        return -np.asarray(distances, dtype=float)
+
+
+def mesh_to_sdf_field(
+    domain: Domain,
+    mesh: TriangleMesh,
+    *,
+    require_watertight: bool = True,
+) -> npt.NDArray[np.float64]:
+    """Sample a watertight mesh into a signed-distance field on the domain grid."""
+
+    return MeshSDF3(mesh, require_watertight=require_watertight).sample(domain)
+
+
+def occupancy_to_sdf_field(domain: Domain, occupancy: npt.ArrayLike) -> npt.NDArray[np.float64]:
+    """Convert a dense occupancy grid into a sampled signed-distance field."""
+
+    occupancy_array = validate_field_shape(domain, occupancy, field_name="occupancy").astype(bool)
+    inside_distance = ndimage.distance_transform_edt(occupancy_array, sampling=domain.voxel_size)
+    outside_distance = ndimage.distance_transform_edt(~occupancy_array, sampling=domain.voxel_size)
+    return outside_distance - inside_distance
+
+
+def implicit_field_to_sdf_values(
+    domain: Domain,
+    implicit_field: npt.ArrayLike,
+    *,
+    threshold: float = 0.5,
+) -> npt.NDArray[np.float64]:
+    """Convert a thresholded implicit field to signed-distance values."""
+
+    values = validate_field_shape(
+        domain,
+        implicit_field,
+        field_name="implicit_field",
+    )
+    return occupancy_to_sdf_field(domain, values >= threshold)
+
+
+def occupancy_to_sdf(domain: Domain, occupancy: npt.ArrayLike) -> GridSDF3:
+    """Wrap an occupancy-derived signed-distance field as an interpolated GridSDF3."""
+
+    return GridSDF3(
+        domain,
+        occupancy_to_sdf_field(domain, occupancy),
+        name="occupancy_sdf",
+    )
+
+
+def implicit_field_to_sdf(
+    domain: Domain,
+    implicit_field: npt.ArrayLike,
+    *,
+    threshold: float = 0.5,
+) -> GridSDF3:
+    """Wrap a thresholded implicit field as an interpolated GridSDF3."""
+
+    return GridSDF3(
+        domain,
+        implicit_field_to_sdf_values(
+            domain,
+            implicit_field,
+            threshold=threshold,
+        ),
+        name="implicit_field_sdf",
+    )

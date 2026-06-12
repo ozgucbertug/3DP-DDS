@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
 import numpy as np
 import numpy.typing as npt
 
-from .mesh import _load_trimesh, _validate_colors
+from ._utils import load_trimesh, validate_colors
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +29,7 @@ class PointCloud:
         if not np.all(np.isfinite(points)):
             raise ValueError("PointCloud.points must contain finite values.")
 
-        colors = _validate_colors(
+        colors = validate_colors(
             self.colors,
             count=len(points),
             name="PointCloud.colors",
@@ -69,7 +70,7 @@ class PointCloud:
     def to_trimesh(self) -> Any:
         """Convert to a trimesh.points.PointCloud instance."""
 
-        trimesh = _load_trimesh()
+        trimesh = load_trimesh()
         return trimesh.points.PointCloud(
             vertices=self.points.copy(),
             colors=None if self.colors is None else self.colors.copy(),
@@ -85,15 +86,13 @@ class PointCloud:
     ) -> PointCloud:
         """Build a PointCloud from a trimesh.points.PointCloud instance."""
 
-        trimesh = _load_trimesh()
+        trimesh = load_trimesh()
         if not isinstance(cloud, trimesh.points.PointCloud):
             raise TypeError("cloud must be a trimesh.points.PointCloud")
         colors = np.asarray(cloud.colors)
         resolved_colors = (
             colors
-            if colors.ndim == 2
-            and colors.shape[0] == len(cloud.vertices)
-            and colors.shape[1] in {3, 4}
+            if colors.ndim == 2 and colors.shape[0] == len(cloud.vertices) and colors.shape[1] in {3, 4}
             else None
         )
         resolved_metadata = dict(cloud.metadata)
@@ -104,3 +103,25 @@ class PointCloud:
             colors=resolved_colors,
             metadata=resolved_metadata,
         )
+
+
+def read_point_cloud(path: str | Path) -> PointCloud:
+    """Read a point cloud from disk using trimesh."""
+
+    trimesh = load_trimesh()
+    source = Path(path)
+    loaded = trimesh.load(source)
+    if not isinstance(loaded, trimesh.points.PointCloud):
+        raise ValueError(f"File {source} does not contain a point cloud.")
+    return PointCloud.from_trimesh(loaded, metadata={"path": str(source)})
+
+
+def write_point_cloud(path: str | Path, cloud: PointCloud) -> Path:
+    """Write a point cloud to disk using trimesh."""
+
+    if not isinstance(cloud, PointCloud):
+        raise TypeError("cloud must be a PointCloud")
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    cloud.to_trimesh().export(target)
+    return target

@@ -11,7 +11,8 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from .geometry.mesh import TriangleMesh, _load_trimesh
+from .geometry._utils import load_trimesh
+from .geometry.mesh import TriangleMesh
 from .utils import normalize_axis
 
 # ---------------------------------------------------------------------------
@@ -42,7 +43,7 @@ def _oriented_mesh(mesh: TriangleMesh) -> TriangleMesh:
     if mesh.is_empty:
         return mesh
     tri_mesh = mesh.to_trimesh()
-    trimesh = _load_trimesh()
+    trimesh = load_trimesh()
     trimesh.repair.fix_normals(tri_mesh)
     if tri_mesh.is_watertight and not tri_mesh.is_volume:
         tri_mesh.invert()

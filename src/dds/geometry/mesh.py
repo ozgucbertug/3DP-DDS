@@ -1,10 +1,12 @@
-"""Triangle-mesh containers and field-to-mesh extraction helpers."""
+"""Triangle-mesh containers, I/O, and dense-field conversions."""
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from importlib import import_module
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any
 
@@ -12,6 +14,7 @@ import numpy as np
 import numpy.typing as npt
 
 from ..domain import Domain
+from ._utils import load_trimesh, validate_colors, validate_field_shape
 
 
 def _load_skimage_measure() -> Any:
@@ -19,28 +22,8 @@ def _load_skimage_measure() -> Any:
         return import_module("skimage.measure")
     except ImportError as exc:
         raise ImportError(
-            "scikit-image is required for mesh extraction. "
-            'Install it with `pip install -e ".[mesh]"`.',
+            'scikit-image is required for mesh extraction. Install it with `pip install -e ".[mesh]"`.',
         ) from exc
-
-
-def _load_trimesh() -> Any:
-    try:
-        return import_module("trimesh")
-    except ImportError as exc:
-        raise ImportError("trimesh is required. Install it with `pip install trimesh`.") from exc
-
-
-def _validate_field_shape(
-    domain: Domain,
-    values: npt.ArrayLike,
-    *,
-    field_name: str,
-) -> npt.NDArray[np.float64]:
-    array = np.asarray(values, dtype=float)
-    if array.shape != domain.grid_shape:
-        raise ValueError(f"{field_name} shape {array.shape} does not match domain grid shape {domain.grid_shape}.")
-    return array
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,15 +48,13 @@ class TriangleMesh:
         if faces.size and (faces.min() < 0 or faces.max() >= len(vertices)):
             raise ValueError("TriangleMesh.faces contain invalid vertex indices.")
         if self.vertex_colors is not None and self.face_colors is not None:
-            raise ValueError(
-                "TriangleMesh accepts vertex_colors or face_colors, not both."
-            )
-        vertex_colors = _validate_colors(
+            raise ValueError("TriangleMesh accepts vertex_colors or face_colors, not both.")
+        vertex_colors = validate_colors(
             self.vertex_colors,
             count=len(vertices),
             name="TriangleMesh.vertex_colors",
         )
-        face_colors = _validate_colors(
+        face_colors = validate_colors(
             self.face_colors,
             count=len(faces),
             name="TriangleMesh.face_colors",
@@ -90,7 +71,9 @@ class TriangleMesh:
     def empty(cls, *, metadata: dict[str, Any] | None = None) -> "TriangleMesh":
         """Return an empty triangle mesh."""
 
-        return cls(vertices=np.empty((0, 3), dtype=float), faces=np.empty((0, 3), dtype=np.int64), metadata=metadata or {})
+        return cls(
+            vertices=np.empty((0, 3), dtype=float), faces=np.empty((0, 3), dtype=np.int64), metadata=metadata or {}
+        )
 
     @property
     def is_empty(self) -> bool:
@@ -117,13 +100,11 @@ class TriangleMesh:
     def to_trimesh(self) -> Any:
         """Convert to a trimesh.Trimesh instance."""
 
-        trimesh = _load_trimesh()
+        trimesh = load_trimesh()
         return trimesh.Trimesh(
             vertices=self.vertices.copy(),
             faces=self.faces.copy(),
-            vertex_colors=(
-                None if self.vertex_colors is None else self.vertex_colors.copy()
-            ),
+            vertex_colors=(None if self.vertex_colors is None else self.vertex_colors.copy()),
             face_colors=None if self.face_colors is None else self.face_colors.copy(),
             metadata=dict(self.metadata),
             process=False,
@@ -138,7 +119,7 @@ class TriangleMesh:
     ) -> "TriangleMesh":
         """Build a TriangleMesh from a trimesh.Trimesh object."""
 
-        trimesh = _load_trimesh()
+        trimesh = load_trimesh()
         if not isinstance(mesh, trimesh.Trimesh):
             raise TypeError("mesh must be a trimesh.Trimesh")
         resolved_metadata = dict(mesh.metadata)
@@ -159,33 +140,63 @@ class TriangleMesh:
         )
 
 
-def _validate_colors(
-    values: npt.ArrayLike | None,
+def _ensure_watertight(mesh: Any, *, require_watertight: bool, context: str) -> None:
+    if mesh.is_watertight:
+        return
+    message = (
+        f"Mesh is not watertight; {context} is unreliable for open surfaces. "
+        "Provide a watertight mesh or pass require_watertight=False to continue anyway."
+    )
+    if require_watertight:
+        raise ValueError(message)
+    warnings.warn(message, RuntimeWarning, stacklevel=2)
+
+
+def read_mesh(path: str | Path) -> TriangleMesh:
+    """Read a triangle mesh from disk using trimesh."""
+
+    trimesh = load_trimesh()
+    source = Path(path)
+    loaded = trimesh.load(source, process=False)
+    if isinstance(loaded, trimesh.Scene):
+        geometries = loaded.dump()
+        if not geometries or not all(isinstance(geometry, trimesh.Trimesh) for geometry in geometries):
+            raise ValueError(f"File {source} does not contain only triangle meshes.")
+        loaded = loaded.to_mesh()
+    if not isinstance(loaded, trimesh.Trimesh) or len(loaded.faces) == 0:
+        raise ValueError(f"File {source} does not contain a triangle mesh.")
+    return TriangleMesh.from_trimesh(loaded, metadata={"path": str(source)})
+
+
+def write_mesh(path: str | Path, mesh: TriangleMesh) -> Path:
+    """Write a triangle mesh to disk using trimesh."""
+
+    if not isinstance(mesh, TriangleMesh):
+        raise TypeError("mesh must be a TriangleMesh")
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    mesh.to_trimesh().export(target)
+    return target
+
+
+def mesh_to_occupancy(
+    domain: Domain,
+    mesh: TriangleMesh,
     *,
-    count: int,
-    name: str,
-) -> npt.NDArray[np.uint8] | None:
-    if values is None:
-        return None
-    colors = np.asarray(values)
-    if (
-        colors.ndim != 2
-        or colors.shape[0] != count
-        or colors.shape[1] not in {3, 4}
-    ):
-        raise ValueError(f"{name} must have shape `(n, 3)` or `(n, 4)`.")
-    if not np.issubdtype(colors.dtype, np.number):
-        raise TypeError(f"{name} must contain numeric values.")
-    if (
-        not np.all(np.isfinite(colors))
-        or np.any(colors < 0)
-        or np.any(colors > 255)
-        or not np.all(colors == np.floor(colors))
-    ):
-        raise ValueError(f"{name} must contain integer values from 0 to 255.")
-    result = np.array(colors, dtype=np.uint8, copy=True)
-    result.setflags(write=False)
-    return result
+    require_watertight: bool = True,
+) -> npt.NDArray[np.bool_]:
+    """Sample mesh occupancy at voxel centers using trimesh containment tests."""
+
+    tri_mesh = mesh.to_trimesh()
+    _ensure_watertight(
+        tri_mesh,
+        require_watertight=require_watertight,
+        context="occupancy queries",
+    )
+    xs, ys, zs = domain.grid_centers()
+    points = np.stack((xs, ys, zs), axis=-1).reshape(-1, 3)
+    contained = np.asarray(tri_mesh.contains(points), dtype=bool)
+    return contained.reshape(domain.grid_shape)
 
 
 def extract_mesh_from_field(
@@ -203,7 +214,7 @@ def extract_mesh_from_field(
     if step_size < 1:
         raise ValueError("step_size must be at least 1.")
 
-    field = _validate_field_shape(domain, values, field_name="values")
+    field = validate_field_shape(domain, values, field_name="values")
     if field.size == 0:
         return TriangleMesh.empty(metadata={"level": level, "gradient_direction": gradient_direction})
     if float(np.min(field)) > level or float(np.max(field)) < level:
