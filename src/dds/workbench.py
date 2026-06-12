@@ -20,9 +20,20 @@ except ImportError as exc:
 from .analysis.support import BUILD_DIRECTION_VECTORS, BuildDirection
 from .domain import Domain
 from .mesh_analysis import normal_rgb_from_normals
+from .primitives import Pose3D
 from .results import SimulationResult
 from .simulator import Simulator
-from .viz import ViewConfig, _occupied_index_bounds
+from .viz import (
+    DepositStyle,
+    FrameStyle,
+    LineStyle,
+    PointStyle,
+    TargetStyle,
+    ViewConfig,
+    _occupied_index_bounds,
+)
+from .viz.converters import triangle_mesh_to_polydata
+from .viz.viewer import Viewer
 
 Representation = Literal["surface", "occupancy", "implicit"]
 ScalarRepresentation = Literal["occupancy", "implicit"]
@@ -80,15 +91,7 @@ def _field_to_image_data(
 
 
 def _triangle_mesh_to_polydata(mesh: Any) -> Any:
-    if mesh.is_empty:
-        return pv.PolyData()
-    faces = np.hstack(
-        [
-            np.full((mesh.n_faces, 1), 3, dtype=np.int64),
-            mesh.faces.astype(np.int64, copy=False),
-        ]
-    ).ravel()
-    return pv.PolyData(np.asarray(mesh.vertices, dtype=float), faces)
+    return triangle_mesh_to_polydata(mesh, pv)
 
 
 class SimulationWorkbench(QtWidgets.QMainWindow):
@@ -183,6 +186,9 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "roi": {"refresh": self._refresh_roi_stats},
         }
         self._initial_view = self._resolve_initial_view_config(initial_view, build_direction)
+        self.show_toolpath = self._initial_view.show_toolpath
+        self.show_targets = self._initial_view.show_targets
+        self.show_world_axes = self._initial_view.show_world_axes
 
         self._build_ui()
         self._apply_window_style()
@@ -229,6 +235,9 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             scalar_field=scalar_field,
             color_mode=color_mode,
             build_direction=config.build_direction,
+            show_toolpath=config.show_toolpath,
+            show_targets=config.show_targets,
+            show_world_axes=config.show_world_axes,
         )
 
     def _apply_initial_view_config(self) -> None:
@@ -252,6 +261,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._sync_surface_controls()
         self._sync_status_controls()
         self._sync_opacity_controls()
+        self._sync_overlay_controls()
+        self._refresh_scene_overlays()
 
     def _build_ui(self) -> None:
         self.setWindowTitle("3DP-DDS Workbench")
@@ -269,6 +280,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         viewport_layout = QtWidgets.QVBoxLayout(viewport_frame)
         viewport_layout.setContentsMargins(0, 0, 0, 0)
         self.plotter = QtInteractor(viewport_frame, off_screen=self.off_screen)
+        self.viewer = Viewer._attach(self.plotter)
         viewport_layout.addWidget(getattr(self.plotter, "interactor", self.plotter))
         layout.addWidget(viewport_frame, stretch=1)
 
@@ -428,6 +440,22 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.clip_checkbox.toggled.connect(self.set_clip_enabled)
         tools_layout.addRow(self.clip_checkbox)
 
+        overlays_box, overlays_layout = self._add_section(sidebar_layout, "Overlays")
+        self.toolpath_checkbox = QtWidgets.QCheckBox("Toolpath", overlays_box)
+        self.toolpath_checkbox.toggled.connect(self.set_toolpath_visible)
+        overlays_layout.addRow(self.toolpath_checkbox)
+
+        self.targets_checkbox = QtWidgets.QCheckBox(
+            "Targets + Normals",
+            overlays_box,
+        )
+        self.targets_checkbox.toggled.connect(self.set_targets_visible)
+        overlays_layout.addRow(self.targets_checkbox)
+
+        self.world_axes_checkbox = QtWidgets.QCheckBox("World Axes", overlays_box)
+        self.world_axes_checkbox.toggled.connect(self.set_world_axes_visible)
+        overlays_layout.addRow(self.world_axes_checkbox)
+
         status_box, status_layout = self._add_section(sidebar_layout, "Stats")
         self.point_picking_checkbox = QtWidgets.QCheckBox("Point", status_box)
         self.point_picking_checkbox.setChecked(False)
@@ -473,7 +501,6 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         sidebar_layout.addStretch(1)
 
         self.plotter.set_background("#f5f6f8")
-        self.plotter.add_axes(line_width=2)
 
     def _apply_window_style(self) -> None:
         self.setStyleSheet(
@@ -1173,6 +1200,110 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.build_direction_combo.setEnabled(overhang_mode)
         self.scalar_field_row.setVisible(scalar_mode)
 
+    def _overlay_scale(self) -> float:
+        extents = np.asarray(self.bundle.domain.max_corner, dtype=float) - np.asarray(
+            self.bundle.domain.min_corner,
+            dtype=float,
+        )
+        diagonal = float(np.linalg.norm(extents))
+        return max(0.05 * diagonal, min(self.bundle.domain.voxel_size))
+
+    def _sync_overlay_controls(self) -> None:
+        controls = (
+            (self.toolpath_checkbox, self.show_toolpath),
+            (self.targets_checkbox, self.show_targets),
+            (self.world_axes_checkbox, self.show_world_axes),
+        )
+        for checkbox, checked in controls:
+            checkbox.blockSignals(True)
+            checkbox.setChecked(checked)
+            checkbox.blockSignals(False)
+
+    def _remove_scene_overlay(self, name: str) -> None:
+        try:
+            self.viewer.remove(name)
+        except KeyError:
+            pass
+
+    def _refresh_scene_overlays(self) -> None:
+        scale = self._overlay_scale()
+        deposits = tuple(self.result.deposits)
+        path_style = DepositStyle(
+            line_style=LineStyle(color="#355c9a", width=4.0),
+            target_style=TargetStyle(scale=scale),
+            show_path=True,
+            show_targets=False,
+            show_normals=False,
+        )
+        target_style = DepositStyle(
+            line_style=LineStyle(color="#355c9a", width=4.0),
+            target_style=TargetStyle(
+                scale=scale,
+                point_style=PointStyle(color="#d64292", size=9.0),
+            ),
+            show_path=False,
+            show_targets=True,
+            show_normals=True,
+        )
+        with self.viewer.batch():
+            if deposits and self.show_toolpath:
+                try:
+                    self.viewer.get("workbench_toolpath").update(
+                        deposits,
+                        style=path_style,
+                    )
+                except KeyError:
+                    self.viewer.add_deposits(
+                        deposits,
+                        style=path_style,
+                        name="workbench_toolpath",
+                    )
+            else:
+                self._remove_scene_overlay("workbench_toolpath")
+
+            if deposits and self.show_targets:
+                try:
+                    self.viewer.get("workbench_targets").update(
+                        deposits,
+                        style=target_style,
+                    )
+                except KeyError:
+                    self.viewer.add_deposits(
+                        deposits,
+                        style=target_style,
+                        name="workbench_targets",
+                    )
+            else:
+                self._remove_scene_overlay("workbench_targets")
+
+            if self.show_world_axes:
+                frame_style = FrameStyle(scale=scale, show_origin=True)
+                try:
+                    self.viewer.get("workbench_world_axes").set_style(frame_style)
+                except KeyError:
+                    self.viewer.add_pose(
+                        Pose3D((0.0, 0.0, 0.0)),
+                        style=frame_style,
+                        name="workbench_world_axes",
+                    )
+            else:
+                self._remove_scene_overlay("workbench_world_axes")
+
+    def set_toolpath_visible(self, value: bool) -> None:
+        self.show_toolpath = bool(value)
+        self._sync_overlay_controls()
+        self._refresh_scene_overlays()
+
+    def set_targets_visible(self, value: bool) -> None:
+        self.show_targets = bool(value)
+        self._sync_overlay_controls()
+        self._refresh_scene_overlays()
+
+    def set_world_axes_visible(self, value: bool) -> None:
+        self.show_world_axes = bool(value)
+        self._sync_overlay_controls()
+        self._refresh_scene_overlays()
+
     def _set_row_visible(self, label_widget: QtWidgets.QWidget | None, field_widget: QtWidgets.QWidget, visible: bool) -> None:
         if label_widget is not None:
             label_widget.setVisible(visible)
@@ -1389,6 +1520,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._mark_representations_dirty("surface", "occupancy", "implicit")
         self.clear_pick()
         self._sync_scalar_field_options()
+        self._refresh_scene_overlays()
         self._rebuild_scene()
         self._refresh_roi_stats()
         if self.point_picking_enabled:
@@ -1578,5 +1710,6 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def closeEvent(self, event: Any) -> None:
         self._clear_clip_state()
         self.plotter.clear_box_widgets()
+        self.viewer.clear()
         self.plotter.close()
         super().closeEvent(event)

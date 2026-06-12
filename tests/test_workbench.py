@@ -222,6 +222,9 @@ def test_initial_view_config_applies_without_example_side_mutation(qtbot: object
             view_mode="implicit",
             scalar_field="coverage",
             build_direction="+Y",
+            show_toolpath=True,
+            show_targets=True,
+            show_world_axes=True,
         ),
         off_screen=True,
     )
@@ -236,6 +239,9 @@ def test_initial_view_config_applies_without_example_side_mutation(qtbot: object
     assert workbench._implicit_actor is not None
     assert workbench._surface_actor is None
     assert workbench._occupancy_actor is None
+    assert workbench.viewer.get("workbench_toolpath").visible
+    assert workbench.viewer.get("workbench_targets").visible
+    assert workbench.viewer.get("workbench_world_axes").visible
 
     workbench.close()
 
@@ -343,4 +349,51 @@ def test_refresh_updates_live_simulator_state(
     assert int(workbench.bundle.occupancy(threshold=0.5).sum()) > 0
     assert workbench._dirty_representations == {"occupancy", "implicit"}
 
+    workbench.close()
+
+
+def test_overlay_controls_refresh_named_visuals(qtbot: object) -> None:
+    simulator = make_simulator()
+    workbench = SimulationWorkbench(simulator, off_screen=True)
+    qtbot.addWidget(workbench)
+
+    workbench.set_toolpath_visible(True)
+    workbench.set_targets_visible(True)
+    workbench.set_world_axes_visible(True)
+
+    assert workbench.viewer.get("workbench_toolpath").source == tuple(
+        simulator.deposits
+    )
+    assert workbench.viewer.get("workbench_targets").source == tuple(
+        simulator.deposits
+    )
+    assert workbench.viewer.get("workbench_world_axes").visible
+
+    simulator.add_deposit(
+        PointDeposit(
+            target=(8.0, 8.0, 0.65),
+            profile=BeadProfile(width=1.2, height=0.8),
+        )
+    )
+    workbench.refresh(simulator)
+    assert len(workbench.viewer.get("workbench_toolpath").source) == len(
+        simulator.deposits
+    )
+
+    workbench.set_targets_visible(False)
+    with pytest.raises(KeyError):
+        workbench.viewer.get("workbench_targets")
+
+    workbench.close()
+
+
+def test_workbench_screenshot_smoke(qtbot: object) -> None:
+    workbench = SimulationWorkbench(make_simulator(), off_screen=True)
+    qtbot.addWidget(workbench)
+
+    image = workbench.plotter.screenshot(return_img=True)
+
+    assert image is not None
+    assert image.ndim == 3
+    assert image.shape[2] in {3, 4}
     workbench.close()

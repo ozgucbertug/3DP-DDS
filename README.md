@@ -661,6 +661,45 @@ python -m pip install -e ".[viz]"
 
 Visualization is optional and is not imported by `import dds`.
 
+### General geometry viewer
+
+`dds.viz.Viewer` provides a retained scene for DDS geometry. Additions return
+named handles that can be updated, hidden, restyled, or removed without
+rebuilding unrelated visuals.
+
+```python
+from dds import DepositionTarget, Line3D, Point3D, Pose3D
+from dds.geometry import read_mesh
+from dds.viz import FrameStyle, LineStyle, MeshStyle, Viewer
+
+viewer = Viewer()
+viewer.add_mesh(
+    read_mesh("part.stl"),
+    name="part",
+    style=MeshStyle(color="#93aec7", opacity=0.7),
+)
+path = viewer.add_line(
+    Line3D(Point3D(0.0, 0.0, 0.0), Point3D(20.0, 0.0, 0.0)),
+    name="path",
+    style=LineStyle(color="#355c9a", width=4.0),
+)
+viewer.add_pose(Pose3D((0.0, 0.0, 0.0)), style=FrameStyle(scale=5.0))
+viewer.add_target(DepositionTarget((20.0, 0.0, 0.0)))
+
+path.set_visible(False)
+viewer.run()
+```
+
+The viewer accepts the DDS types `TriangleMesh`, `Point3D`, `Line3D`,
+`Polyline3D`, `Vector3D`, `Pose3D`, `DepositionTarget`, and deposition
+events. A pose renders a complete RGB XYZ frame. A deposition target renders
+only its point and normal because it does not retain tool roll.
+
+Use `viewer.batch()` when adding or updating several visuals so the viewport
+renders once at the end of the operation.
+
+### Simulation workbench
+
 ```python
 import dds.viz
 from dds.viz import ViewConfig
@@ -671,6 +710,9 @@ workbench = dds.viz.show(
         view_mode="surface",
         color_mode="overhang",
         build_direction="+Z",
+        show_toolpath=True,
+        show_targets=True,
+        show_world_axes=True,
     ),
 )
 workbench.app.exec()
@@ -758,7 +800,7 @@ src/dds/
 ├── simulator.py        Stateful incremental dense simulation
 ├── targets.py          Ordered-pose conversion helpers
 ├── types.py            Shared public type aliases
-├── viz.py              Lazy visualization entry point
+├── viz/                Lazy viewer API, styles, and PyVista converters
 └── workbench.py        PyVistaQt workbench (optional: viz)
 ```
 

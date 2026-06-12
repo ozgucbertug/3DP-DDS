@@ -35,7 +35,10 @@ results, derived analysis, persistence, and optional integrations.
 - `geometry/`: supported analytic SDF, CAD, mesh, and metric APIs.
 - `targets.py` and `formats/`: external path/format adapters.
 - `io.py`: array bundles and typed checkpoint round trips.
-- `viz.py` and `workbench.py`: optional visualization entry points.
+- `viz/`: optional retained-mode geometry viewer, styles, and PyVista
+  conversion.
+- `workbench.py`: simulation-specific Qt controls, field representations, and
+  analysis tools built on the retained viewer.
 
 The root `dds` namespace contains only core deposition and simulation types.
 Specialized capabilities remain in their owning namespace so importing the

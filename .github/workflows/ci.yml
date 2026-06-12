@@ -35,3 +35,17 @@ jobs:
       - run: python -m pip install "mypy>=1.10" "pytest>=8.0" "pytest-qt>=4.4" "ruff>=0.6"
       - run: ruff check src tests examples
       - run: mypy
+
+  visualization:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 xvfb
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[viz]"
+      - run: python -m pip install "pytest>=8.0" "pytest-qt>=4.4"
+      - run: xvfb-run -a env DDS_RUN_VIZ_TESTS=1 pytest -q tests/test_viz.py tests/test_viz_viewer.py tests/test_workbench.py

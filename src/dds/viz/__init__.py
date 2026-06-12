@@ -1,21 +1,55 @@
-"""Configuration and lazy entry points for optional visualization."""
+"""Optional visualization configuration and lazy public entry points."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from importlib import import_module
 from typing import TYPE_CHECKING, ClassVar, Literal
 
 import numpy as np
 import numpy.typing as npt
 
+from .styles import (
+    DepositStyle,
+    FrameStyle,
+    LineStyle,
+    MeshStyle,
+    PointStyle,
+    TargetStyle,
+)
+
 if TYPE_CHECKING:
-    from .results import SimulationResult
-    from .simulator import Simulator
-    from .workbench import SimulationWorkbench
+    from ..results import SimulationResult
+    from ..simulator import Simulator
+    from ..workbench import SimulationWorkbench
+    from .viewer import Viewer, VisualHandle
 
 ViewMode = Literal["surface", "occupancy", "implicit"]
 ViewColorMode = Literal["plain", "normals", "overhang"]
 ViewScalarField = Literal["occupancy", "implicit", "coverage", "deposition_order"]
+
+__all__ = [
+    "DepositStyle",
+    "FrameStyle",
+    "LineStyle",
+    "MeshStyle",
+    "PointStyle",
+    "TargetStyle",
+    "ViewColorMode",
+    "ViewConfig",
+    "ViewMode",
+    "ViewScalarField",
+    "Viewer",
+    "VisualHandle",
+    "show",
+]
+
+
+def __getattr__(name: str) -> object:
+    if name in {"Viewer", "VisualHandle"}:
+        module = import_module(".viewer", __name__)
+        return getattr(module, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _occupied_index_bounds(
@@ -52,6 +86,9 @@ class ViewConfig:
     scalar_field: ViewScalarField | None = None
     color_mode: ViewColorMode | None = None
     build_direction: str | tuple[float, float, float] = "+Z"
+    show_toolpath: bool = False
+    show_targets: bool = False
+    show_world_axes: bool = False
     _VALID_DIRECTION_STRINGS: ClassVar[frozenset[str]] = frozenset(
         {"+X", "-X", "+Y", "-Y", "+Z", "-Z"}
     )
@@ -68,20 +105,17 @@ class ViewConfig:
 
 
 def show(
-    simulator_or_result: "Simulator | SimulationResult",
+    simulator_or_result: Simulator | SimulationResult,
     *,
-    view_mode: "ViewMode" = "surface",
+    view_mode: ViewMode = "surface",
     initial_view: ViewConfig | None = None,
     threshold: float | None = None,
     off_screen: bool = False,
-) -> "SimulationWorkbench":
-    """Open the interactive workbench for a simulator or result snapshot.
+) -> SimulationWorkbench:
+    """Open the interactive workbench for a simulator or result snapshot."""
 
-    Requires ``pip install -e "[viz]"``.
-    """
-
-    from .results import SimulationResult
-    from .workbench import SimulationWorkbench
+    from ..results import SimulationResult
+    from ..workbench import SimulationWorkbench
 
     resolved_threshold = (
         simulator_or_result.default_threshold
