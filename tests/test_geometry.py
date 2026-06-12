@@ -426,6 +426,37 @@ def test_triangle_mesh_and_grid_sdf_own_read_only_arrays() -> None:
         sdf.values = np.ones(domain.grid_shape)  # type: ignore[misc]
 
 
+def test_triangle_mesh_trimesh_roundtrip_preserves_metadata_and_colors() -> None:
+    vertex_colors = np.asarray(
+        [(255, 0, 0), (0, 255, 0), (0, 0, 255)],
+        dtype=np.uint8,
+    )
+    mesh = TriangleMesh(
+        vertices=np.asarray(
+            [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        ),
+        faces=np.asarray([(0, 1, 2)]),
+        metadata={"source": "test"},
+        vertex_colors=vertex_colors,
+    )
+
+    restored = TriangleMesh.from_trimesh(mesh.to_trimesh())
+
+    assert restored.metadata["source"] == "test"
+    assert restored.vertex_colors is not None
+    np.testing.assert_array_equal(restored.vertex_colors[:, :3], vertex_colors)
+    assert restored.face_colors is None
+    with pytest.raises(ValueError, match="not both"):
+        TriangleMesh(
+            mesh.vertices,
+            mesh.faces,
+            vertex_colors=vertex_colors,
+            face_colors=np.asarray([(255, 255, 255)], dtype=np.uint8),
+        )
+    with pytest.raises(TypeError, match="trimesh.Trimesh"):
+        TriangleMesh.from_trimesh(object())
+
+
 def test_occupancy_to_sdf_field_is_negative_inside_positive_outside() -> None:
     domain = Domain.from_bounds(xmin=-5.0, xmax=5.0, ymin=-5.0, ymax=5.0, zmin=-5.0, zmax=5.0, voxel_size=0.5)
     occupancy = np.zeros(domain.grid_shape, dtype=bool)

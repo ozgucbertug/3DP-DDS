@@ -36,13 +36,14 @@ def _opacity(value: float) -> None:
 
 @dataclass(frozen=True, slots=True)
 class MeshStyle:
-    color: Color = "#93aec7"
+    color: Color | None = None
     opacity: float = 1.0
     show_edges: bool = False
     smooth_shading: bool = True
 
     def __post_init__(self) -> None:
-        _validate_color(self.color, "color")
+        if self.color is not None:
+            _validate_color(self.color, "color")
         _opacity(self.opacity)
 
 

@@ -102,7 +102,12 @@ def make_mesh() -> TriangleMesh:
 
 
 def test_converters_preserve_geometry_and_connectivity() -> None:
-    mesh_data = triangle_mesh_to_polydata(make_mesh(), pv)
+    colored_mesh = TriangleMesh(
+        make_mesh().vertices,
+        make_mesh().faces,
+        face_colors=np.asarray([(255, 0, 0)], dtype=np.uint8),
+    )
+    mesh_data = triangle_mesh_to_polydata(colored_mesh, pv)
     cloud_data = point_cloud_to_polydata(
         PointCloud(
             np.asarray([(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)]),
@@ -131,6 +136,7 @@ def test_converters_preserve_geometry_and_connectivity() -> None:
 
     assert mesh_data.n_points == 3
     assert mesh_data.n_cells == 1
+    assert "face_colors" in mesh_data.cell_data
     assert cloud_data.n_points == 2
     assert "point_colors" in cloud_data.point_data
     assert points_data.n_points == 2
@@ -215,6 +221,28 @@ def test_point_cloud_uses_embedded_colors_and_supports_uniform_override() -> Non
     handle.update(updated)
     assert handle.source is updated
     assert viewer._record(handle.name).actors[0].dataset.n_points == 1
+
+
+def test_mesh_uses_embedded_colors_and_supports_uniform_override() -> None:
+    viewer, _plotter = make_viewer()
+    base = make_mesh()
+    mesh = TriangleMesh(
+        base.vertices,
+        base.faces,
+        face_colors=np.asarray([(255, 0, 0)], dtype=np.uint8),
+    )
+    handle = viewer.add_mesh(mesh, name="colored_mesh")
+    actor = viewer._record(handle.name).actors[0]
+
+    assert actor.kwargs["scalars"] == "face_colors"
+    assert actor.kwargs["preference"] == "cell"
+    assert actor.kwargs["rgb"] is True
+    assert "color" not in actor.kwargs
+
+    handle.set_style(MeshStyle(color="#ffffff"))
+    actor = viewer._record(handle.name).actors[0]
+    assert actor.kwargs["color"] == "#ffffff"
+    assert "scalars" not in actor.kwargs
 
 
 def test_nested_batches_render_once() -> None:

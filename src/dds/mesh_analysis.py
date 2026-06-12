@@ -12,7 +12,7 @@ import numpy as np
 import numpy.typing as npt
 
 from .geometry.mesh import TriangleMesh, _load_trimesh
-from .utils import EPSILON, normalize_axis
+from .utils import normalize_axis
 
 # ---------------------------------------------------------------------------
 # Public batch data-holder and factory
@@ -66,20 +66,12 @@ def compute_face_data(mesh: TriangleMesh) -> FaceData:
             centroids=np.empty((0, 3), dtype=float),
         )
 
-    triangles = oriented.vertices[oriented.faces]
-    cross = np.cross(
-        triangles[:, 1] - triangles[:, 0],
-        triangles[:, 2] - triangles[:, 0],
-    )
-    lengths = np.linalg.norm(cross, axis=1)
-    normals = np.zeros_like(cross, dtype=float)
-    valid = lengths > EPSILON
-    normals[valid] = cross[valid] / lengths[valid, np.newaxis]
+    tri_mesh = oriented.to_trimesh()
     return FaceData(
         mesh=oriented,
-        normals=normals,
-        areas=0.5 * lengths,
-        centroids=np.mean(triangles, axis=1),
+        normals=np.asarray(tri_mesh.face_normals, dtype=float),
+        areas=np.asarray(tri_mesh.area_faces, dtype=float),
+        centroids=np.asarray(tri_mesh.triangles_center, dtype=float),
     )
 
 
@@ -118,21 +110,12 @@ def vertex_normals(
     *,
     precomputed: FaceData | None = None,
 ) -> npt.NDArray[np.float64]:
-    """Return area-weighted vertex normals."""
+    """Return vertex normals computed by trimesh."""
 
     data = precomputed if precomputed is not None else compute_face_data(mesh)
     if data.mesh.is_empty:
         return np.empty((0, 3), dtype=float)
-    normals = np.zeros_like(data.mesh.vertices, dtype=float)
-    weighted = data.normals * data.areas[:, np.newaxis]
-    np.add.at(normals, data.mesh.faces[:, 0], weighted)
-    np.add.at(normals, data.mesh.faces[:, 1], weighted)
-    np.add.at(normals, data.mesh.faces[:, 2], weighted)
-    lengths = np.linalg.norm(normals, axis=1)
-    valid = lengths > EPSILON
-    normals[valid] /= lengths[valid, np.newaxis]
-    normals[~valid] = 0.0
-    return normals
+    return np.asarray(data.mesh.to_trimesh().vertex_normals, dtype=float)
 
 
 def face_centroids(
@@ -146,8 +129,7 @@ def face_centroids(
         return precomputed.centroids
     if mesh.is_empty:
         return np.empty((0, 3), dtype=float)
-    triangles = mesh.vertices[mesh.faces]
-    return np.mean(triangles, axis=1)
+    return np.asarray(mesh.to_trimesh().triangles_center, dtype=float)
 
 
 def face_areas(
@@ -161,9 +143,7 @@ def face_areas(
         return precomputed.areas
     if mesh.is_empty:
         return np.empty((0,), dtype=float)
-    triangles = mesh.vertices[mesh.faces]
-    cross = np.cross(triangles[:, 1] - triangles[:, 0], triangles[:, 2] - triangles[:, 0])
-    return 0.5 * np.linalg.norm(cross, axis=1)
+    return np.asarray(mesh.to_trimesh().area_faces, dtype=float)
 
 
 def overhang_angles(
@@ -229,7 +209,7 @@ def mesh_bounds_stats(mesh: TriangleMesh) -> dict[str, float]:
             "dy": 0.0,
             "dz": 0.0,
         }
-    lower, upper = mesh.bounds
+    lower, upper = np.asarray(mesh.to_trimesh().bounds, dtype=float)
     return {
         "xmin": float(lower[0]),
         "xmax": float(upper[0]),
@@ -246,7 +226,9 @@ def mesh_bounds_stats(mesh: TriangleMesh) -> dict[str, float]:
 def mesh_surface_area(mesh: TriangleMesh) -> float:
     """Return the total triangle area of a mesh."""
 
-    return float(np.sum(face_areas(mesh)))
+    if mesh.is_empty:
+        return 0.0
+    return float(mesh.to_trimesh().area)
 
 
 def mesh_volume_estimate(mesh: TriangleMesh) -> float | None:
@@ -260,4 +242,3 @@ def mesh_volume_estimate(mesh: TriangleMesh) -> float | None:
     if not tri_mesh.is_volume:
         tri_mesh.invert()
     return float(abs(tri_mesh.volume))
-

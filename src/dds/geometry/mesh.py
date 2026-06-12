@@ -50,6 +50,8 @@ class TriangleMesh:
     vertices: npt.NDArray[np.float64]
     faces: npt.NDArray[np.int64]
     metadata: Mapping[str, Any] = field(default_factory=dict)
+    vertex_colors: npt.NDArray[np.uint8] | None = None
+    face_colors: npt.NDArray[np.uint8] | None = None
 
     def __post_init__(self) -> None:
         vertices = np.array(self.vertices, dtype=float, copy=True)
@@ -62,11 +64,27 @@ class TriangleMesh:
             raise ValueError("TriangleMesh.vertices must contain finite values.")
         if faces.size and (faces.min() < 0 or faces.max() >= len(vertices)):
             raise ValueError("TriangleMesh.faces contain invalid vertex indices.")
+        if self.vertex_colors is not None and self.face_colors is not None:
+            raise ValueError(
+                "TriangleMesh accepts vertex_colors or face_colors, not both."
+            )
+        vertex_colors = _validate_colors(
+            self.vertex_colors,
+            count=len(vertices),
+            name="TriangleMesh.vertex_colors",
+        )
+        face_colors = _validate_colors(
+            self.face_colors,
+            count=len(faces),
+            name="TriangleMesh.face_colors",
+        )
         vertices.setflags(write=False)
         faces.setflags(write=False)
         object.__setattr__(self, "vertices", vertices)
         object.__setattr__(self, "faces", faces)
         object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+        object.__setattr__(self, "vertex_colors", vertex_colors)
+        object.__setattr__(self, "face_colors", face_colors)
 
     @classmethod
     def empty(cls, *, metadata: dict[str, Any] | None = None) -> "TriangleMesh":
@@ -100,7 +118,16 @@ class TriangleMesh:
         """Convert to a trimesh.Trimesh instance."""
 
         trimesh = _load_trimesh()
-        return trimesh.Trimesh(vertices=self.vertices.copy(), faces=self.faces.copy(), process=False)
+        return trimesh.Trimesh(
+            vertices=self.vertices.copy(),
+            faces=self.faces.copy(),
+            vertex_colors=(
+                None if self.vertex_colors is None else self.vertex_colors.copy()
+            ),
+            face_colors=None if self.face_colors is None else self.face_colors.copy(),
+            metadata=dict(self.metadata),
+            process=False,
+        )
 
     @classmethod
     def from_trimesh(
@@ -111,7 +138,54 @@ class TriangleMesh:
     ) -> "TriangleMesh":
         """Build a TriangleMesh from a trimesh.Trimesh object."""
 
-        return cls(vertices=np.asarray(mesh.vertices, dtype=float), faces=np.asarray(mesh.faces, dtype=np.int64), metadata=metadata or {})
+        trimesh = _load_trimesh()
+        if not isinstance(mesh, trimesh.Trimesh):
+            raise TypeError("mesh must be a trimesh.Trimesh")
+        resolved_metadata = dict(mesh.metadata)
+        if metadata is not None:
+            resolved_metadata.update(metadata)
+        vertex_colors = None
+        face_colors = None
+        if mesh.visual.defined and mesh.visual.kind == "vertex":
+            vertex_colors = np.asarray(mesh.visual.vertex_colors, dtype=np.uint8)
+        elif mesh.visual.defined and mesh.visual.kind == "face":
+            face_colors = np.asarray(mesh.visual.face_colors, dtype=np.uint8)
+        return cls(
+            vertices=np.asarray(mesh.vertices, dtype=float),
+            faces=np.asarray(mesh.faces, dtype=np.int64),
+            metadata=resolved_metadata,
+            vertex_colors=vertex_colors,
+            face_colors=face_colors,
+        )
+
+
+def _validate_colors(
+    values: npt.ArrayLike | None,
+    *,
+    count: int,
+    name: str,
+) -> npt.NDArray[np.uint8] | None:
+    if values is None:
+        return None
+    colors = np.asarray(values)
+    if (
+        colors.ndim != 2
+        or colors.shape[0] != count
+        or colors.shape[1] not in {3, 4}
+    ):
+        raise ValueError(f"{name} must have shape `(n, 3)` or `(n, 4)`.")
+    if not np.issubdtype(colors.dtype, np.number):
+        raise TypeError(f"{name} must contain numeric values.")
+    if (
+        not np.all(np.isfinite(colors))
+        or np.any(colors < 0)
+        or np.any(colors > 255)
+        or not np.all(colors == np.floor(colors))
+    ):
+        raise ValueError(f"{name} must contain integer values from 0 to 255.")
+    result = np.array(colors, dtype=np.uint8, copy=True)
+    result.setflags(write=False)
+    return result
 
 
 def extract_mesh_from_field(

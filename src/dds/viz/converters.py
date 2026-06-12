@@ -22,7 +22,18 @@ def triangle_mesh_to_polydata(mesh: TriangleMesh, pv: Any) -> Any:
             mesh.faces.astype(np.int64, copy=False),
         ]
     ).ravel()
-    return pv.PolyData(np.asarray(mesh.vertices, dtype=float), faces)
+    dataset = pv.PolyData(np.asarray(mesh.vertices, dtype=float), faces)
+    if mesh.vertex_colors is not None:
+        dataset.point_data["vertex_colors"] = np.asarray(
+            mesh.vertex_colors,
+            dtype=np.uint8,
+        )
+    if mesh.face_colors is not None:
+        dataset.cell_data["face_colors"] = np.asarray(
+            mesh.face_colors,
+            dtype=np.uint8,
+        )
+    return dataset
 
 
 def points_to_polydata(points: Sequence[Point3D], pv: Any) -> Any:

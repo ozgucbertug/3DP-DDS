@@ -105,8 +105,7 @@ class MeshSDF3(SDF3):
         super().__init__(self._evaluate_mesh, name=name)
 
     def _evaluate_mesh(self, points: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-        trimesh = _load_trimesh()
-        distances = trimesh.proximity.signed_distance(self._trimesh, points)
+        distances = self._trimesh.nearest.signed_distance(points)
         return -np.asarray(distances, dtype=float)
 
 

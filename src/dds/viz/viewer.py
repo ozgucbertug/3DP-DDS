@@ -504,6 +504,7 @@ class Viewer:
         smooth_shading: bool = False,
         scalars: str | None = None,
         rgb: bool = False,
+        preference: str | None = None,
     ) -> Any:
         kwargs: dict[str, Any] = {
             "name": name,
@@ -519,6 +520,8 @@ class Viewer:
         if scalars is not None:
             kwargs["scalars"] = scalars
             kwargs["rgb"] = rgb
+        if preference is not None:
+            kwargs["preference"] = preference
         if line_width is not None:
             kwargs["line_width"] = line_width
             kwargs["render_lines_as_tubes"] = render_lines_as_tubes
@@ -601,18 +604,35 @@ class Viewer:
     ) -> list[Any]:
         self._validate_record_types(kind, source, style)
         if kind == "mesh":
+            mesh = cast(TriangleMesh, source)
             mesh_style = cast(MeshStyle, style)
-            dataset = triangle_mesh_to_polydata(cast(TriangleMesh, source), pv)
+            dataset = triangle_mesh_to_polydata(mesh, pv)
             if dataset.n_cells == 0:
                 return []
+            embedded_scalars = None
+            preference = None
+            if mesh_style.color is None:
+                if mesh.vertex_colors is not None:
+                    embedded_scalars = "vertex_colors"
+                    preference = "point"
+                elif mesh.face_colors is not None:
+                    embedded_scalars = "face_colors"
+                    preference = "cell"
             return [
                 self._add_dataset(
                     dataset,
                     name,
-                    color=mesh_style.color,
+                    color=(
+                        None
+                        if embedded_scalars is not None
+                        else mesh_style.color or "#93aec7"
+                    ),
                     opacity=mesh_style.opacity,
                     show_edges=mesh_style.show_edges,
                     smooth_shading=mesh_style.smooth_shading,
+                    scalars=embedded_scalars,
+                    rgb=embedded_scalars is not None,
+                    preference=preference,
                 )
             ]
         if kind == "point_cloud":

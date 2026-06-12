@@ -10,7 +10,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from .mesh import _load_trimesh
+from .mesh import _load_trimesh, _validate_colors
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,30 +28,11 @@ class PointCloud:
         if not np.all(np.isfinite(points)):
             raise ValueError("PointCloud.points must contain finite values.")
 
-        colors: npt.NDArray[np.uint8] | None = None
-        if self.colors is not None:
-            raw_colors = np.asarray(self.colors)
-            if (
-                raw_colors.ndim != 2
-                or raw_colors.shape[0] != points.shape[0]
-                or raw_colors.shape[1] not in {3, 4}
-            ):
-                raise ValueError(
-                    "PointCloud.colors must have shape `(n, 3)` or `(n, 4)`."
-                )
-            if not np.issubdtype(raw_colors.dtype, np.number):
-                raise TypeError("PointCloud.colors must contain numeric values.")
-            if (
-                not np.all(np.isfinite(raw_colors))
-                or np.any(raw_colors < 0)
-                or np.any(raw_colors > 255)
-                or not np.all(raw_colors == np.floor(raw_colors))
-            ):
-                raise ValueError(
-                    "PointCloud.colors must contain integer values from 0 to 255."
-                )
-            colors = np.array(raw_colors, dtype=np.uint8, copy=True)
-            colors.setflags(write=False)
+        colors = _validate_colors(
+            self.colors,
+            count=len(points),
+            name="PointCloud.colors",
+        )
 
         points.setflags(write=False)
         object.__setattr__(self, "points", points)

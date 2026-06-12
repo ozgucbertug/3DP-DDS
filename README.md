@@ -694,8 +694,9 @@ viewer.run()
 The viewer accepts the DDS types `TriangleMesh`, `PointCloud`, `Point3D`,
 `Line3D`, `Polyline3D`, `Vector3D`, `Pose3D`, `DepositionTarget`, and
 deposition events. Point clouds preserve per-point RGB or RGBA colors by
-default. A pose renders a complete RGB XYZ frame. A deposition target renders
-only its point and normal because it does not retain tool roll.
+default, and triangle meshes preserve vertex or face colors. A pose renders a
+complete RGB XYZ frame. A deposition target renders only its point and normal
+because it does not retain tool roll.
 
 Use `viewer.batch()` when adding or updating several visuals so the viewport
 renders once at the end of the operation.
