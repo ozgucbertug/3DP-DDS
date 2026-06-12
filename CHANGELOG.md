@@ -12,6 +12,8 @@ All notable changes will be documented in this file.
 - Repository validation, contribution guidance, and modeling documentation.
 - A retained PyVistaQt viewer for meshes, points, paths, poses, deposition
   targets, and grouped deposit overlays.
+- Immutable point clouds with trimesh conversion, file I/O, optional
+  per-point colors, and retained-viewer support.
 
 ### Changed
 
@@ -19,6 +21,7 @@ All notable changes will be documented in this file.
 - Additive coverage is explicitly identified as a nonphysical diagnostic.
 - The simulation workbench now consumes the retained viewer for optional
   toolpath, target-normal, and world-frame overlays.
+- Mesh and point-cloud conversion and file I/O now consistently use trimesh.
 
 ### Fixed
 

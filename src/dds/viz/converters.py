@@ -7,7 +7,7 @@ from typing import Any, cast
 
 import numpy as np
 
-from ..geometry import TriangleMesh
+from ..geometry import PointCloud, TriangleMesh
 from ..primitives import Line3D, Point3D, Polyline3D
 
 
@@ -33,6 +33,15 @@ def points_to_polydata(points: Sequence[Point3D], pv: Any) -> Any:
         raise TypeError("points must contain Point3D values")
     values = np.asarray([point.to_tuple() for point in resolved], dtype=float)
     return pv.PolyData(values)
+
+
+def point_cloud_to_polydata(cloud: PointCloud, pv: Any) -> Any:
+    if not isinstance(cloud, PointCloud):
+        raise TypeError("cloud must be a PointCloud")
+    dataset = pv.PolyData(np.asarray(cloud.points, dtype=float))
+    if cloud.colors is not None:
+        dataset.point_data["point_colors"] = np.asarray(cloud.colors, dtype=np.uint8)
+    return dataset
 
 
 def line_to_polydata(line: Line3D, pv: Any) -> Any:

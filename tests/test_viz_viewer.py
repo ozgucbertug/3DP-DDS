@@ -25,17 +25,19 @@ from dds import (  # noqa: E402
     Pose3D,
     Vector3D,
 )
-from dds.geometry import TriangleMesh  # noqa: E402
+from dds.geometry import PointCloud, TriangleMesh  # noqa: E402
 from dds.viz import (  # noqa: E402
     DepositStyle,
     FrameStyle,
     LineStyle,
     MeshStyle,
+    PointCloudStyle,
     PointStyle,
     TargetStyle,
 )
 from dds.viz.converters import (  # noqa: E402
     line_to_polydata,
+    point_cloud_to_polydata,
     points_to_polydata,
     polyline_to_polydata,
     triangle_mesh_to_polydata,
@@ -44,8 +46,9 @@ from dds.viz.viewer import Viewer  # noqa: E402
 
 
 class FakeActor:
-    def __init__(self, dataset: Any) -> None:
+    def __init__(self, dataset: Any, kwargs: dict[str, Any]) -> None:
         self.dataset = dataset
+        self.kwargs = kwargs
         self.visible = True
 
     def SetVisibility(self, value: bool) -> None:
@@ -65,8 +68,8 @@ class FakePlotter:
         self.actors: list[FakeActor] = []
         self.render_count = 0
 
-    def add_mesh(self, dataset: Any, **_kwargs: Any) -> FakeActor:
-        actor = FakeActor(dataset)
+    def add_mesh(self, dataset: Any, **kwargs: Any) -> FakeActor:
+        actor = FakeActor(dataset, kwargs)
         self.actors.append(actor)
         return actor
 
@@ -100,6 +103,13 @@ def make_mesh() -> TriangleMesh:
 
 def test_converters_preserve_geometry_and_connectivity() -> None:
     mesh_data = triangle_mesh_to_polydata(make_mesh(), pv)
+    cloud_data = point_cloud_to_polydata(
+        PointCloud(
+            np.asarray([(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)]),
+            np.asarray([(255, 0, 0), (0, 255, 0)], dtype=np.uint8),
+        ),
+        pv,
+    )
     points_data = points_to_polydata(
         (Point3D(0.0, 0.0, 0.0), Point3D(1.0, 2.0, 3.0)),
         pv,
@@ -121,6 +131,8 @@ def test_converters_preserve_geometry_and_connectivity() -> None:
 
     assert mesh_data.n_points == 3
     assert mesh_data.n_cells == 1
+    assert cloud_data.n_points == 2
+    assert "point_colors" in cloud_data.point_data
     assert points_data.n_points == 2
     assert line_data.n_points == 2
     assert line_data.n_lines == 1
@@ -131,6 +143,8 @@ def test_converters_preserve_geometry_and_connectivity() -> None:
 def test_style_validation_and_immutability() -> None:
     with pytest.raises(ValueError, match="positive"):
         PointStyle(size=0.0)
+    with pytest.raises(ValueError, match="positive"):
+        PointCloudStyle(size=0.0)
     with pytest.raises(ValueError, match="between 0 and 1"):
         MeshStyle(opacity=1.1)
     with pytest.raises(ValueError, match="positive"):
@@ -177,6 +191,30 @@ def test_named_lifecycle_updates_only_one_visual_and_preserves_camera() -> None:
     first.remove()
     with pytest.raises(KeyError):
         viewer.get("point")
+
+
+def test_point_cloud_uses_embedded_colors_and_supports_uniform_override() -> None:
+    viewer, _plotter = make_viewer()
+    cloud = PointCloud(
+        np.asarray([(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)]),
+        np.asarray([(255, 0, 0), (0, 255, 0)], dtype=np.uint8),
+    )
+    handle = viewer.add_point_cloud(cloud, name="scan")
+    actor = viewer._record(handle.name).actors[0]
+
+    assert actor.kwargs["scalars"] == "point_colors"
+    assert actor.kwargs["rgb"] is True
+    assert "color" not in actor.kwargs
+
+    handle.set_style(PointCloudStyle(color="#ffffff", size=5.0))
+    actor = viewer._record(handle.name).actors[0]
+    assert actor.kwargs["color"] == "#ffffff"
+    assert "scalars" not in actor.kwargs
+
+    updated = PointCloud(np.asarray([(4.0, 5.0, 6.0)]))
+    handle.update(updated)
+    assert handle.source is updated
+    assert viewer._record(handle.name).actors[0].dataset.n_points == 1
 
 
 def test_nested_batches_render_once() -> None:
@@ -250,6 +288,8 @@ def test_invalid_and_empty_inputs_are_rejected() -> None:
         viewer.add_points(())
     with pytest.raises(ValueError, match="must not be empty"):
         viewer.add_deposits(())
+    with pytest.raises(TypeError, match="PointCloud"):
+        viewer.add_point_cloud(np.zeros((2, 3)))  # type: ignore[arg-type]
     with pytest.raises(TypeError, match="Point3D"):
         viewer.add_point((0.0, 0.0, 0.0))  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="non-zero"):

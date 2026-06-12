@@ -9,6 +9,7 @@ from dds import BeadProfile, DepositionMetadata, Domain, LineDeposit, PointDepos
 from dds.geometry import (
     GridSDF3,
     MeshSDF3,
+    PointCloud,
     TriangleMesh,
     box,
     capped_cone,
@@ -28,6 +29,7 @@ from dds.geometry import (
     occupancy_to_sdf_field,
     orient,
     read_mesh,
+    read_point_cloud,
     rotate,
     rotation_matrix,
     rounded_box,
@@ -39,6 +41,7 @@ from dds.geometry import (
     torus,
     union,
     write_mesh,
+    write_point_cloud,
 )
 
 
@@ -239,6 +242,82 @@ def test_mesh_io_roundtrip_preserves_vertex_and_face_counts(tmp_path: Path) -> N
 
     assert loaded.n_vertices == mesh.n_vertices
     assert loaded.n_faces == mesh.n_faces
+
+
+def test_point_cloud_trimesh_and_io_roundtrip_preserve_points_and_colors(
+    tmp_path: Path,
+) -> None:
+    cloud = PointCloud(
+        points=np.asarray(
+            [
+                (0.0, 0.0, 0.0),
+                (1.0, 2.0, 3.0),
+                (-1.0, 0.5, 2.0),
+            ]
+        ),
+        colors=np.asarray(
+            [
+                (255, 0, 0),
+                (0, 255, 0),
+                (0, 0, 255),
+            ],
+            dtype=np.uint8,
+        ),
+        metadata={"sensor": "test"},
+    )
+
+    trimesh_cloud = cloud.to_trimesh()
+    restored = PointCloud.from_trimesh(trimesh_cloud)
+    path = write_point_cloud(tmp_path / "cloud.ply", cloud)
+    loaded = read_point_cloud(path)
+
+    np.testing.assert_allclose(restored.points, cloud.points)
+    np.testing.assert_array_equal(restored.colors[:, :3], cloud.colors)
+    np.testing.assert_allclose(loaded.points, cloud.points)
+    np.testing.assert_array_equal(loaded.colors[:, :3], cloud.colors)
+    assert loaded.metadata["path"] == str(path)
+
+
+def test_mesh_reader_rejects_point_cloud_files(tmp_path: Path) -> None:
+    path = write_point_cloud(
+        tmp_path / "points.ply",
+        PointCloud(np.asarray([(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)])),
+    )
+
+    with pytest.raises(ValueError, match="does not contain a triangle mesh"):
+        read_mesh(path)
+
+
+def test_point_cloud_validates_and_owns_arrays() -> None:
+    points = np.asarray([(0.0, 0.0, 0.0), (1.0, 2.0, 3.0)])
+    colors = np.asarray([(255, 0, 0), (0, 255, 0)], dtype=np.uint8)
+    cloud = PointCloud(points, colors, metadata={"source": "test"})
+    points[0, 0] = 9.0
+    colors[0, 0] = 0
+
+    assert cloud.n_points == 2
+    assert cloud.has_colors
+    assert cloud.points[0, 0] == pytest.approx(0.0)
+    assert cloud.colors is not None
+    assert cloud.colors[0, 0] == 255
+    np.testing.assert_allclose(cloud.bounds, ((0.0, 0.0, 0.0), (1.0, 2.0, 3.0)))
+    with pytest.raises(ValueError):
+        cloud.points[0, 0] = 2.0
+    with pytest.raises(ValueError):
+        cloud.colors[0, 0] = 2
+    with pytest.raises(TypeError):
+        cloud.metadata["source"] = "changed"  # type: ignore[index]
+    with pytest.raises(ValueError, match="shape"):
+        PointCloud(np.zeros((2, 2)))
+    with pytest.raises(ValueError, match="shape"):
+        PointCloud(np.zeros((2, 3)), np.zeros((3, 3)))
+    with pytest.raises(ValueError, match="0 to 255"):
+        PointCloud(np.zeros((1, 3)), np.asarray([(256, 0, 0)]))
+
+    empty = PointCloud.empty()
+    assert empty.is_empty
+    with pytest.raises(ValueError, match="do not have bounds"):
+        _ = empty.bounds
 
 
 def test_mesh_to_sdf_field_inverts_trimesh_sign_convention() -> None:

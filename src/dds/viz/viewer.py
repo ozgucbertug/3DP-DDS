@@ -17,7 +17,7 @@ except ImportError as exc:
         'Install them with `pip install -e ".[viz]".'
     ) from exc
 
-from ..geometry import TriangleMesh
+from ..geometry import PointCloud, TriangleMesh
 from ..primitives import (
     Deposit,
     DepositionTarget,
@@ -32,6 +32,7 @@ from ..primitives import (
 )
 from .converters import (
     line_to_polydata,
+    point_cloud_to_polydata,
     points_to_polydata,
     polyline_to_polydata,
     triangle_mesh_to_polydata,
@@ -41,12 +42,14 @@ from .styles import (
     FrameStyle,
     LineStyle,
     MeshStyle,
+    PointCloudStyle,
     PointStyle,
     TargetStyle,
 )
 
 VisualKind = Literal[
     "mesh",
+    "point_cloud",
     "points",
     "line",
     "polyline",
@@ -57,6 +60,7 @@ VisualKind = Literal[
 ]
 VisualSource = (
     TriangleMesh
+    | PointCloud
     | tuple[Point3D, ...]
     | Line3D
     | Polyline3D
@@ -65,7 +69,15 @@ VisualSource = (
     | DepositionTarget
     | tuple[Deposit, ...]
 )
-VisualStyle = MeshStyle | PointStyle | LineStyle | FrameStyle | TargetStyle | DepositStyle
+VisualStyle = (
+    MeshStyle
+    | PointCloudStyle
+    | PointStyle
+    | LineStyle
+    | FrameStyle
+    | TargetStyle
+    | DepositStyle
+)
 
 
 @dataclass(slots=True)
@@ -248,6 +260,22 @@ class Viewer:
             raise TypeError("point must be a Point3D")
         return self.add_points((point,), style=style, name=name)
 
+    def add_point_cloud(
+        self,
+        cloud: PointCloud,
+        *,
+        style: PointCloudStyle | None = None,
+        name: str | None = None,
+    ) -> VisualHandle:
+        if not isinstance(cloud, PointCloud):
+            raise TypeError("cloud must be a PointCloud")
+        return self._add_record(
+            "point_cloud",
+            cloud,
+            style or PointCloudStyle(),
+            name=name,
+        )
+
     def add_points(
         self,
         points: Sequence[Point3D],
@@ -426,6 +454,7 @@ class Viewer:
     ) -> None:
         expected_styles: dict[VisualKind, type[VisualStyle]] = {
             "mesh": MeshStyle,
+            "point_cloud": PointCloudStyle,
             "points": PointStyle,
             "line": LineStyle,
             "polyline": LineStyle,
@@ -438,6 +467,7 @@ class Viewer:
             raise TypeError(f"{kind} visuals require {expected_styles[kind].__name__}")
         valid_source = {
             "mesh": isinstance(source, TriangleMesh),
+            "point_cloud": isinstance(source, PointCloud),
             "points": isinstance(source, tuple)
             and bool(source)
             and all(isinstance(value, Point3D) for value in source),
@@ -472,10 +502,11 @@ class Viewer:
         render_lines_as_tubes: bool = False,
         show_edges: bool = False,
         smooth_shading: bool = False,
+        scalars: str | None = None,
+        rgb: bool = False,
     ) -> Any:
         kwargs: dict[str, Any] = {
             "name": name,
-            "color": color,
             "opacity": opacity,
             "render": False,
             "reset_camera": False,
@@ -483,6 +514,11 @@ class Viewer:
             "show_edges": show_edges,
             "smooth_shading": smooth_shading,
         }
+        if color is not None:
+            kwargs["color"] = color
+        if scalars is not None:
+            kwargs["scalars"] = scalars
+            kwargs["rgb"] = rgb
         if line_width is not None:
             kwargs["line_width"] = line_width
             kwargs["render_lines_as_tubes"] = render_lines_as_tubes
@@ -577,6 +613,27 @@ class Viewer:
                     opacity=mesh_style.opacity,
                     show_edges=mesh_style.show_edges,
                     smooth_shading=mesh_style.smooth_shading,
+                )
+            ]
+        if kind == "point_cloud":
+            cloud = cast(PointCloud, source)
+            cloud_style = cast(PointCloudStyle, style)
+            dataset = point_cloud_to_polydata(cloud, pv)
+            if dataset.n_points == 0:
+                return []
+            use_embedded_colors = (
+                cloud_style.color is None and cloud.colors is not None
+            )
+            return [
+                self._add_dataset(
+                    dataset,
+                    name,
+                    color=None if use_embedded_colors else cloud_style.color or "#d64292",
+                    opacity=cloud_style.opacity,
+                    point_size=cloud_style.size,
+                    render_points_as_spheres=cloud_style.render_as_spheres,
+                    scalars="point_colors" if use_embedded_colors else None,
+                    rgb=use_embedded_colors,
                 )
             ]
         if kind == "points":

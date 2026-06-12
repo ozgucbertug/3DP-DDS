@@ -32,7 +32,7 @@ results, derived analysis, persistence, and optional integrations.
 - `simulator.py`: mutable deposit collection and dense incremental caches.
 - `results.py`: immutable result snapshots and `simulate`.
 - `analysis/`: typed derived queries and result models.
-- `geometry/`: supported analytic SDF, CAD, mesh, and metric APIs.
+- `geometry/`: supported analytic SDF, CAD, mesh, point-cloud, and metric APIs.
 - `targets.py` and `formats/`: external path/format adapters.
 - `io.py`: array bundles and typed checkpoint round trips.
 - `viz/`: optional retained-mode geometry viewer, styles, and PyVista

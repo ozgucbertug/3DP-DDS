@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import warnings
-from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -12,14 +11,8 @@ import numpy.typing as npt
 
 from ..domain import Domain
 from .mesh import TriangleMesh, _load_trimesh, _validate_field_shape
+from .point_cloud import PointCloud
 from .sdf import SDF3, GridSDF3
-
-
-def _load_meshio() -> Any:
-    try:
-        return import_module("meshio")
-    except ImportError as exc:
-        raise ImportError('meshio is required for mesh file IO. Install it with `pip install -e ".[mesh]"`.') from exc
 
 
 def _load_scipy_ndimage() -> Any:
@@ -43,27 +36,53 @@ def _ensure_watertight(mesh: Any, *, require_watertight: bool, context: str) -> 
 
 
 def read_mesh(path: str | Path) -> TriangleMesh:
-    """Read a triangle mesh from disk using meshio."""
+    """Read a triangle mesh from disk using trimesh."""
 
-    meshio = _load_meshio()
+    trimesh = _load_trimesh()
     source = Path(path)
-    raw = meshio.read(source)
-    vertices = np.asarray(raw.points[:, :3], dtype=float)
-    triangle_blocks = [np.asarray(block.data, dtype=np.int64) for block in raw.cells if block.type == "triangle"]
-    if not triangle_blocks:
-        raise ValueError(f"Mesh file {source} does not contain triangle cells.")
-    faces = np.concatenate(triangle_blocks, axis=0)
-    return TriangleMesh(vertices=vertices, faces=faces, metadata={"path": str(source)})
+    loaded = trimesh.load(source, process=False)
+    if isinstance(loaded, trimesh.Scene):
+        geometries = loaded.dump()
+        if not geometries or not all(
+            isinstance(geometry, trimesh.Trimesh) for geometry in geometries
+        ):
+            raise ValueError(f"File {source} does not contain only triangle meshes.")
+        loaded = loaded.to_mesh()
+    if not isinstance(loaded, trimesh.Trimesh) or len(loaded.faces) == 0:
+        raise ValueError(f"File {source} does not contain a triangle mesh.")
+    return TriangleMesh.from_trimesh(loaded, metadata={"path": str(source)})
 
 
 def write_mesh(path: str | Path, mesh: TriangleMesh) -> Path:
-    """Write a triangle mesh to disk using meshio."""
+    """Write a triangle mesh to disk using trimesh."""
 
-    meshio = _load_meshio()
+    if not isinstance(mesh, TriangleMesh):
+        raise TypeError("mesh must be a TriangleMesh")
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    raw = meshio.Mesh(points=mesh.vertices, cells=[("triangle", mesh.faces)])
-    raw.write(target)
+    mesh.to_trimesh().export(target)
+    return target
+
+
+def read_point_cloud(path: str | Path) -> PointCloud:
+    """Read a point cloud from disk using trimesh."""
+
+    trimesh = _load_trimesh()
+    source = Path(path)
+    loaded = trimesh.load(source)
+    if not isinstance(loaded, trimesh.points.PointCloud):
+        raise ValueError(f"File {source} does not contain a point cloud.")
+    return PointCloud.from_trimesh(loaded, metadata={"path": str(source)})
+
+
+def write_point_cloud(path: str | Path, cloud: PointCloud) -> Path:
+    """Write a point cloud to disk using trimesh."""
+
+    if not isinstance(cloud, PointCloud):
+        raise TypeError("cloud must be a PointCloud")
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    cloud.to_trimesh().export(target)
     return target
 
 

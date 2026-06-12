@@ -60,6 +60,20 @@ class PointStyle:
 
 
 @dataclass(frozen=True, slots=True)
+class PointCloudStyle:
+    color: Color | None = None
+    size: float = 3.0
+    render_as_spheres: bool = False
+    opacity: float = 1.0
+
+    def __post_init__(self) -> None:
+        if self.color is not None:
+            _validate_color(self.color, "color")
+        _positive(self.size, "size")
+        _opacity(self.opacity)
+
+
+@dataclass(frozen=True, slots=True)
 class LineStyle:
     color: Color = "#34495e"
     width: float = 3.0

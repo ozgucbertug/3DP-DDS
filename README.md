@@ -45,7 +45,7 @@ The core dependencies are NumPy, SciPy, and Tyro.
 | Extra | Adds | Install |
 | --- | --- | --- |
 | `formats` | YAML target loading through PyYAML | `python -m pip install -e ".[formats]"` |
-| `mesh` | Mesh extraction, I/O, containment, and signed-distance operations | `python -m pip install -e ".[mesh]"` |
+| `mesh` | Trimesh-backed mesh and point-cloud I/O, extraction, containment, and signed-distance operations | `python -m pip install -e ".[mesh]"` |
 | `viz` | PyVistaQt interactive workbench and mesh dependencies | `python -m pip install -e ".[viz]"` |
 | `all` | All `formats`, `mesh`, and `viz` capabilities | `python -m pip install -e ".[all]"` |
 
@@ -669,7 +669,7 @@ rebuilding unrelated visuals.
 
 ```python
 from dds import DepositionTarget, Line3D, Point3D, Pose3D
-from dds.geometry import read_mesh
+from dds.geometry import read_mesh, read_point_cloud
 from dds.viz import FrameStyle, LineStyle, MeshStyle, Viewer
 
 viewer = Viewer()
@@ -678,6 +678,7 @@ viewer.add_mesh(
     name="part",
     style=MeshStyle(color="#93aec7", opacity=0.7),
 )
+viewer.add_point_cloud(read_point_cloud("scan.ply"), name="scan")
 path = viewer.add_line(
     Line3D(Point3D(0.0, 0.0, 0.0), Point3D(20.0, 0.0, 0.0)),
     name="path",
@@ -690,9 +691,10 @@ path.set_visible(False)
 viewer.run()
 ```
 
-The viewer accepts the DDS types `TriangleMesh`, `Point3D`, `Line3D`,
-`Polyline3D`, `Vector3D`, `Pose3D`, `DepositionTarget`, and deposition
-events. A pose renders a complete RGB XYZ frame. A deposition target renders
+The viewer accepts the DDS types `TriangleMesh`, `PointCloud`, `Point3D`,
+`Line3D`, `Polyline3D`, `Vector3D`, `Pose3D`, `DepositionTarget`, and
+deposition events. Point clouds preserve per-point RGB or RGBA colors by
+default. A pose renders a complete RGB XYZ frame. A deposition target renders
 only its point and normal because it does not retain tool roll.
 
 Use `viewer.batch()` when adding or updating several visuals so the viewport

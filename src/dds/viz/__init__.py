@@ -14,6 +14,7 @@ from .styles import (
     FrameStyle,
     LineStyle,
     MeshStyle,
+    PointCloudStyle,
     PointStyle,
     TargetStyle,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "FrameStyle",
     "LineStyle",
     "MeshStyle",
+    "PointCloudStyle",
     "PointStyle",
     "TargetStyle",
     "ViewColorMode",

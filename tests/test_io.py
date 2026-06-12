@@ -71,7 +71,7 @@ def test_save_simulation_bundle_rejects_non_json_metadata(tmp_path: Path) -> Non
 
 
 def test_write_read_mesh_round_trip(tmp_path: Path) -> None:
-    pytest.importorskip("meshio")
+    pytest.importorskip("trimesh")
     pytest.importorskip("skimage")
 
     from dds import BeadProfile, PointDeposit, simulate

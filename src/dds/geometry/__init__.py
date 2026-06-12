@@ -24,7 +24,9 @@ from .adapters import (
     occupancy_to_sdf,
     occupancy_to_sdf_field,
     read_mesh,
+    read_point_cloud,
     write_mesh,
+    write_point_cloud,
 )
 from .mesh import (
     TriangleMesh,
@@ -34,6 +36,7 @@ from .mesh import (
     sdf_to_mesh,
 )
 from .ops import difference, dilate, erode, intersection, shell, union
+from .point_cloud import PointCloud
 from .sdf import SDF3, GridSDF3, as_sdf3
 from .shapes import (
     ORIGIN,
@@ -63,6 +66,7 @@ __all__ = [
     "GridSDF3",
     "MeshSDF3",
     "ORIGIN",
+    "PointCloud",
     "SDF3",
     "TriangleMesh",
     "X",
@@ -103,6 +107,7 @@ __all__ = [
     "overhang_angles",
     "plane",
     "read_mesh",
+    "read_point_cloud",
     "rotate",
     "rotation_matrix",
     "rounded_box",
@@ -119,4 +124,5 @@ __all__ = [
     "union",
     "vertex_normals",
     "write_mesh",
+    "write_point_cloud",
 ]
