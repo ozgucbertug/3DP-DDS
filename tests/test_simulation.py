@@ -207,6 +207,51 @@ def test_polyline_deposit_parallel_to_normal_segment_fills_centerline() -> None:
     np.testing.assert_allclose(field[2:7, 2, 6], 1.0, rtol=0.0, atol=0.0)
 
 
+def test_line_deposit_oblique_to_normal_fills_swept_interior() -> None:
+    domain = Domain.from_bounds(
+        xmin=-2.0,
+        xmax=3.0,
+        ymin=-2.0,
+        ymax=2.0,
+        zmin=-1.0,
+        zmax=6.0,
+        voxel_size=0.25,
+    )
+    axis = (0.0, 0.0, 1.0)
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 1.0), axis),
+        end=DepositionTarget((3.0, 0.0, 3.0), axis),
+        profile=BeadProfile(width=1.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    assert field[domain.world_to_index((0.375, -0.125, 1.125))] > 0.8
+
+
+def test_line_deposit_with_varying_axes_fills_swept_interior() -> None:
+    domain = Domain.from_bounds(
+        xmin=-2.0,
+        xmax=3.0,
+        ymin=-2.0,
+        ymax=2.0,
+        zmin=-1.0,
+        zmax=6.0,
+        voxel_size=0.25,
+    )
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 1.0), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((0.0, 0.0, 4.0), (0.4, 0.0, 0.916515)),
+        profile=BeadProfile(width=1.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    assert field[domain.world_to_index((-0.625, -0.125, 1.625))] == pytest.approx(
+        1.0
+    )
+
+
 def test_line_deposit_with_equal_endpoint_axes_skips_spherical_interpolation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -258,7 +303,7 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
     assert density[domain.world_to_index((0.875, 0.625, 3.125))] > 0.0
     assert float(density.max()) == pytest.approx(1.0)
     assert float(density.sum()) == pytest.approx(
-        163.88229860627575,
+        208.54884274108406,
         rel=0.0,
         abs=1e-12,
     )

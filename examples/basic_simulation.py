@@ -33,6 +33,8 @@ def build_example_domain() -> Domain:
 def build_example_deposits() -> list[PointDeposit | LineDeposit | PolylineDeposit]:
     profile = BeadProfile(width=1.2, height=0.6)
     vertical_normal = (0.0, 0.0, 1.0)
+    tilted_x_normal = (0.4, 0.0, 0.916515)
+    tilted_y_normal = (-0.25, 0.35, 0.902)
     return [
         PointDeposit(
             target=DepositionTarget((2.25, 2.25, 0.55), vertical_normal),
@@ -48,12 +50,25 @@ def build_example_deposits() -> list[PointDeposit | LineDeposit | PolylineDeposi
             end=DepositionTarget((14.25, 2.25, 0.55), vertical_normal),
             profile=profile,
         ),
+        LineDeposit(
+            start=DepositionTarget((6.25, 5.25, 0.75), vertical_normal),
+            end=DepositionTarget((14.25, 5.25, 2.75), tilted_x_normal),
+            profile=profile,
+        ),
         PolylineDeposit(
             targets=(
                 DepositionTarget((2.25, 8.25, 0.55), vertical_normal),
                 DepositionTarget((2.25, 8.25, 4.55), vertical_normal),
                 DepositionTarget((10.25, 8.25, 4.55), vertical_normal),
                 DepositionTarget((10.25, 12.25, 4.55), vertical_normal),
+            ),
+            profile=profile,
+        ),
+        PolylineDeposit(
+            targets=(
+                DepositionTarget((13.25, 9.25, 0.75), vertical_normal),
+                DepositionTarget((13.25, 9.25, 4.75), tilted_x_normal),
+                DepositionTarget((17.25, 13.25, 4.25), tilted_y_normal),
             ),
             profile=profile,
         ),

@@ -21,6 +21,8 @@ from .primitives import (
 from .utils import closest_point_parameters, slerp_unit_vectors
 
 TileShape = tuple[int, int, int]
+_LINE_SWEEP_SEARCH_SAMPLES = 9
+_LINE_SWEEP_SEARCH_ITERATIONS = 24
 
 
 @dataclass(frozen=True, slots=True)
@@ -106,6 +108,118 @@ def rounded_cylinder_signed_distance(
     )
 
 
+def _line_sweep_signed_distance_at_parameters(
+    points: npt.NDArray[np.float64],
+    *,
+    start: npt.NDArray[np.float64],
+    end: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+    parameters: npt.NDArray[np.float64],
+    profile: _ResolvedBeadProfile,
+) -> npt.NDArray[np.float64]:
+    targets = start + parameters[:, np.newaxis] * (end - start)
+    axes = (
+        start_axis
+        if np.allclose(start_axis, end_axis, rtol=0.0, atol=1e-12)
+        else slerp_unit_vectors(start_axis, end_axis, parameters)
+    )
+    return rounded_cylinder_signed_distance(
+        points,
+        target=targets,
+        axis=axes,
+        profile=profile,
+    )
+
+
+def _line_sweep_needs_parameter_search(
+    start: npt.NDArray[np.float64],
+    end: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+) -> bool:
+    if not np.allclose(start_axis, end_axis, rtol=0.0, atol=1e-12):
+        return True
+
+    segment = end - start
+    length = float(np.linalg.norm(segment))
+    if length <= 1e-12:
+        return False
+    tangent = segment / length
+    return abs(float(np.dot(tangent, start_axis))) > 1e-12
+
+
+def _minimized_line_sweep_signed_distance(
+    points: npt.NDArray[np.float64],
+    *,
+    start: npt.NDArray[np.float64],
+    end: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+    profile: _ResolvedBeadProfile,
+) -> npt.NDArray[np.float64]:
+    sample_parameters = np.linspace(0.0, 1.0, _LINE_SWEEP_SEARCH_SAMPLES)
+    best_distance = np.full(points.shape[0], np.inf, dtype=float)
+    best_index = np.zeros(points.shape[0], dtype=np.intp)
+    for index, parameter in enumerate(sample_parameters):
+        parameters = np.full(points.shape[0], parameter, dtype=float)
+        distance = _line_sweep_signed_distance_at_parameters(
+            points,
+            start=start,
+            end=end,
+            start_axis=start_axis,
+            end_axis=end_axis,
+            parameters=parameters,
+            profile=profile,
+        )
+        is_better = distance < best_distance
+        best_distance[is_better] = distance[is_better]
+        best_index[is_better] = index
+
+    step = 1.0 / (_LINE_SWEEP_SEARCH_SAMPLES - 1)
+    centers = sample_parameters[best_index]
+    lower = np.clip(centers - step, 0.0, 1.0)
+    upper = np.clip(centers + step, 0.0, 1.0)
+    golden = (np.sqrt(5.0) - 1.0) / 2.0
+
+    for _ in range(_LINE_SWEEP_SEARCH_ITERATIONS):
+        left = upper - golden * (upper - lower)
+        right = lower + golden * (upper - lower)
+        left_distance = _line_sweep_signed_distance_at_parameters(
+            points,
+            start=start,
+            end=end,
+            start_axis=start_axis,
+            end_axis=end_axis,
+            parameters=left,
+            profile=profile,
+        )
+        right_distance = _line_sweep_signed_distance_at_parameters(
+            points,
+            start=start,
+            end=end,
+            start_axis=start_axis,
+            end_axis=end_axis,
+            parameters=right,
+            profile=profile,
+        )
+        choose_left = left_distance < right_distance
+        upper = np.where(choose_left, right, upper)
+        lower = np.where(choose_left, lower, left)
+
+    refined_parameters = (lower + upper) / 2.0
+    refined_distance = _line_sweep_signed_distance_at_parameters(
+        points,
+        start=start,
+        end=end,
+        start_axis=start_axis,
+        end_axis=end_axis,
+        parameters=refined_parameters,
+        profile=profile,
+    )
+    return np.minimum(best_distance, refined_distance)
+
+
 def validate_tile_shape(tile_shape: Sequence[int]) -> TileShape:
     if len(tile_shape) != 3:
         raise ValueError("tile_shape must contain exactly three integers.")
@@ -188,26 +302,27 @@ def _sample_line_on_bounds(
     flat_points = points.reshape(-1, 3)
     start_axis = deposit.start.normal.to_array()
     end_axis = deposit.end.normal.to_array()
-    # Constant-normal sweeps must be parameterized by the bead centerline;
-    # the top-reference line collapses to the surface when it is normal-parallel.
-    if np.allclose(start_axis, end_axis, rtol=0.0, atol=1e-12):
-        start_center = start - start_axis * profile.half_height
-        end_center = end - end_axis * profile.half_height
-        parameters = closest_point_parameters(flat_points, start_center, end_center)
+    if _line_sweep_needs_parameter_search(start, end, start_axis, end_axis):
+        signed_distance = _minimized_line_sweep_signed_distance(
+            flat_points,
+            start=start,
+            end=end,
+            start_axis=start_axis,
+            end_axis=end_axis,
+            profile=profile,
+        )
     else:
         parameters = closest_point_parameters(flat_points, start, end)
-    closest_targets = start + parameters[:, np.newaxis] * (end - start)
-    axes = (
-        start_axis
-        if np.array_equal(start_axis, end_axis)
-        else slerp_unit_vectors(start_axis, end_axis, parameters)
-    )
-    signed_distance = rounded_cylinder_signed_distance(
-        flat_points,
-        target=closest_targets,
-        axis=axes,
-        profile=profile,
-    ).reshape(points.shape[:-1])
+        signed_distance = _line_sweep_signed_distance_at_parameters(
+            flat_points,
+            start=start,
+            end=end,
+            start_axis=start_axis,
+            end_axis=end_axis,
+            parameters=parameters,
+            profile=profile,
+        )
+    signed_distance = signed_distance.reshape(points.shape[:-1])
     values = _implicit_values_from_signed_distance(signed_distance, profile.transition_width)
     return _SampledKernel(
         slices=(
