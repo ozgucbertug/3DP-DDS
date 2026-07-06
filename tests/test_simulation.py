@@ -39,6 +39,54 @@ def make_profile(width: float = 1.2, height: float = 1.2) -> BeadProfile:
     return BeadProfile(width=width, height=height)
 
 
+def brute_force_line_sweep_field(
+    domain: Domain,
+    deposit: LineDeposit,
+    *,
+    samples: int = 801,
+) -> np.ndarray:
+    from dds.kernels import (
+        _implicit_values_from_signed_distance,
+        _line_sweep_signed_distance_at_parameters,
+        _resolve_bead_profile,
+    )
+
+    profile = _resolve_bead_profile(deposit.profile, domain)
+    xs, ys, zs = domain.grid_centers()
+    points = np.stack((xs, ys, zs), axis=-1).reshape(-1, 3)
+    start = deposit.start.position.to_array()
+    end = deposit.end.position.to_array()
+    start_axis = deposit.start.normal.to_array()
+    end_axis = deposit.end.normal.to_array()
+    best_distance = np.full(points.shape[0], np.inf, dtype=float)
+    for parameter in np.linspace(0.0, 1.0, samples):
+        parameters = np.full(points.shape[0], parameter, dtype=float)
+        distance = _line_sweep_signed_distance_at_parameters(
+            points,
+            start=start,
+            end=end,
+            start_axis=start_axis,
+            end_axis=end_axis,
+            parameters=parameters,
+            profile=profile,
+        )
+        best_distance = np.minimum(best_distance, distance)
+    return _implicit_values_from_signed_distance(
+        best_distance,
+        profile.transition_width,
+    ).reshape(domain.grid_shape)
+
+
+def assert_no_threshold_underfill(
+    field: np.ndarray,
+    reference: np.ndarray,
+    *,
+    threshold: float = 0.5,
+) -> None:
+    underfilled = (reference >= threshold) & (field < threshold)
+    assert not np.any(underfilled)
+
+
 def test_geometry_primitives_have_distinct_roles() -> None:
     point = Point3D(1.0, 2.0, 3.0)
     pose = Pose3D(point, Rotation.from_euler("z", 90.0, degrees=True))
@@ -189,6 +237,51 @@ def test_line_deposit_parallel_to_normal_fills_centerline() -> None:
     assert field[2, 2, 7] == pytest.approx(0.5)
 
 
+def test_line_deposit_parallel_to_normal_matches_long_rounded_cylinder() -> None:
+    from dds.kernels import (
+        _implicit_values_from_signed_distance,
+        _resolve_bead_profile,
+        top_referenced_rounded_cylinder_signed_distance,
+    )
+
+    domain = Domain.from_bounds(
+        xmin=-1.5,
+        xmax=1.5,
+        ymin=-1.5,
+        ymax=1.5,
+        zmin=-1.0,
+        zmax=4.0,
+        voxel_size=0.5,
+    )
+    axis = (0.0, 0.0, 1.0)
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 1.0), axis),
+        end=DepositionTarget((0.0, 0.0, 3.0), axis),
+        profile=make_profile(width=1.0, height=1.0),
+    )
+    profile = _resolve_bead_profile(deposit.profile, domain)
+    xs, ys, zs = domain.grid_centers()
+    points = np.stack((xs, ys, zs), axis=-1)
+
+    field = simulate(domain, [deposit]).implicit_field
+    signed_distance = top_referenced_rounded_cylinder_signed_distance(
+        points.reshape(-1, 3),
+        target=deposit.end.position.to_array(),
+        axis=deposit.end.normal.to_array(),
+        height=profile.height
+        + np.linalg.norm(
+            deposit.end.position.to_array() - deposit.start.position.to_array()
+        ),
+        profile=profile,
+    ).reshape(domain.grid_shape)
+    expected = _implicit_values_from_signed_distance(
+        signed_distance,
+        profile.transition_width,
+    )
+
+    np.testing.assert_allclose(field, expected, rtol=0.0, atol=0.0)
+
+
 def test_polyline_deposit_parallel_to_normal_segment_fills_centerline() -> None:
     domain = make_domain()
     axis = (0.0, 0.0, 1.0)
@@ -205,6 +298,28 @@ def test_polyline_deposit_parallel_to_normal_segment_fills_centerline() -> None:
 
     np.testing.assert_allclose(field[2, 2, 1:7], 1.0, rtol=0.0, atol=0.0)
     np.testing.assert_allclose(field[2:7, 2, 6], 1.0, rtol=0.0, atol=0.0)
+
+
+def test_polyline_deposit_with_one_varying_normal_segment_matches_line() -> None:
+    domain = Domain.from_bounds(
+        xmin=-2.0,
+        xmax=3.0,
+        ymin=-2.0,
+        ymax=2.0,
+        zmin=-1.0,
+        zmax=6.0,
+        voxel_size=0.25,
+    )
+    profile = BeadProfile(width=1.0, height=2.0)
+    start = DepositionTarget((0.0, 0.0, 1.0), (0.0, 0.0, 1.0))
+    end = DepositionTarget((0.0, 0.0, 4.0), (0.4, 0.0, 0.916515))
+    line = LineDeposit(start=start, end=end, profile=profile)
+    polyline = PolylineDeposit(targets=(start, end), profile=profile)
+
+    line_field = simulate(domain, [line]).implicit_field
+    polyline_field = simulate(domain, [polyline]).implicit_field
+
+    np.testing.assert_allclose(polyline_field, line_field, rtol=0.0, atol=0.0)
 
 
 def test_line_deposit_oblique_to_normal_fills_swept_interior() -> None:
@@ -225,8 +340,10 @@ def test_line_deposit_oblique_to_normal_fills_swept_interior() -> None:
     )
 
     field = simulate(domain, [deposit]).implicit_field
+    reference = brute_force_line_sweep_field(domain, deposit)
 
     assert field[domain.world_to_index((0.375, -0.125, 1.125))] > 0.8
+    assert_no_threshold_underfill(field, reference)
 
 
 def test_line_deposit_with_varying_axes_fills_swept_interior() -> None:
@@ -246,10 +363,12 @@ def test_line_deposit_with_varying_axes_fills_swept_interior() -> None:
     )
 
     field = simulate(domain, [deposit]).implicit_field
+    reference = brute_force_line_sweep_field(domain, deposit)
 
     assert field[domain.world_to_index((-0.625, -0.125, 1.625))] == pytest.approx(
         1.0
     )
+    assert_no_threshold_underfill(field, reference)
 
 
 def test_line_deposit_with_equal_endpoint_axes_skips_spherical_interpolation(
@@ -276,6 +395,245 @@ def test_line_deposit_with_equal_endpoint_axes_skips_spherical_interpolation(
     )
 
 
+def test_line_and_polyline_deposits_expose_sweep_resolution_control() -> None:
+    profile = make_profile()
+    line = LineDeposit(
+        start=(0.0, 0.0, 0.0),
+        end=(1.0, 0.0, 1.0),
+        profile=profile,
+        sweep_resolution=0.25,
+    )
+    polyline = PolylineDeposit(
+        targets=(
+            (0.0, 0.0, 0.0),
+            (1.0, 0.0, 1.0),
+            (2.0, 0.0, 1.0),
+        ),
+        profile=profile,
+        sweep_resolution=0.5,
+    )
+
+    assert LineDeposit(
+        start=(0.0, 0.0, 0.0),
+        end=(1.0, 0.0, 1.0),
+        profile=profile,
+    ).sweep_resolution is None
+    assert line.sweep_resolution == pytest.approx(0.25)
+    assert polyline.sweep_resolution == pytest.approx(0.5)
+    assert [
+        segment.sweep_resolution for segment in polyline.segments()
+    ] == pytest.approx([0.5, 0.5])
+
+
+@pytest.mark.parametrize("sweep_resolution", [0, -1, 0.0])
+def test_deposit_sweep_resolution_rejects_non_positive_values(
+    sweep_resolution: float,
+) -> None:
+    with pytest.raises(ValueError, match="sweep_resolution"):
+        LineDeposit(
+            start=(0.0, 0.0, 0.0),
+            end=(1.0, 0.0, 1.0),
+            profile=make_profile(),
+            sweep_resolution=sweep_resolution,
+        )
+
+
+@pytest.mark.parametrize("sweep_resolution", [float("nan"), float("inf")])
+def test_deposit_sweep_resolution_rejects_non_finite_values(
+    sweep_resolution: float,
+) -> None:
+    with pytest.raises(ValueError, match="sweep_resolution"):
+        LineDeposit(
+            start=(0.0, 0.0, 0.0),
+            end=(1.0, 0.0, 1.0),
+            profile=make_profile(),
+            sweep_resolution=sweep_resolution,
+        )
+
+
+@pytest.mark.parametrize("sweep_resolution", [True, "auto", "manual"])
+def test_deposit_sweep_resolution_rejects_invalid_values(
+    sweep_resolution: object,
+) -> None:
+    with pytest.raises(TypeError, match="sweep_resolution"):
+        PolylineDeposit(
+            targets=((0.0, 0.0, 0.0), (1.0, 0.0, 1.0)),
+            profile=make_profile(),
+            sweep_resolution=sweep_resolution,  # type: ignore[arg-type]
+        )
+
+
+def test_line_deposit_explicit_sweep_resolution_overrides_auto_count(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.kernels
+
+    observed_counts: list[int] = []
+    original_subdivide = dds.kernels._subdivide_line_deposit
+
+    def tracked_subdivide(deposit: LineDeposit, count: int) -> tuple[LineDeposit, ...]:
+        observed_counts.append(count)
+        return original_subdivide(deposit, count)
+
+    def unexpected_auto_count(*args: object, **kwargs: object) -> int:
+        raise AssertionError("explicit resolution should bypass auto counting")
+
+    monkeypatch.setattr(dds.kernels, "_subdivide_line_deposit", tracked_subdivide)
+    monkeypatch.setattr(
+        dds.kernels,
+        "_line_sweep_subdivision_count",
+        unexpected_auto_count,
+    )
+    domain = Domain.from_bounds(
+        xmin=-1.0,
+        xmax=4.0,
+        ymin=-1.0,
+        ymax=1.0,
+        zmin=-1.0,
+        zmax=4.0,
+        voxel_size=0.5,
+    )
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 1.0), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((3.0, 0.0, 3.0), (0.0, 0.0, 1.0)),
+        profile=BeadProfile(width=1.0, height=2.0),
+        sweep_resolution=1.0,
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    assert observed_counts == [4]
+    assert float(field.max()) > 0.0
+
+
+def test_line_deposit_auto_sweep_count_increases_with_finer_voxels() -> None:
+    import dds.kernels
+
+    profile = BeadProfile(width=4.0, height=4.0)
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((3.0, 0.0, 2.0), (0.0, 0.0, 1.0)),
+        profile=profile,
+    )
+    coarse_domain = Domain.from_bounds(
+        xmin=-1.0,
+        xmax=4.0,
+        ymin=-1.0,
+        ymax=1.0,
+        zmin=-1.0,
+        zmax=3.0,
+        voxel_size=1.0,
+    )
+    fine_domain = Domain.from_bounds(
+        xmin=-1.0,
+        xmax=4.0,
+        ymin=-1.0,
+        ymax=1.0,
+        zmin=-1.0,
+        zmax=3.0,
+        voxel_size=0.25,
+    )
+
+    coarse_count = dds.kernels._line_sweep_subdivision_count(
+        coarse_domain,
+        deposit.start.position.to_array(),
+        deposit.end.position.to_array(),
+        deposit.start.normal.to_array(),
+        deposit.end.normal.to_array(),
+        dds.kernels._resolve_bead_profile(profile, coarse_domain),
+    )
+    fine_count = dds.kernels._line_sweep_subdivision_count(
+        fine_domain,
+        deposit.start.position.to_array(),
+        deposit.end.position.to_array(),
+        deposit.start.normal.to_array(),
+        deposit.end.normal.to_array(),
+        dds.kernels._resolve_bead_profile(profile, fine_domain),
+    )
+
+    assert fine_count > coarse_count
+
+
+def test_line_deposit_auto_sweep_count_increases_with_smaller_beads() -> None:
+    import dds.kernels
+
+    domain = Domain.from_bounds(
+        xmin=-1.0,
+        xmax=4.0,
+        ymin=-1.0,
+        ymax=1.0,
+        zmin=-1.0,
+        zmax=3.0,
+        voxel_size=1.0,
+    )
+    large_profile = BeadProfile(width=4.0, height=4.0)
+    small_profile = BeadProfile(width=0.4, height=4.0)
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 0.0), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((3.0, 0.0, 2.0), (0.0, 0.0, 1.0)),
+        profile=large_profile,
+    )
+
+    large_count = dds.kernels._line_sweep_subdivision_count(
+        domain,
+        deposit.start.position.to_array(),
+        deposit.end.position.to_array(),
+        deposit.start.normal.to_array(),
+        deposit.end.normal.to_array(),
+        dds.kernels._resolve_bead_profile(large_profile, domain),
+    )
+    small_count = dds.kernels._line_sweep_subdivision_count(
+        domain,
+        deposit.start.position.to_array(),
+        deposit.end.position.to_array(),
+        deposit.start.normal.to_array(),
+        deposit.end.normal.to_array(),
+        dds.kernels._resolve_bead_profile(small_profile, domain),
+    )
+
+    assert small_count > large_count
+
+
+def test_line_deposit_falls_back_to_minimization_for_pathological_subdivision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import dds.kernels
+
+    calls = 0
+    original = dds.kernels._minimized_line_sweep_signed_distance
+
+    def tracked_minimization(*args: object, **kwargs: object) -> np.ndarray:
+        nonlocal calls
+        calls += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(dds.kernels, "_LINE_SWEEP_MAX_SUBSEGMENTS", 1)
+    monkeypatch.setattr(
+        dds.kernels,
+        "_minimized_line_sweep_signed_distance",
+        tracked_minimization,
+    )
+    domain = Domain.from_bounds(
+        xmin=-1.0,
+        xmax=4.0,
+        ymin=-1.0,
+        ymax=1.0,
+        zmin=-1.0,
+        zmax=4.0,
+        voxel_size=0.5,
+    )
+    deposit = LineDeposit(
+        start=DepositionTarget((0.0, 0.0, 1.0), (0.0, 0.0, 1.0)),
+        end=DepositionTarget((3.0, 0.0, 3.0), (0.0, 0.0, 1.0)),
+        profile=BeadProfile(width=1.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    assert calls > 0
+    assert float(field.max()) > 0.0
+
+
 def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> None:
     domain = Domain.from_bounds(
         xmin=-3.0,
@@ -299,14 +657,11 @@ def test_line_deposit_with_varying_axes_is_not_clipped_by_endpoint_bounds() -> N
     )
 
     density = Simulator(domain, [deposit]).result().implicit_field
+    reference = brute_force_line_sweep_field(domain, deposit)
 
     assert density[domain.world_to_index((0.875, 0.625, 3.125))] > 0.0
     assert float(density.max()) == pytest.approx(1.0)
-    assert float(density.sum()) == pytest.approx(
-        208.54884274108406,
-        rel=0.0,
-        abs=1e-12,
-    )
+    assert_no_threshold_underfill(density, reference)
 
 
 def test_line_deposit_remains_continuous_across_kernel_tile_boundaries() -> None:

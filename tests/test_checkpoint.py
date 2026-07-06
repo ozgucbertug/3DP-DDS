@@ -62,6 +62,7 @@ def test_line_deposit_serialization_round_trip() -> None:
         start=DepositionTarget((1.0, 2.0, 3.0), (0.0, 0.0, 1.0)),
         end=DepositionTarget((4.0, 5.0, 6.0), (0.0, 1.0, 1.0)),
         profile=BeadProfile(width=2.0, height=1.0),
+        sweep_resolution=0.25,
     )
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert isinstance(restored, LineDeposit)
@@ -70,6 +71,7 @@ def test_line_deposit_serialization_round_trip() -> None:
     assert restored.end.normal.to_tuple() == pytest.approx(
         original.end.normal.to_tuple()
     )
+    assert restored.sweep_resolution == pytest.approx(0.25)
 
 
 def test_polyline_deposit_serialization_round_trip() -> None:
@@ -80,6 +82,7 @@ def test_polyline_deposit_serialization_round_trip() -> None:
             DepositionTarget((1.0, 1.0, 1.0)),
         ),
         profile=BeadProfile(width=1.0, height=0.5),
+        sweep_resolution=0.5,
     )
 
     restored = _deposit_from_dict(_deposit_to_dict(original))
@@ -89,6 +92,7 @@ def test_polyline_deposit_serialization_round_trip() -> None:
     assert restored.targets[1].normal.to_tuple() == pytest.approx(
         original.targets[1].normal.to_tuple()
     )
+    assert restored.sweep_resolution == pytest.approx(0.5)
 
 
 def test_line_deposit_default_poses_round_trip() -> None:
@@ -100,6 +104,35 @@ def test_line_deposit_default_poses_round_trip() -> None:
     restored = _deposit_from_dict(_deposit_to_dict(original))
     assert restored.start == original.start
     assert restored.end == original.end
+    assert restored.sweep_resolution is None
+
+
+def test_line_deposit_missing_sweep_resolution_loads_as_auto() -> None:
+    original = LineDeposit(
+        start=(0.0, 0.0, 0.0),
+        end=(1.0, 0.0, 0.0),
+        profile=BeadProfile(width=1.0, height=0.5),
+    )
+    payload = _deposit_to_dict(original)
+    payload.pop("sweep_resolution")
+
+    restored = _deposit_from_dict(payload)
+
+    assert restored.sweep_resolution is None
+
+
+def test_line_deposit_legacy_auto_sweep_resolution_loads_as_auto() -> None:
+    original = LineDeposit(
+        start=(0.0, 0.0, 0.0),
+        end=(1.0, 0.0, 0.0),
+        profile=BeadProfile(width=1.0, height=0.5),
+    )
+    payload = _deposit_to_dict(original)
+    payload["sweep_resolution"] = "auto"
+
+    restored = _deposit_from_dict(payload)
+
+    assert restored.sweep_resolution is None
 
 
 def test_deposit_to_dict_raises_for_unknown_type() -> None:

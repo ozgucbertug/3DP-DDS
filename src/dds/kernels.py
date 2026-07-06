@@ -13,6 +13,7 @@ import numpy.typing as npt
 from .attributes import BeadProfile
 from .domain import Domain
 from .primitives import (
+    DepositionTarget,
     LineDeposit,
     PointDeposit,
     PolylineDeposit,
@@ -23,6 +24,8 @@ from .utils import closest_point_parameters, slerp_unit_vectors
 TileShape = tuple[int, int, int]
 _LINE_SWEEP_SEARCH_SAMPLES = 9
 _LINE_SWEEP_SEARCH_ITERATIONS = 24
+_LINE_SWEEP_MAX_SUBSEGMENTS = 128
+_LINE_SWEEP_GEOMETRY_TOLERANCE = 1e-12
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,7 +43,6 @@ class _ResolvedBeadProfile:
     width: float
     height: float
     radius: float
-    half_height: float
     rounding_radius: float
     transition_width: float
     support_padding: float
@@ -62,7 +64,6 @@ def _resolve_bead_profile(
         width=float(width),
         height=float(height),
         radius=float(width / 2.0),
-        half_height=float(height / 2.0),
         rounding_radius=float(rounding_radius),
         transition_width=float(transition_width),
         support_padding=float(transition_width / 2.0),
@@ -89,14 +90,34 @@ def rounded_cylinder_signed_distance(
 ) -> npt.NDArray[np.float64]:
     """Evaluate the signed distance to a top-referenced rounded cylinder."""
 
-    center = target - axis * profile.half_height
+    return top_referenced_rounded_cylinder_signed_distance(
+        points,
+        target=target,
+        axis=axis,
+        height=profile.height,
+        profile=profile,
+    )
+
+
+def top_referenced_rounded_cylinder_signed_distance(
+    points: npt.NDArray[np.float64],
+    *,
+    target: npt.NDArray[np.float64],
+    axis: npt.NDArray[np.float64],
+    height: float,
+    profile: _ResolvedBeadProfile,
+) -> npt.NDArray[np.float64]:
+    """Evaluate a top-referenced rounded cylinder with an explicit axial height."""
+
+    half_height = height / 2.0
+    center = target - axis * half_height
     relative = points - center
     axial = np.sum(relative * axis, axis=-1)
     radial_vectors = relative - axial[..., np.newaxis] * axis
     radial = np.sqrt(np.sum(radial_vectors * radial_vectors, axis=-1))
     radial_bound = radial - profile.radius + profile.rounding_radius
     axial_bound = (
-        np.abs(axial) - profile.half_height + profile.rounding_radius
+        np.abs(axial) - half_height + profile.rounding_radius
     )
     return (
         np.minimum(np.maximum(radial_bound, axial_bound), 0.0)
@@ -106,6 +127,54 @@ def rounded_cylinder_signed_distance(
         )
         - profile.rounding_radius
     )
+
+
+def _same_axis(
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+) -> bool:
+    return bool(
+        np.allclose(
+            start_axis,
+            end_axis,
+            rtol=0.0,
+            atol=_LINE_SWEEP_GEOMETRY_TOLERANCE,
+        )
+    )
+
+
+def _is_constant_normal_perpendicular_sweep(
+    start: npt.NDArray[np.float64],
+    end: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+) -> bool:
+    if not _same_axis(start_axis, end_axis):
+        return False
+    segment = end - start
+    length = float(np.linalg.norm(segment))
+    if length <= _LINE_SWEEP_GEOMETRY_TOLERANCE:
+        return False
+    tolerance = _LINE_SWEEP_GEOMETRY_TOLERANCE * max(1.0, length)
+    return abs(float(np.dot(segment, start_axis))) <= tolerance
+
+
+def _is_constant_normal_parallel_sweep(
+    start: npt.NDArray[np.float64],
+    end: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+) -> bool:
+    if not _same_axis(start_axis, end_axis):
+        return False
+    segment = end - start
+    length = float(np.linalg.norm(segment))
+    if length <= _LINE_SWEEP_GEOMETRY_TOLERANCE:
+        return False
+    axial = float(np.dot(segment, start_axis))
+    perpendicular = segment - axial * start_axis
+    tolerance = _LINE_SWEEP_GEOMETRY_TOLERANCE * max(1.0, length)
+    return float(np.linalg.norm(perpendicular)) <= tolerance
 
 
 def _line_sweep_signed_distance_at_parameters(
@@ -132,21 +201,124 @@ def _line_sweep_signed_distance_at_parameters(
     )
 
 
-def _line_sweep_needs_parameter_search(
+def _bead_support_radius(profile: _ResolvedBeadProfile) -> float:
+    return float(np.sqrt(profile.radius**2 + profile.height**2))
+
+
+def _auto_sweep_resolution(
+    domain: Domain,
+    profile: _ResolvedBeadProfile,
+) -> float:
+    return min(
+        0.5 * min(domain.voxel_size),
+        0.25 * profile.rounding_radius,
+    )
+
+
+def _line_sweep_normal_angle(
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+) -> float:
+    dot = float(np.clip(np.dot(start_axis, end_axis), -1.0, 1.0))
+    return float(np.arccos(dot))
+
+
+def _line_sweep_normal_displacement(
+    segment: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+) -> float:
+    return max(
+        abs(float(np.dot(segment, start_axis))),
+        abs(float(np.dot(segment, end_axis))),
+    )
+
+
+def _auto_normal_angle_step(
+    domain: Domain,
+    profile: _ResolvedBeadProfile,
+) -> float:
+    auto_resolution = _auto_sweep_resolution(domain, profile)
+    support_radius = _bead_support_radius(profile)
+    ratio = min(1.0, auto_resolution / (2.0 * support_radius))
+    return float(2.0 * np.arcsin(ratio))
+
+
+def _line_sweep_subdivision_count(
+    domain: Domain,
     start: npt.NDArray[np.float64],
     end: npt.NDArray[np.float64],
     start_axis: npt.NDArray[np.float64],
     end_axis: npt.NDArray[np.float64],
-) -> bool:
-    if not np.allclose(start_axis, end_axis, rtol=0.0, atol=1e-12):
-        return True
-
+    profile: _ResolvedBeadProfile,
+) -> int:
     segment = end - start
-    length = float(np.linalg.norm(segment))
-    if length <= 1e-12:
-        return False
-    tangent = segment / length
-    return abs(float(np.dot(tangent, start_axis))) > 1e-12
+    angle = _line_sweep_normal_angle(start_axis, end_axis)
+    normal_steps = int(np.ceil(angle / _auto_normal_angle_step(domain, profile)))
+
+    normal_displacement = _line_sweep_normal_displacement(
+        segment,
+        start_axis,
+        end_axis,
+    )
+    displacement_steps = int(
+        np.ceil(normal_displacement / _auto_sweep_resolution(domain, profile))
+    )
+
+    return max(1, normal_steps, displacement_steps)
+
+
+def _line_sweep_distance_padding(
+    start: npt.NDArray[np.float64],
+    end: npt.NDArray[np.float64],
+    start_axis: npt.NDArray[np.float64],
+    end_axis: npt.NDArray[np.float64],
+    profile: _ResolvedBeadProfile,
+    count: int,
+) -> float:
+    if count <= 0:
+        raise ValueError("count must be positive")
+    segment = end - start
+    normal_displacement = _line_sweep_normal_displacement(
+        segment,
+        start_axis,
+        end_axis,
+    )
+    normal_angle = _line_sweep_normal_angle(start_axis, end_axis)
+    support_radius = _bead_support_radius(profile)
+    return float(
+        normal_displacement / count
+        + 2.0 * support_radius * np.sin((normal_angle / count) / 2.0)
+    )
+
+
+def _subdivide_line_deposit(
+    deposit: LineDeposit,
+    count: int,
+) -> tuple[LineDeposit, ...]:
+    if count <= 0:
+        raise ValueError("count must be positive")
+
+    start = deposit.start.position.to_array()
+    end = deposit.end.position.to_array()
+    start_axis = deposit.start.normal.to_array()
+    end_axis = deposit.end.normal.to_array()
+    parameters = np.linspace(0.0, 1.0, count + 1)
+    positions = start + parameters[:, np.newaxis] * (end - start)
+    axes = (
+        np.broadcast_to(start_axis, positions.shape)
+        if _same_axis(start_axis, end_axis)
+        else slerp_unit_vectors(start_axis, end_axis, parameters)
+    )
+    return tuple(
+        LineDeposit(
+            start=DepositionTarget(positions[index], axes[index]),
+            end=DepositionTarget(positions[index + 1], axes[index + 1]),
+            profile=deposit.profile,
+            sweep_resolution=deposit.sweep_resolution,
+        )
+        for index in range(count)
+    )
 
 
 def _minimized_line_sweep_signed_distance(
@@ -295,6 +467,9 @@ def _sample_line_on_bounds(
     deposit: LineDeposit,
     profile: _ResolvedBeadProfile,
     index_bounds: tuple[tuple[int, int], tuple[int, int], tuple[int, int]],
+    *,
+    force_minimized: bool = False,
+    distance_padding: float = 0.0,
 ) -> _SampledKernel:
     start = deposit.start.position.to_array()
     end = deposit.end.position.to_array()
@@ -302,13 +477,24 @@ def _sample_line_on_bounds(
     flat_points = points.reshape(-1, 3)
     start_axis = deposit.start.normal.to_array()
     end_axis = deposit.end.normal.to_array()
-    if _line_sweep_needs_parameter_search(start, end, start_axis, end_axis):
+    if force_minimized:
         signed_distance = _minimized_line_sweep_signed_distance(
             flat_points,
             start=start,
             end=end,
             start_axis=start_axis,
             end_axis=end_axis,
+            profile=profile,
+        )
+    elif _is_constant_normal_parallel_sweep(start, end, start_axis, end_axis):
+        segment = end - start
+        axial = float(np.dot(segment, start_axis))
+        target = end if axial >= 0.0 else start
+        signed_distance = top_referenced_rounded_cylinder_signed_distance(
+            flat_points,
+            target=target,
+            axis=start_axis,
+            height=profile.height + abs(axial),
             profile=profile,
         )
     else:
@@ -322,6 +508,8 @@ def _sample_line_on_bounds(
             parameters=parameters,
             profile=profile,
         )
+    if distance_padding:
+        signed_distance = signed_distance - distance_padding
     signed_distance = signed_distance.reshape(points.shape[:-1])
     values = _implicit_values_from_signed_distance(signed_distance, profile.transition_width)
     return _SampledKernel(
@@ -379,6 +567,84 @@ def _iter_line_kernels(
         return
 
     profile = _resolve_bead_profile(deposit.profile, domain)
+    start = deposit.start.position.to_array()
+    end = deposit.end.position.to_array()
+    start_axis = deposit.start.normal.to_array()
+    end_axis = deposit.end.normal.to_array()
+    direct_sweep = (
+        _is_constant_normal_perpendicular_sweep(start, end, start_axis, end_axis)
+        or _is_constant_normal_parallel_sweep(start, end, start_axis, end_axis)
+    )
+    if not direct_sweep:
+        if deposit.sweep_resolution is None:
+            subsegment_count = _line_sweep_subdivision_count(
+                domain,
+                start,
+                end,
+                start_axis,
+                end_axis,
+                profile,
+            )
+            use_minimized_fallback = subsegment_count > _LINE_SWEEP_MAX_SUBSEGMENTS
+        else:
+            segment_length = float(np.linalg.norm(end - start))
+            subsegment_count = max(
+                1,
+                int(np.ceil(segment_length / deposit.sweep_resolution)),
+            )
+            use_minimized_fallback = False
+        if not use_minimized_fallback:
+            # The per-subsegment projection can overestimate distance by the
+            # allowed normal-direction drift, so bias inward to avoid underfill.
+            yield from _iter_merged_line_kernels(
+                domain,
+                _subdivide_line_deposit(deposit, subsegment_count),
+                tile_shape,
+                subdivide_segments=False,
+                distance_padding=_line_sweep_distance_padding(
+                    start,
+                    end,
+                    start_axis,
+                    end_axis,
+                    profile,
+                    subsegment_count,
+                ),
+            )
+            return
+        yield from _iter_single_line_kernels(
+            domain,
+            deposit,
+            tile_shape,
+            force_minimized=True,
+        )
+        return
+
+    yield from _iter_single_line_kernels(domain, deposit, tile_shape)
+
+
+def _iter_single_line_kernels(
+    domain: Domain,
+    deposit: LineDeposit,
+    tile_shape: TileShape,
+    *,
+    force_minimized: bool = False,
+    distance_padding: float = 0.0,
+) -> Iterator[_SampledKernel]:
+    if np.allclose(
+        deposit.start.position.to_array(),
+        deposit.end.position.to_array(),
+    ):
+        yield from _iter_point_kernels(
+            domain,
+            PointDeposit(
+                target=deposit.start,
+                profile=deposit.profile,
+            ),
+            tile_shape,
+        )
+        return
+
+    profile = _resolve_bead_profile(deposit.profile, domain)
     support_min, support_max = deposit.support_bounds(
         padding=profile.support_padding,
     )
@@ -386,20 +652,46 @@ def _iter_line_kernels(
     if index_bounds is None:
         return
     for tile_bounds in _iter_index_tiles(index_bounds, tile_shape, domain.grid_shape):
-        sampled = _sample_line_on_bounds(domain, deposit, profile, tile_bounds)
+        sampled = _sample_line_on_bounds(
+            domain,
+            deposit,
+            profile,
+            tile_bounds,
+            force_minimized=force_minimized,
+            distance_padding=distance_padding,
+        )
         if np.any(sampled.values > 0.0):
             yield sampled
 
 
-def _iter_polyline_kernels(
+def _iter_merged_line_kernels(
     domain: Domain,
-    deposit: PolylineDeposit,
+    segments: Sequence[LineDeposit],
     tile_shape: TileShape,
+    *,
+    subdivide_segments: bool = True,
+    distance_padding: float = 0.0,
 ) -> Iterator[_SampledKernel]:
     serial = count()
-    heap: list[tuple[tuple[tuple[int, int], ...], int, _SampledKernel, Iterator[_SampledKernel]]] = []
-    for segment in deposit.segments():
-        iterator = _iter_line_kernels(domain, segment, tile_shape)
+    heap: list[
+        tuple[
+            tuple[tuple[int, int], ...],
+            int,
+            _SampledKernel,
+            Iterator[_SampledKernel],
+        ]
+    ] = []
+    for segment in segments:
+        iterator = (
+            _iter_line_kernels(domain, segment, tile_shape)
+            if subdivide_segments
+            else _iter_single_line_kernels(
+                domain,
+                segment,
+                tile_shape,
+                distance_padding=distance_padding,
+            )
+        )
         sampled = next(iterator, None)
         if sampled is not None:
             bounds = tuple((int(s.start), int(s.stop)) for s in sampled.slices)
@@ -410,7 +702,9 @@ def _iter_polyline_kernels(
         merged = sampled.values.copy()
         next_sample = next(iterator, None)
         if next_sample is not None:
-            next_bounds = tuple((int(s.start), int(s.stop)) for s in next_sample.slices)
+            next_bounds = tuple(
+                (int(s.start), int(s.stop)) for s in next_sample.slices
+            )
             heapq.heappush(heap, (next_bounds, next(serial), next_sample, iterator))
 
         while heap and heap[0][0] == bounds:
@@ -418,7 +712,10 @@ def _iter_polyline_kernels(
             np.maximum(merged, overlapping.values, out=merged)
             next_overlapping = next(overlapping_iterator, None)
             if next_overlapping is not None:
-                next_bounds = tuple((int(s.start), int(s.stop)) for s in next_overlapping.slices)
+                next_bounds = tuple(
+                    (int(s.start), int(s.stop))
+                    for s in next_overlapping.slices
+                )
                 heapq.heappush(
                     heap,
                     (next_bounds, next(serial), next_overlapping, overlapping_iterator),
@@ -432,6 +729,14 @@ def _iter_polyline_kernels(
             ),
             values=merged,
         )
+
+
+def _iter_polyline_kernels(
+    domain: Domain,
+    deposit: PolylineDeposit,
+    tile_shape: TileShape,
+) -> Iterator[_SampledKernel]:
+    yield from _iter_merged_line_kernels(domain, deposit.segments(), tile_shape)
 
 
 def iter_deposit_kernels(

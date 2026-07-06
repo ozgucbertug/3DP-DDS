@@ -54,6 +54,7 @@ def build_example_deposits() -> list[PointDeposit | LineDeposit | PolylineDeposi
             start=DepositionTarget((6.25, 5.25, 0.75), vertical_normal),
             end=DepositionTarget((14.25, 5.25, 2.75), tilted_x_normal),
             profile=profile,
+            sweep_resolution=0.1,
         ),
         PolylineDeposit(
             targets=(
@@ -71,6 +72,7 @@ def build_example_deposits() -> list[PointDeposit | LineDeposit | PolylineDeposi
                 DepositionTarget((17.25, 13.25, 4.25), tilted_y_normal),
             ),
             profile=profile,
+            sweep_resolution=0.1,
         ),
     ]
 

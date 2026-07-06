@@ -98,14 +98,21 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
             "start": deposit.start.to_dict(),
             "end": deposit.end.to_dict(),
             "profile": deposit.profile.to_dict(),
+            "sweep_resolution": deposit.sweep_resolution,
         }
     if isinstance(deposit, PolylineDeposit):
         return {
             "type": "PolylineDeposit",
             "targets": [target.to_dict() for target in deposit.targets],
             "profile": deposit.profile.to_dict(),
+            "sweep_resolution": deposit.sweep_resolution,
         }
     raise TypeError(f"Cannot serialise deposit of type {type(deposit).__name__!r}.")
+
+
+def _sweep_resolution_from_dict(d: dict[str, Any]) -> object:
+    value = d.get("sweep_resolution")
+    return None if value == "auto" else value
 
 
 def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
@@ -139,6 +146,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
                 normal=tuple(d["end"]["normal"]),
             ),
             profile=profile,
+            sweep_resolution=_sweep_resolution_from_dict(d),
         )
     if deposit_type == "PolylineDeposit":
         return PolylineDeposit(
@@ -150,6 +158,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
                 for target in d["targets"]
             ),
             profile=profile,
+            sweep_resolution=_sweep_resolution_from_dict(d),
         )
     raise AssertionError("unreachable")
 

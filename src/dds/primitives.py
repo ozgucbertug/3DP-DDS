@@ -17,6 +17,7 @@ Coordinate3D: TypeAlias = Sequence[float]
 PointLike: TypeAlias = "Point3D | Coordinate3D"
 VectorLike: TypeAlias = "Vector3D | Coordinate3D"
 TargetLike: TypeAlias = "DepositionTarget | Pose3D | Point3D | Coordinate3D"
+SweepResolution: TypeAlias = "float | None"
 
 DEFAULT_AXIS = (0.0, 0.0, 1.0)
 
@@ -359,6 +360,26 @@ def _validate_deposit_profile(profile: BeadProfile) -> None:
         raise TypeError("profile must be a BeadProfile")
 
 
+def _validate_sweep_resolution(
+    sweep_resolution: object,
+) -> float | None:
+    if sweep_resolution is None:
+        return None
+    if isinstance(sweep_resolution, bool):
+        raise TypeError("sweep_resolution must be None or a positive number")
+    try:
+        resolved = float(sweep_resolution)
+    except (TypeError, ValueError) as exc:
+        raise TypeError(
+            "sweep_resolution must be None or a positive number"
+        ) from exc
+    if not np.isfinite(resolved):
+        raise ValueError("sweep_resolution must be finite")
+    if resolved <= 0.0:
+        raise ValueError("sweep_resolution must be positive")
+    return resolved
+
+
 @dataclass(frozen=True, slots=True, init=False)
 class PointDeposit:
     """A bead deposited at one target."""
@@ -395,16 +416,19 @@ class LineDeposit:
     start: DepositionTarget
     end: DepositionTarget
     profile: BeadProfile
+    sweep_resolution: float | None
 
     def __init__(
         self,
         start: TargetLike,
         end: TargetLike,
         profile: BeadProfile,
+        sweep_resolution: SweepResolution = None,
     ) -> None:
         resolved_start = DepositionTarget.from_value(start)
         resolved_end = DepositionTarget.from_value(end)
         _validate_deposit_profile(profile)
+        resolved_sweep_resolution = _validate_sweep_resolution(sweep_resolution)
         if (
             float(
                 np.dot(
@@ -418,6 +442,11 @@ class LineDeposit:
         object.__setattr__(self, "start", resolved_start)
         object.__setattr__(self, "end", resolved_end)
         object.__setattr__(self, "profile", profile)
+        object.__setattr__(
+            self,
+            "sweep_resolution",
+            resolved_sweep_resolution,
+        )
 
     @property
     def line(self) -> Line3D:
@@ -445,15 +474,18 @@ class PolylineDeposit:
 
     targets: tuple[DepositionTarget, ...]
     profile: BeadProfile
+    sweep_resolution: float | None
 
     def __init__(
         self,
         targets: Iterable[TargetLike],
         profile: BeadProfile,
+        sweep_resolution: SweepResolution = None,
     ) -> None:
         resolved_targets = tuple(
             DepositionTarget.from_value(target) for target in targets
         )
+        resolved_sweep_resolution = _validate_sweep_resolution(sweep_resolution)
         if len(resolved_targets) < 2:
             raise ValueError("polyline deposit requires at least two targets")
         for start, end in zip(
@@ -471,6 +503,11 @@ class PolylineDeposit:
         _validate_deposit_profile(profile)
         object.__setattr__(self, "targets", resolved_targets)
         object.__setattr__(self, "profile", profile)
+        object.__setattr__(
+            self,
+            "sweep_resolution",
+            resolved_sweep_resolution,
+        )
 
     @property
     def polyline(self) -> Polyline3D:
@@ -482,6 +519,7 @@ class PolylineDeposit:
                 start=start,
                 end=end,
                 profile=self.profile,
+                sweep_resolution=self.sweep_resolution,
             )
             for start, end in zip(
                 self.targets[:-1],
