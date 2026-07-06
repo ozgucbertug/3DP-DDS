@@ -174,6 +174,39 @@ def test_line_deposit_with_equal_endpoint_axes_has_stable_field_values() -> None
     assert field[0, 0, 0] == pytest.approx(0.0)
 
 
+def test_line_deposit_parallel_to_normal_fills_centerline() -> None:
+    domain = make_domain()
+    axis = (0.0, 0.0, 1.0)
+    deposit = LineDeposit(
+        start=DepositionTarget((2.5, 2.5, 2.5), axis),
+        end=DepositionTarget((2.5, 2.5, 7.5), axis),
+        profile=make_profile(width=2.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    np.testing.assert_allclose(field[2, 2, 1:7], 1.0, rtol=0.0, atol=0.0)
+    assert field[2, 2, 7] == pytest.approx(0.5)
+
+
+def test_polyline_deposit_parallel_to_normal_segment_fills_centerline() -> None:
+    domain = make_domain()
+    axis = (0.0, 0.0, 1.0)
+    deposit = PolylineDeposit(
+        targets=(
+            DepositionTarget((2.5, 2.5, 2.5), axis),
+            DepositionTarget((2.5, 2.5, 7.5), axis),
+            DepositionTarget((6.5, 2.5, 7.5), axis),
+        ),
+        profile=make_profile(width=2.0, height=2.0),
+    )
+
+    field = simulate(domain, [deposit]).implicit_field
+
+    np.testing.assert_allclose(field[2, 2, 1:7], 1.0, rtol=0.0, atol=0.0)
+    np.testing.assert_allclose(field[2:7, 2, 6], 1.0, rtol=0.0, atol=0.0)
+
+
 def test_line_deposit_with_equal_endpoint_axes_skips_spherical_interpolation(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -186,10 +186,17 @@ def _sample_line_on_bounds(
     end = deposit.end.position.to_array()
     points = _grid_points_on_bounds(domain, index_bounds)
     flat_points = points.reshape(-1, 3)
-    parameters = closest_point_parameters(flat_points, start, end)
-    closest_targets = start + parameters[:, np.newaxis] * (end - start)
     start_axis = deposit.start.normal.to_array()
     end_axis = deposit.end.normal.to_array()
+    # Constant-normal sweeps must be parameterized by the bead centerline;
+    # the top-reference line collapses to the surface when it is normal-parallel.
+    if np.allclose(start_axis, end_axis, rtol=0.0, atol=1e-12):
+        start_center = start - start_axis * profile.half_height
+        end_center = end - end_axis * profile.half_height
+        parameters = closest_point_parameters(flat_points, start_center, end_center)
+    else:
+        parameters = closest_point_parameters(flat_points, start, end)
+    closest_targets = start + parameters[:, np.newaxis] * (end - start)
     axes = (
         start_axis
         if np.array_equal(start_axis, end_axis)

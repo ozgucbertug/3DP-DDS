@@ -7,9 +7,11 @@ from typing import Literal
 import dds.viz
 from dds import (
     BeadProfile,
+    DepositionTarget,
     Domain,
     LineDeposit,
     PointDeposit,
+    PolylineDeposit,
     Simulator,
 )
 from dds.analysis import occupancy_fraction
@@ -28,21 +30,31 @@ def build_example_domain() -> Domain:
     )
 
 
-def build_example_deposits() -> list[PointDeposit | LineDeposit]:
+def build_example_deposits() -> list[PointDeposit | LineDeposit | PolylineDeposit]:
     profile = BeadProfile(width=1.2, height=0.6)
+    vertical_normal = (0.0, 0.0, 1.0)
     return [
         PointDeposit(
-            target=(2.25, 2.25, 0.55),
+            target=DepositionTarget((2.25, 2.25, 0.55), vertical_normal),
             profile=profile,
         ),
         LineDeposit(
-            start=(2.25, 2.25, 0.55),
-            end=(10.25, 2.25, 0.55),
+            start=DepositionTarget((4.25, 2.25, 0.55), vertical_normal),
+            end=DepositionTarget((4.25, 2.25, 5.55), vertical_normal),
             profile=profile,
         ),
         LineDeposit(
-            start=(10.25, 2.25, 0.55),
-            end=(10.25, 8.25, 0.55),
+            start=DepositionTarget((6.25, 2.25, 0.55), vertical_normal),
+            end=DepositionTarget((14.25, 2.25, 0.55), vertical_normal),
+            profile=profile,
+        ),
+        PolylineDeposit(
+            targets=(
+                DepositionTarget((2.25, 8.25, 0.55), vertical_normal),
+                DepositionTarget((2.25, 8.25, 4.55), vertical_normal),
+                DepositionTarget((10.25, 8.25, 4.55), vertical_normal),
+                DepositionTarget((10.25, 12.25, 4.55), vertical_normal),
+            ),
             profile=profile,
         ),
     ]
