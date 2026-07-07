@@ -14,7 +14,21 @@ from ..utils import readonly_array
 
 @dataclass(slots=True, frozen=True)
 class StratumFieldSet:
-    """Implicit and occupancy fields partitioned by deposit order."""
+    """Implicit and occupancy fields partitioned by deposit order.
+
+    Parameters
+    ----------
+    domain
+        Domain shared by all stored fields.
+    threshold
+        Occupancy threshold used to construct the strata.
+    stratum_ids
+        One-based deposition-order identifiers included in this result.
+    implicit_fields, occupancy_fields
+        Per-stratum fields with shape ``domain.grid_shape``.
+    label_field
+        Dense field containing the stratum identifier at each occupied voxel.
+    """
 
     domain: Domain
     threshold: float
@@ -48,21 +62,35 @@ class StratumFieldSet:
             raise ValueError("label_field must match the domain grid shape.")
 
     def stratum_index(self, stratum_id: int) -> int:
+        """Return the tuple index for a one-based stratum identifier."""
+
         try:
             return self.stratum_ids.index(int(stratum_id))
         except ValueError as exc:
             raise KeyError(f"Unknown stratum_id {stratum_id!r}.") from exc
 
     def implicit_field(self, stratum_id: int) -> npt.NDArray[np.float64]:
+        """Return the implicit field for one stratum identifier."""
+
         return self.implicit_fields[self.stratum_index(stratum_id)]
 
     def occupancy(self, stratum_id: int) -> npt.NDArray[np.bool_]:
+        """Return the occupancy field for one stratum identifier."""
+
         return self.occupancy_fields[self.stratum_index(stratum_id)]
 
 
 @dataclass(slots=True, frozen=True)
 class InterfacePairSummary:
-    """Summary metrics for one adjacent ordered-deposit pair."""
+    """Summary metrics for one adjacent ordered-deposit pair.
+
+    Notes
+    -----
+    ``previous_id`` and ``next_id`` are adjacent one-based stratum identifiers.
+    ``contact_face_count`` counts touching voxel faces, while ``contact_area``
+    reports their world-space area. Overlap metrics are measured relative to the
+    next stratum in the pair.
+    """
 
     previous_id: int
     next_id: int
@@ -74,7 +102,7 @@ class InterfacePairSummary:
 
 @dataclass(slots=True, frozen=True)
 class InterfaceAnalysis:
-    """Typed interface/contact analysis result."""
+    """Interface, contact, and overlap result for ordered strata."""
 
     stratum_ids: tuple[int, ...]
     contact_mask: npt.NDArray[np.bool_]
@@ -99,7 +127,15 @@ class InterfaceAnalysis:
 
 @dataclass(slots=True, frozen=True)
 class SupportAnalysis:
-    """Typed support and overhang analysis result."""
+    """Support and overhang analysis result for one build direction.
+
+    Notes
+    -----
+    ``mesh`` is the surface mesh used for face-level angle analysis,
+    ``build_direction`` is a unit vector, and ``overhang_angles`` are reported in
+    degrees. ``support_shadow_field`` marks unsupported regions on the dense
+    world grid. ``max_unsupported_span`` is measured along the build axis.
+    """
 
     mesh: TriangleMesh
     build_direction: tuple[float, float, float]

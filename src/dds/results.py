@@ -19,7 +19,22 @@ from .utils import ensure_finite_scalar, readonly_array
 
 @dataclass(slots=True, frozen=True)
 class SimulationResult:
-    """Immutable implicit geometry and optional coverage diagnostic."""
+    """Immutable simulation fields and deposit metadata.
+
+    Parameters
+    ----------
+    domain
+        Domain used to sample the deposits.
+    deposits
+        Deposits represented by this result, in simulation order.
+    implicit_field
+        Nonnegative union-like geometry field with shape ``domain.grid_shape``.
+    coverage
+        Optional additive overlap diagnostic. It is not physical density or
+        material volume fraction.
+    default_threshold
+        Threshold used by analysis methods when no threshold is supplied.
+    """
 
     domain: Domain
     deposits: tuple[Deposit, ...]
@@ -76,7 +91,7 @@ class SimulationResult:
 
     @property
     def analysis(self) -> SimulationAnalysis:
-        """Return cached derived queries for this result snapshot."""
+        """Cached derived queries for this immutable result snapshot."""
 
         if self._analysis_cache is None:
             object.__setattr__(
@@ -99,7 +114,20 @@ class SimulationResult:
         *,
         metadata: dict[str, object] | None = None,
     ) -> dict[str, Path]:
-        """Write occupancy, deposition index, implicit field, and metadata."""
+        """Write array bundle files for this result.
+
+        Parameters
+        ----------
+        directory
+            Output directory created or reused by the writer.
+        metadata
+            Optional JSON-serializable metadata to include in the bundle.
+
+        Returns
+        -------
+        dict[str, pathlib.Path]
+            Paths written by logical payload name.
+        """
 
         threshold = self.default_threshold
         written = save_simulation_bundle(
@@ -140,7 +168,25 @@ def simulate(
     include_coverage: bool = False,
     threshold: float = 0.5,
 ) -> SimulationResult:
-    """Run a simulation and return an immutable result."""
+    """Run a one-shot deposition simulation.
+
+    Parameters
+    ----------
+    domain
+        Simulation domain defining the sampled voxel grid.
+    deposits
+        One deposit or an iterable of deposits.
+    include_coverage
+        Include the additive coverage diagnostic in the result.
+    threshold
+        Default threshold stored for analysis queries.
+
+    Returns
+    -------
+    SimulationResult
+        Immutable result snapshot containing the implicit field and optional
+        coverage field.
+    """
 
     deposit_tuple = tuple(iter_deposits(deposits))
     fields = accumulate_fields(

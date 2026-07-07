@@ -39,7 +39,19 @@ def _coerce_xyz(value: object, *, name: str) -> tuple[float, float, float]:
 
 @dataclass(frozen=True, slots=True)
 class Point3D:
-    """A position in three-dimensional Cartesian space."""
+    """A finite position in three-dimensional Cartesian space.
+
+    Parameters
+    ----------
+    x, y, z
+        Cartesian coordinates in the same world unit recorded by the
+        simulation :class:`dds.Domain`.
+
+    Raises
+    ------
+    ValueError
+        If any coordinate is not finite.
+    """
 
     x: float
     y: float
@@ -55,20 +67,48 @@ class Point3D:
 
     @classmethod
     def from_value(cls, value: PointLike) -> Point3D:
+        """Coerce a point-like value into a ``Point3D``.
+
+        Parameters
+        ----------
+        value
+            Existing ``Point3D`` or any three-component numeric sequence.
+
+        Returns
+        -------
+        Point3D
+            The input point itself or a new immutable point instance.
+        """
+
         if isinstance(value, cls):
             return value
         return cls(*_coerce_xyz(value, name="point"))
 
     def to_tuple(self) -> tuple[float, float, float]:
+        """Return the point as an ``(x, y, z)`` tuple."""
+
         return self.x, self.y, self.z
 
     def to_array(self) -> np.ndarray:
+        """Return the point as a NumPy ``float64`` array."""
+
         return np.asarray(self.to_tuple(), dtype=np.float64)
 
 
 @dataclass(frozen=True, slots=True)
 class Vector3D:
-    """A direction or displacement in three-dimensional Cartesian space."""
+    """A finite direction or displacement in three-dimensional space.
+
+    Parameters
+    ----------
+    x, y, z
+        Vector components in Cartesian order.
+
+    Raises
+    ------
+    ValueError
+        If any component is not finite.
+    """
 
     x: float
     y: float
@@ -84,30 +124,61 @@ class Vector3D:
 
     @classmethod
     def from_value(cls, value: VectorLike) -> Vector3D:
+        """Coerce a vector-like value into a ``Vector3D``."""
+
         if isinstance(value, cls):
             return value
         return cls(*_coerce_xyz(value, name="vector"))
 
     @property
     def length(self) -> float:
+        """Euclidean vector length."""
+
         return float(np.linalg.norm(self.to_array()))
 
     def normalized(self) -> Vector3D:
+        """Return a unit-length vector in the same direction.
+
+        Raises
+        ------
+        ValueError
+            If the vector has zero length.
+        """
+
         length = self.length
         if length == 0.0:
             raise ValueError("vector must be non-zero")
         return Vector3D(self.x / length, self.y / length, self.z / length)
 
     def to_tuple(self) -> tuple[float, float, float]:
+        """Return the vector as an ``(x, y, z)`` tuple."""
+
         return self.x, self.y, self.z
 
     def to_array(self) -> np.ndarray:
+        """Return the vector as a NumPy ``float64`` array."""
+
         return np.asarray(self.to_tuple(), dtype=np.float64)
 
 
 @dataclass(frozen=True, slots=True, init=False, eq=False)
 class Pose3D:
-    """An active local-to-parent rigid transform."""
+    """An active local-to-parent rigid transform.
+
+    Parameters
+    ----------
+    position
+        Translation component of the transform.
+    orientation
+        SciPy ``Rotation`` containing exactly one rotation. If omitted, the
+        identity rotation is used.
+
+    Notes
+    -----
+    ``Pose3D`` is active: it transforms local coordinates into the parent
+    frame. Use :meth:`DepositionTarget.from_pose` to convert a tool pose into
+    the top-referenced target consumed by deposition kernels.
+    """
 
     position: Point3D
     orientation: Rotation
@@ -138,6 +209,8 @@ class Pose3D:
         )
 
     def transform_point(self, point: PointLike) -> Point3D:
+        """Transform a local point into the parent frame."""
+
         transformed = (
             self.orientation.apply(Point3D.from_value(point).to_array())
             + self.position.to_array()
@@ -145,16 +218,31 @@ class Pose3D:
         return Point3D.from_value(transformed.tolist())
 
     def transform_vector(self, vector: VectorLike) -> Vector3D:
+        """Transform a local vector by orientation only."""
+
         transformed = self.orientation.apply(Vector3D.from_value(vector).to_array())
         return Vector3D.from_value(transformed)
 
     def inverse(self) -> Pose3D:
+        """Return the inverse parent-to-local transform."""
+
         orientation = self.orientation.inv()
         position = -orientation.apply(self.position.to_array())
         return Pose3D(position=position.tolist(), orientation=orientation)
 
     def compose(self, local_pose: Pose3D) -> Pose3D:
-        """Apply ``local_pose`` and then this pose."""
+        """Compose this transform with a local transform.
+
+        Parameters
+        ----------
+        local_pose
+            Transform applied first in this pose's local frame.
+
+        Returns
+        -------
+        Pose3D
+            Transform equivalent to applying ``local_pose`` and then this pose.
+        """
 
         if not isinstance(local_pose, Pose3D):
             raise TypeError("local_pose must be a Pose3D")
@@ -164,6 +252,8 @@ class Pose3D:
         )
 
     def as_matrix(self) -> np.ndarray:
+        """Return the homogeneous 4x4 transform matrix."""
+
         matrix = np.eye(4, dtype=np.float64)
         matrix[:3, :3] = self.orientation.as_matrix()
         matrix[:3, 3] = self.position.to_array()
@@ -171,6 +261,15 @@ class Pose3D:
 
     @classmethod
     def from_matrix(cls, matrix: object) -> Pose3D:
+        """Create a pose from a homogeneous 4x4 transform matrix.
+
+        Raises
+        ------
+        ValueError
+            If the matrix is not finite, not homogeneous, or does not contain
+            a proper orthonormal rotation.
+        """
+
         values = np.asarray(matrix, dtype=np.float64)
         if values.shape != (4, 4):
             raise ValueError("pose matrix must have shape (4, 4)")
@@ -197,6 +296,8 @@ class Pose3D:
         position_atol: float = 1e-9,
         angle_atol: float = 1e-9,
     ) -> bool:
+        """Return whether another pose is close under position and angle tolerances."""
+
         if not isinstance(other, Pose3D):
             return False
         if position_atol < 0.0 or angle_atol < 0.0:
@@ -211,6 +312,8 @@ class Pose3D:
         return bool(position_close and relative_angle <= angle_atol)
 
     def to_dict(self) -> dict[str, list[float]]:
+        """Return an export-friendly dictionary with scalar-last quaternion."""
+
         return {
             "position": list(self.position.to_tuple()),
             "orientation_xyzw": self.orientation.as_quat(canonical=True).tolist(),
@@ -219,7 +322,21 @@ class Pose3D:
 
 @dataclass(frozen=True, slots=True, init=False)
 class DepositionTarget:
-    """A top-referenced position and deposition normal."""
+    """A top-referenced position and deposition normal.
+
+    Parameters
+    ----------
+    position
+        World-space top position of the deposited bead, usually the nozzle
+        target.
+    normal
+        Deposition normal. The vector is normalized during construction.
+
+    Notes
+    -----
+    Targets are top-referenced, not center-referenced: bead geometry extends
+    opposite the normal by ``BeadProfile.height``.
+    """
 
     position: Point3D
     normal: Vector3D
@@ -243,6 +360,23 @@ class DepositionTarget:
         *,
         local_axis: VectorLike = DEFAULT_AXIS,
     ) -> DepositionTarget:
+        """Convert a tool pose into a deposition target.
+
+        Parameters
+        ----------
+        pose
+            Tool pose whose position becomes the target position.
+        local_axis
+            Tool-local deposition axis transformed into the world normal. The
+            default is local ``+Z``.
+
+        Notes
+        -----
+        Roll about ``local_axis`` is discarded after conversion because the
+        current bead model is rotationally symmetric about the deposition
+        normal.
+        """
+
         if not isinstance(pose, Pose3D):
             raise TypeError("pose must be a Pose3D")
         axis = Vector3D.from_value(local_axis).normalized()
@@ -253,6 +387,8 @@ class DepositionTarget:
 
     @classmethod
     def from_value(cls, value: TargetLike) -> DepositionTarget:
+        """Coerce a target-like value into a ``DepositionTarget``."""
+
         if isinstance(value, DepositionTarget):
             return value
         if isinstance(value, Pose3D):
@@ -260,6 +396,8 @@ class DepositionTarget:
         return cls(position=Point3D.from_value(value))
 
     def to_dict(self) -> dict[str, list[float]]:
+        """Return an export-friendly dictionary representation."""
+
         return {
             "position": list(self.position.to_tuple()),
             "normal": list(self.normal.to_tuple()),
@@ -268,7 +406,7 @@ class DepositionTarget:
 
 @dataclass(frozen=True, slots=True)
 class Line3D:
-    """A finite line defined by start and end points."""
+    """A finite line segment defined by start and end points."""
 
     start: PointLike
     end: PointLike
@@ -279,18 +417,24 @@ class Line3D:
 
     @property
     def direction(self) -> Vector3D:
+        """Vector from ``start`` to ``end``."""
+
         start = cast(Point3D, self.start)
         end = cast(Point3D, self.end)
         return Vector3D.from_value((end.to_array() - start.to_array()).tolist())
 
     @property
     def length(self) -> float:
+        """Euclidean segment length."""
+
         start = cast(Point3D, self.start)
         end = cast(Point3D, self.end)
         return float(np.linalg.norm(end.to_array() - start.to_array()))
 
     @property
     def bounds(self) -> tuple[Point3D, Point3D]:
+        """Axis-aligned lower and upper bounds of the segment endpoints."""
+
         start = cast(Point3D, self.start).to_array()
         end = cast(Point3D, self.end).to_array()
         return Point3D.from_value(np.minimum(start, end).tolist()), Point3D.from_value(
@@ -300,7 +444,7 @@ class Line3D:
 
 @dataclass(frozen=True, slots=True)
 class Polyline3D:
-    """A connected sequence of points."""
+    """A connected sequence of at least two points."""
 
     points: tuple[PointLike, ...]
 
@@ -312,6 +456,8 @@ class Polyline3D:
 
     @property
     def segments(self) -> tuple[Line3D, ...]:
+        """Consecutive line segments making up the polyline."""
+
         return tuple(
             Line3D(start, end)
             for start, end in zip(self.points[:-1], self.points[1:], strict=True)
@@ -319,10 +465,14 @@ class Polyline3D:
 
     @property
     def length(self) -> float:
+        """Total Euclidean length of all polyline segments."""
+
         return sum(segment.length for segment in self.segments)
 
     @property
     def bounds(self) -> tuple[Point3D, Point3D]:
+        """Axis-aligned lower and upper bounds of all polyline points."""
+
         coordinates = np.asarray(
             [cast(Point3D, point).to_tuple() for point in self.points],
             dtype=np.float64,
@@ -382,7 +532,16 @@ def _validate_sweep_resolution(
 
 @dataclass(frozen=True, slots=True, init=False)
 class PointDeposit:
-    """A bead deposited at one target."""
+    """A bead deposited at one top-referenced target.
+
+    Parameters
+    ----------
+    target
+        Deposition target, pose, point, or coordinate triplet. Coordinate
+        triplets are interpreted as world ``+Z`` targets.
+    profile
+        Bead dimensions used by deposition kernels.
+    """
 
     target: DepositionTarget
     profile: BeadProfile
@@ -397,6 +556,8 @@ class PointDeposit:
         object.__setattr__(self, "profile", profile)
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
+        """Return conservative world-space support bounds for the bead."""
+
         minimum, maximum = _point_target_support_bounds(
             self.target.position,
             self.target.normal,
@@ -411,7 +572,24 @@ class PointDeposit:
 
 @dataclass(frozen=True, slots=True, init=False)
 class LineDeposit:
-    """A bead swept between two deposition targets."""
+    """A bead swept between two top-referenced deposition targets.
+
+    Parameters
+    ----------
+    start, end
+        Endpoint targets, poses, points, or coordinate triplets.
+    profile
+        Bead dimensions used by deposition kernels.
+    sweep_resolution
+        Optional world-space spacing for explicit sweep subdivision. ``None``
+        lets the kernel choose a conservative resolution from the domain and
+        bead profile.
+
+    Raises
+    ------
+    ValueError
+        If endpoint normals are antiparallel.
+    """
 
     start: DepositionTarget
     end: DepositionTarget
@@ -450,9 +628,13 @@ class LineDeposit:
 
     @property
     def line(self) -> Line3D:
+        """Centerline connecting the endpoint target positions."""
+
         return Line3D(self.start.position, self.end.position)
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
+        """Return conservative world-space support bounds for the swept bead."""
+
         padding_value = ensure_finite_scalar(padding, "padding")
         if padding_value < 0.0:
             raise ValueError("padding must be non-negative")
@@ -470,7 +652,17 @@ class LineDeposit:
 
 @dataclass(frozen=True, slots=True, init=False)
 class PolylineDeposit:
-    """A bead swept through a connected sequence of deposition targets."""
+    """One ordered multi-segment bead sweep through deposition targets.
+
+    Parameters
+    ----------
+    targets
+        Sequence of at least two target-like values.
+    profile
+        Bead dimensions used by all segments.
+    sweep_resolution
+        Optional world-space spacing shared by generated line segments.
+    """
 
     targets: tuple[DepositionTarget, ...]
     profile: BeadProfile
@@ -511,9 +703,13 @@ class PolylineDeposit:
 
     @property
     def polyline(self) -> Polyline3D:
+        """Polyline through the target positions."""
+
         return Polyline3D(tuple(target.position for target in self.targets))
 
     def segments(self) -> tuple[LineDeposit, ...]:
+        """Return the polyline as consecutive ``LineDeposit`` segments."""
+
         return tuple(
             LineDeposit(
                 start=start,
@@ -529,6 +725,8 @@ class PolylineDeposit:
         )
 
     def support_bounds(self, *, padding: float = 0.0) -> tuple[Point3D, Point3D]:
+        """Return conservative world-space support bounds for all segments."""
+
         segment_bounds = [
             segment.support_bounds(padding=padding) for segment in self.segments()
         ]
@@ -542,7 +740,24 @@ DepositInput: TypeAlias = Deposit
 
 
 def iter_deposits(deposits: DepositInput | Iterable[DepositInput]) -> Iterator[Deposit]:
-    """Yield deposition events from one deposit or an iterable of deposits."""
+    """Yield normalized deposition events from one deposit or an iterable.
+
+    Parameters
+    ----------
+    deposits
+        A single deposit or an iterable containing point, line, or polyline
+        deposits.
+
+    Yields
+    ------
+    Deposit
+        Deposits in input order.
+
+    Raises
+    ------
+    TypeError
+        If the input is not a deposit or iterable of deposits.
+    """
 
     if isinstance(deposits, (PointDeposit, LineDeposit, PolylineDeposit)):
         yield deposits

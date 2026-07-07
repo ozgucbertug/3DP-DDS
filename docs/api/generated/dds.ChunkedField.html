@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dds.ChunkedField &mdash; 3DP-DDS</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/api/generated/dds.ChunkedField.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=3e6ca1ad"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="dds.simulate" href="dds.simulate.html" />
+    <link rel="prev" title="dds.Simulator" href="dds.Simulator.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            3DP-DDS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#first-simulation">First Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/domains-and-beads.html">Domains And Beads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/index.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../core.html">Core API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="dds.BeadProfile.html">dds.BeadProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.BeadProfile.html#dds.BeadProfile"><code class="docutils literal notranslate"><span class="pre">BeadProfile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Domain.html">dds.Domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Domain.html#dds.Domain"><code class="docutils literal notranslate"><span class="pre">Domain</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Point3D.html">dds.Point3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Point3D.html#dds.Point3D"><code class="docutils literal notranslate"><span class="pre">Point3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Vector3D.html">dds.Vector3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Vector3D.html#dds.Vector3D"><code class="docutils literal notranslate"><span class="pre">Vector3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Pose3D.html">dds.Pose3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Pose3D.html#dds.Pose3D"><code class="docutils literal notranslate"><span class="pre">Pose3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.DepositionTarget.html">dds.DepositionTarget</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.DepositionTarget.html#dds.DepositionTarget"><code class="docutils literal notranslate"><span class="pre">DepositionTarget</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Line3D.html">dds.Line3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Line3D.html#dds.Line3D"><code class="docutils literal notranslate"><span class="pre">Line3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Polyline3D.html">dds.Polyline3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Polyline3D.html#dds.Polyline3D"><code class="docutils literal notranslate"><span class="pre">Polyline3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.PointDeposit.html">dds.PointDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.PointDeposit.html#dds.PointDeposit"><code class="docutils literal notranslate"><span class="pre">PointDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.LineDeposit.html">dds.LineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.LineDeposit.html#dds.LineDeposit"><code class="docutils literal notranslate"><span class="pre">LineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.PolylineDeposit.html">dds.PolylineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.PolylineDeposit.html#dds.PolylineDeposit"><code class="docutils literal notranslate"><span class="pre">PolylineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.SimulationResult.html">dds.SimulationResult</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.SimulationResult.html#dds.SimulationResult"><code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Simulator.html">dds.Simulator</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Simulator.html#dds.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">dds.ChunkedField</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dds.ChunkedField"><code class="docutils literal notranslate"><span class="pre">ChunkedField</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.simulate.html">dds.simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.simulate.html#dds.simulate"><code class="docutils literal notranslate"><span class="pre">simulate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../primitives.html">Primitive Helpers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.primitives.iter_deposits.html">dds.primitives.iter_deposits</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.primitives.iter_deposits.html#dds.primitives.iter_deposits"><code class="docutils literal notranslate"><span class="pre">iter_deposits()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../fields.html">Field Accumulation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_fields.html">dds.fields.accumulate_fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_fields.html#dds.fields.accumulate_fields"><code class="docutils literal notranslate"><span class="pre">accumulate_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_field.html">dds.fields.accumulate_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_field.html#dds.fields.accumulate_field"><code class="docutils literal notranslate"><span class="pre">accumulate_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_deposition_index.html">dds.fields.accumulate_deposition_index</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_deposition_index.html#dds.fields.accumulate_deposition_index"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_index()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_deposition_order.html">dds.fields.accumulate_deposition_order</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_deposition_order.html#dds.fields.accumulate_deposition_order"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.apply_deposit_to_field.html">dds.fields.apply_deposit_to_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.apply_deposit_to_field.html#dds.fields.apply_deposit_to_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.apply_deposit_to_index_field.html">dds.fields.apply_deposit_to_index_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.apply_deposit_to_index_field.html#dds.fields.apply_deposit_to_index_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_index_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_chunked_field.html">dds.fields.accumulate_chunked_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_chunked_field.html#dds.fields.accumulate_chunked_field"><code class="docutils literal notranslate"><span class="pre">accumulate_chunked_field()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis.html">Analysis API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.SimulationAnalysis.html">dds.analysis.SimulationAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis"><code class="docutils literal notranslate"><span class="pre">SimulationAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.StratumFieldSet.html">dds.analysis.StratumFieldSet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet"><code class="docutils literal notranslate"><span class="pre">StratumFieldSet</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.InterfacePairSummary.html">dds.analysis.InterfacePairSummary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary"><code class="docutils literal notranslate"><span class="pre">InterfacePairSummary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.InterfaceAnalysis.html">dds.analysis.InterfaceAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis"><code class="docutils literal notranslate"><span class="pre">InterfaceAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.SupportAnalysis.html">dds.analysis.SupportAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis"><code class="docutils literal notranslate"><span class="pre">SupportAnalysis</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../occupancy.html">Occupancy API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.occupancy.occupancy_from_implicit_field.html">dds.occupancy.occupancy_from_implicit_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.occupancy.occupancy_from_implicit_field.html#dds.occupancy.occupancy_from_implicit_field"><code class="docutils literal notranslate"><span class="pre">occupancy_from_implicit_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.occupancy.occupancy_fraction.html">dds.occupancy.occupancy_fraction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.occupancy.occupancy_fraction.html#dds.occupancy.occupancy_fraction"><code class="docutils literal notranslate"><span class="pre">occupancy_fraction()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">3DP-DDS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../core.html">Core API</a></li>
+      <li class="breadcrumb-item active">dds.ChunkedField</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/ozgucbertug/3DP-DDS/blob/main/docs/source/api/generated/dds.ChunkedField.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dds-chunkedfield">
+<h1>dds.ChunkedField<a class="headerlink" href="#dds-chunkedfield" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="dds.ChunkedField">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dds.</span></span><span class="sig-name descname"><span class="pre">ChunkedField</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">domain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunk_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(32,</span> <span class="pre">32,</span> <span class="pre">32)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">include_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Sparse field backed by fixed-size dense chunks.</p>
+<p>Every chunk stores the implicit field. Coverage is allocated only when
+requested. Empty chunks are never stored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>domain</strong> (<a class="reference internal" href="dds.Domain.html#dds.Domain" title="dds.domain.Domain"><em>dds.domain.Domain</em></a>) – Simulation domain for the chunked storage.</p></li>
+<li><p><strong>chunk_shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – Dense chunk dimensions in <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> index order.</p></li>
+<li><p><strong>include_coverage</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – Allocate additive coverage chunks in addition to implicit chunks.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.ChunkedField.domain">
+<span class="sig-name descname"><span class="pre">domain</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="dds.Domain.html#dds.Domain" title="dds.domain.Domain"><span class="pre">Domain</span></a></em><a class="headerlink" href="#dds.ChunkedField.domain" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.ChunkedField.chunk_shape">
+<span class="sig-name descname"><span class="pre">chunk_shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.ChunkedField.chunk_shape" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.ChunkedField.include_coverage">
+<span class="sig-name descname"><span class="pre">include_coverage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#dds.ChunkedField.include_coverage" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.add_kernel">
+<span class="sig-name descname"><span class="pre">add_kernel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sampled</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.add_kernel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.add_kernel" title="Link to this definition"></a></dt>
+<dd><p>Accumulate one sampled kernel tile and return whether it was nonempty.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sampled</strong> (<em>_SampledKernel</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.record_event">
+<span class="sig-name descname"><span class="pre">record_event</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.record_event"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.record_event" title="Link to this definition"></a></dt>
+<dd><p>Record one deposition event that contributed at least one kernel tile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.materialize">
+<span class="sig-name descname"><span class="pre">materialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'implicit'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">index_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.materialize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.materialize" title="Link to this definition"></a></dt>
+<dd><p>Materialize the full field or an index-space region of interest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'implicit'</em><em>, </em><em>'coverage'</em><em>]</em>) – <code class="docutils literal notranslate"><span class="pre">&quot;implicit&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;coverage&quot;</span></code>.</p></li>
+<li><p><strong>index_bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>] </em><em>| </em><em>None</em>) – Optional half-open bounds in domain index coordinates.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.5)"><em>dtype</em></a>[<em>float64</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.to_dense">
+<span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'implicit'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.to_dense" title="Link to this definition"></a></dt>
+<dd><p>Materialize a full-domain dense field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>field</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'implicit'</em><em>, </em><em>'coverage'</em><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.5)"><em>dtype</em></a>[<em>float64</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.to_dense_all">
+<span class="sig-name descname"><span class="pre">to_dense_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.to_dense_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.to_dense_all" title="Link to this definition"></a></dt>
+<dd><p>Materialize all fields configured on this storage object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a>[‘implicit’, ‘coverage’], ~numpy.ndarray[~typing.Any, ~numpy.dtype[~numpy.float64]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.clear">
+<span class="sig-name descname"><span class="pre">clear</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.clear"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.clear" title="Link to this definition"></a></dt>
+<dd><p>Remove all allocated chunks and event diagnostics.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.chunk_count">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">chunk_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.chunk_count" title="Link to this definition"></a></dt>
+<dd><p>Number of allocated chunks.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.event_count">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">event_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.event_count" title="Link to this definition"></a></dt>
+<dd><p>Number of in-domain deposition events accumulated.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.active_voxel_count">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">active_voxel_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.active_voxel_count" title="Link to this definition"></a></dt>
+<dd><p>Number of voxels with a positive geometric envelope.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.allocated_voxel_count">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">allocated_voxel_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.allocated_voxel_count" title="Link to this definition"></a></dt>
+<dd><p>Number of voxel slots allocated across all chunks.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.nbytes">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nbytes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.nbytes" title="Link to this definition"></a></dt>
+<dd><p>Bytes occupied by the implicit field and optional coverage.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.dense_field_nbytes">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dense_field_nbytes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.dense_field_nbytes" title="Link to this definition"></a></dt>
+<dd><p>Bytes required by one equivalent dense float64 field.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.dense_nbytes">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">dense_nbytes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></em><a class="headerlink" href="#dds.ChunkedField.dense_nbytes" title="Link to this definition"></a></dt>
+<dd><p>Bytes required by equivalent configured dense fields.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.active_fraction">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">active_fraction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#dds.ChunkedField.active_fraction" title="Link to this definition"></a></dt>
+<dd><p>Fraction of domain voxels with positive geometric support.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.allocation_fraction">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">allocation_fraction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#dds.ChunkedField.allocation_fraction" title="Link to this definition"></a></dt>
+<dd><p>Fraction of domain voxel slots allocated in chunks.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="dds.ChunkedField.memory_ratio">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">memory_ratio</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></em><a class="headerlink" href="#dds.ChunkedField.memory_ratio" title="Link to this definition"></a></dt>
+<dd><p>Stored bytes divided by equivalent requested dense fields.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.ChunkedField.to_result">
+<span class="sig-name descname"><span class="pre">to_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deposits</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">threshold</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/chunked.html#ChunkedField.to_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.ChunkedField.to_result" title="Link to this definition"></a></dt>
+<dd><p>Construct a <a class="reference internal" href="dds.SimulationResult.html#dds.SimulationResult" title="dds.results.SimulationResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SimulationResult</span></code></a> from this chunked field.</p>
+<p>Materializes the dense arrays and wraps them in a <code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code>
+without re-running the simulation.  Useful when the chunked field was
+built via <code class="xref py py-func docutils literal notranslate"><span class="pre">accumulate_chunked_field()</span></code> and the caller wants access
+to the full analysis interface.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deposits</strong> (<em>Iterable</em><em>[</em><em>DepositInput</em><em>] </em><em>| </em><em>DepositInput</em>) – The same deposit sequence that was used to build this field.</p></li>
+<li><p><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Occupancy threshold forwarded to the result’s <code class="docutils literal notranslate"><span class="pre">default_threshold</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="dds.SimulationResult.html#dds.SimulationResult" title="dds.SimulationResult">SimulationResult</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dds.Simulator.html" class="btn btn-neutral float-left" title="dds.Simulator" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dds.simulate.html" class="btn btn-neutral float-right" title="dds.simulate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ozguc Bertug Capunaman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+ 
+<div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
+  This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
+</div>
+
+
+</body>
+</html>

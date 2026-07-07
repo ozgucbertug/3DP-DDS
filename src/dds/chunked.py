@@ -33,6 +33,15 @@ class ChunkedField:
 
     Every chunk stores the implicit field. Coverage is allocated only when
     requested. Empty chunks are never stored.
+
+    Parameters
+    ----------
+    domain
+        Simulation domain for the chunked storage.
+    chunk_shape
+        Dense chunk dimensions in ``(x, y, z)`` index order.
+    include_coverage
+        Allocate additive coverage chunks in addition to implicit chunks.
     """
 
     domain: Domain
@@ -158,7 +167,15 @@ class ChunkedField:
         *,
         index_bounds: IndexBounds | None = None,
     ) -> npt.NDArray[np.float64]:
-        """Materialize the full field or an index-space region of interest."""
+        """Materialize the full field or an index-space region of interest.
+
+        Parameters
+        ----------
+        field
+            ``"implicit"`` or ``"coverage"``.
+        index_bounds
+            Optional half-open bounds in domain index coordinates.
+        """
 
         if field not in {"implicit", "coverage"}:
             raise ValueError("field must be 'implicit' or 'coverage'.")
@@ -370,10 +387,19 @@ def accumulate_chunked_field(
 
     Parameters
     ----------
-    domain:
+    domain
         Simulation domain.
-    deposits:
+    deposits
         One or more deposit primitives or sequences thereof.
+    chunk_shape
+        Dense chunk shape in ``(x, y, z)`` index order.
+    include_coverage
+        Whether to store additive coverage in each active chunk.
+
+    Returns
+    -------
+    ChunkedField
+        Sparse chunk-backed accumulation result.
     """
 
     chunked = ChunkedField(

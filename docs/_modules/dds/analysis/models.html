@@ -1,0 +1,455 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dds.analysis.models &mdash; 3DP-DDS</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/_modules/dds/analysis/models.html" />
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=3e6ca1ad"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            3DP-DDS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting-started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting-started.html#first-simulation">First Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting-started.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/domains-and-beads.html">Domains And Beads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts/index.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/core.html">Core API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.BeadProfile.html">dds.BeadProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.BeadProfile.html#dds.BeadProfile"><code class="docutils literal notranslate"><span class="pre">BeadProfile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Domain.html">dds.Domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Domain.html#dds.Domain"><code class="docutils literal notranslate"><span class="pre">Domain</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Point3D.html">dds.Point3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Point3D.html#dds.Point3D"><code class="docutils literal notranslate"><span class="pre">Point3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Vector3D.html">dds.Vector3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Vector3D.html#dds.Vector3D"><code class="docutils literal notranslate"><span class="pre">Vector3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Pose3D.html">dds.Pose3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Pose3D.html#dds.Pose3D"><code class="docutils literal notranslate"><span class="pre">Pose3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.DepositionTarget.html">dds.DepositionTarget</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget"><code class="docutils literal notranslate"><span class="pre">DepositionTarget</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Line3D.html">dds.Line3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Line3D.html#dds.Line3D"><code class="docutils literal notranslate"><span class="pre">Line3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Polyline3D.html">dds.Polyline3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Polyline3D.html#dds.Polyline3D"><code class="docutils literal notranslate"><span class="pre">Polyline3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.PointDeposit.html">dds.PointDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.PointDeposit.html#dds.PointDeposit"><code class="docutils literal notranslate"><span class="pre">PointDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.LineDeposit.html">dds.LineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.LineDeposit.html#dds.LineDeposit"><code class="docutils literal notranslate"><span class="pre">LineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.PolylineDeposit.html">dds.PolylineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit"><code class="docutils literal notranslate"><span class="pre">PolylineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.SimulationResult.html">dds.SimulationResult</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.SimulationResult.html#dds.SimulationResult"><code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Simulator.html">dds.Simulator</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Simulator.html#dds.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.ChunkedField.html">dds.ChunkedField</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.ChunkedField.html#dds.ChunkedField"><code class="docutils literal notranslate"><span class="pre">ChunkedField</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.simulate.html">dds.simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.simulate.html#dds.simulate"><code class="docutils literal notranslate"><span class="pre">simulate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/primitives.html">Primitive Helpers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.primitives.iter_deposits.html">dds.primitives.iter_deposits</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.primitives.iter_deposits.html#dds.primitives.iter_deposits"><code class="docutils literal notranslate"><span class="pre">iter_deposits()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/fields.html">Field Accumulation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_fields.html">dds.fields.accumulate_fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_fields.html#dds.fields.accumulate_fields"><code class="docutils literal notranslate"><span class="pre">accumulate_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_field.html">dds.fields.accumulate_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_field.html#dds.fields.accumulate_field"><code class="docutils literal notranslate"><span class="pre">accumulate_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_index.html">dds.fields.accumulate_deposition_index</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_index.html#dds.fields.accumulate_deposition_index"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_index()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_order.html">dds.fields.accumulate_deposition_order</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_order.html#dds.fields.accumulate_deposition_order"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_field.html">dds.fields.apply_deposit_to_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_field.html#dds.fields.apply_deposit_to_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_index_field.html">dds.fields.apply_deposit_to_index_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_index_field.html#dds.fields.apply_deposit_to_index_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_index_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_chunked_field.html">dds.fields.accumulate_chunked_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_chunked_field.html#dds.fields.accumulate_chunked_field"><code class="docutils literal notranslate"><span class="pre">accumulate_chunked_field()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/analysis.html">Analysis API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.SimulationAnalysis.html">dds.analysis.SimulationAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis"><code class="docutils literal notranslate"><span class="pre">SimulationAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.StratumFieldSet.html">dds.analysis.StratumFieldSet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet"><code class="docutils literal notranslate"><span class="pre">StratumFieldSet</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfacePairSummary.html">dds.analysis.InterfacePairSummary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary"><code class="docutils literal notranslate"><span class="pre">InterfacePairSummary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfaceAnalysis.html">dds.analysis.InterfaceAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis"><code class="docutils literal notranslate"><span class="pre">InterfaceAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.SupportAnalysis.html">dds.analysis.SupportAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis"><code class="docutils literal notranslate"><span class="pre">SupportAnalysis</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/occupancy.html">Occupancy API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_from_implicit_field.html">dds.occupancy.occupancy_from_implicit_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_from_implicit_field.html#dds.occupancy.occupancy_from_implicit_field"><code class="docutils literal notranslate"><span class="pre">occupancy_from_implicit_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_fraction.html">dds.occupancy.occupancy_fraction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_fraction.html#dds.occupancy.occupancy_fraction"><code class="docutils literal notranslate"><span class="pre">occupancy_fraction()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">3DP-DDS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dds.analysis.models</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dds.analysis.models</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Typed analysis result models for dense simulation workflows.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">npt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..domain</span><span class="w"> </span><span class="kn">import</span> <span class="n">Domain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..geometry.mesh</span><span class="w"> </span><span class="kn">import</span> <span class="n">TriangleMesh</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">readonly_array</span>
+
+
+<div class="viewcode-block" id="StratumFieldSet">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">StratumFieldSet</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Implicit and occupancy fields partitioned by deposit order.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    domain</span>
+<span class="sd">        Domain shared by all stored fields.</span>
+<span class="sd">    threshold</span>
+<span class="sd">        Occupancy threshold used to construct the strata.</span>
+<span class="sd">    stratum_ids</span>
+<span class="sd">        One-based deposition-order identifiers included in this result.</span>
+<span class="sd">    implicit_fields, occupancy_fields</span>
+<span class="sd">        Per-stratum fields with shape ``domain.grid_shape``.</span>
+<span class="sd">    label_field</span>
+<span class="sd">        Dense field containing the stratum identifier at each occupied voxel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span>
+    <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">stratum_ids</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">implicit_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">occupancy_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">label_field</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;implicit_fields&quot;</span><span class="p">,</span>
+            <span class="nb">tuple</span><span class="p">(</span><span class="n">readonly_array</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">implicit_fields</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;occupancy_fields&quot;</span><span class="p">,</span>
+            <span class="nb">tuple</span><span class="p">(</span><span class="n">readonly_array</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_fields</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;label_field&quot;</span><span class="p">,</span> <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">label_field</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stratum_ids</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">implicit_fields</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stratum_ids</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">occupancy_fields</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;stratum_ids, implicit_fields, and occupancy_fields must have the same length.&quot;</span><span class="p">)</span>
+        <span class="n">expected_shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="o">.</span><span class="n">grid_shape</span>
+        <span class="k">for</span> <span class="n">implicit_field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">implicit_fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">implicit_field</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;implicit_fields must match the domain grid shape.&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">occupancy</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">occupancy</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;occupancy_fields must match the domain grid shape.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">label_field</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">expected_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;label_field must match the domain grid shape.&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="StratumFieldSet.stratum_index">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet.stratum_index">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stratum_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stratum_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the tuple index for a one-based stratum identifier.&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">stratum_ids</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">stratum_id</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown stratum_id </span><span class="si">{</span><span class="n">stratum_id</span><span class="si">!r}</span><span class="s2">.&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span></div>
+
+
+<div class="viewcode-block" id="StratumFieldSet.implicit_field">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet.implicit_field">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implicit_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stratum_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the implicit field for one stratum identifier.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">implicit_fields</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stratum_index</span><span class="p">(</span><span class="n">stratum_id</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="StratumFieldSet.occupancy">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet.occupancy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">occupancy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stratum_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the occupancy field for one stratum identifier.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy_fields</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">stratum_index</span><span class="p">(</span><span class="n">stratum_id</span><span class="p">)]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="InterfacePairSummary">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InterfacePairSummary</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Summary metrics for one adjacent ordered-deposit pair.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    ``previous_id`` and ``next_id`` are adjacent one-based stratum identifiers.</span>
+<span class="sd">    ``contact_face_count`` counts touching voxel faces, while ``contact_area``</span>
+<span class="sd">    reports their world-space area. Overlap metrics are measured relative to the</span>
+<span class="sd">    next stratum in the pair.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">previous_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">next_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">contact_face_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">contact_area</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">overlap_voxel_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">overlap_fraction</span><span class="p">:</span> <span class="nb">float</span></div>
+
+
+
+<div class="viewcode-block" id="InterfaceAnalysis">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InterfaceAnalysis</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface, contact, and overlap result for ordered strata.&quot;&quot;&quot;</span>
+
+    <span class="n">stratum_ids</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">contact_mask</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]</span>
+    <span class="n">overlap_mask</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]</span>
+    <span class="n">unsupported_next_mask</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]</span>
+    <span class="n">contact_face_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">contact_area</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">overlap_voxel_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">overlap_fraction</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">pair_summaries</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">InterfacePairSummary</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;contact_mask&quot;</span><span class="p">,</span> <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">contact_mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;overlap_mask&quot;</span><span class="p">,</span> <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">overlap_mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;unsupported_next_mask&quot;</span><span class="p">,</span>
+            <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">unsupported_next_mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;pair_summaries&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pair_summaries</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="SupportAnalysis">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SupportAnalysis</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Support and overhang analysis result for one build direction.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    ``mesh`` is the surface mesh used for face-level angle analysis,</span>
+<span class="sd">    ``build_direction`` is a unit vector, and ``overhang_angles`` are reported in</span>
+<span class="sd">    degrees. ``support_shadow_field`` marks unsupported regions on the dense</span>
+<span class="sd">    world grid. ``max_unsupported_span`` is measured along the build axis.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mesh</span><span class="p">:</span> <span class="n">TriangleMesh</span>
+    <span class="n">build_direction</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span>
+    <span class="n">overhang_angles</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
+    <span class="n">downfacing_mask</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]</span>
+    <span class="n">support_risk_mask</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]</span>
+    <span class="n">face_areas</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
+    <span class="n">downfacing_area</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">risk_area</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">support_shadow_field</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span>
+    <span class="n">shadow_voxel_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">shadow_volume</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">max_unsupported_span</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;overhang_angles&quot;</span><span class="p">,</span> <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">overhang_angles</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;downfacing_mask&quot;</span><span class="p">,</span> <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">downfacing_mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;support_risk_mask&quot;</span><span class="p">,</span>
+            <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">support_risk_mask</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;face_areas&quot;</span><span class="p">,</span> <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">face_areas</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;support_shadow_field&quot;</span><span class="p">,</span>
+            <span class="n">readonly_array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">support_shadow_field</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ozguc Bertug Capunaman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+ 
+<div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
+  This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
+</div>
+
+
+</body>
+</html>

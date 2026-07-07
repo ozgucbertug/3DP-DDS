@@ -123,7 +123,28 @@ class _AnalysisCache:
 
 @dataclass(slots=True, frozen=True, init=False)
 class SimulationAnalysis:
-    """Cached queries derived lazily from an immutable implicit field."""
+    """Cached queries derived lazily from an immutable simulation field.
+
+    Parameters
+    ----------
+    domain
+        Simulation domain that defines bounds, voxel size, and grid shape.
+    implicit_field
+        Nonnegative union-like deposition field with shape
+        ``domain.grid_shape``.
+    deposits
+        Deposits that produced the field, in simulation order.
+    default_threshold
+        Threshold used when query methods are called without an explicit
+        threshold.
+
+    Notes
+    -----
+    The stored implicit field is not a signed-distance field. It is clipped to
+    ``[0, 1]`` and uses the threshold, commonly ``0.5``, as the nominal
+    fabricated surface. Use :meth:`surface_sdf` or :meth:`signed_distance_at`
+    for metric distances.
+    """
 
     domain: Domain
     deposits: tuple[Deposit, ...]
@@ -209,6 +230,19 @@ class SimulationAnalysis:
         *,
         threshold: float | None = None,
     ) -> npt.NDArray[np.bool_]:
+        """Return thresholded occupancy for the implicit field.
+
+        Parameters
+        ----------
+        threshold
+            Occupancy threshold. If omitted, ``default_threshold`` is used.
+
+        Returns
+        -------
+        numpy.ndarray
+            Read-only boolean array with shape ``domain.grid_shape``.
+        """
+
         key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._cache.occupancy:
             self._cache.occupancy[key] = _freeze_generated_array(
@@ -223,6 +257,26 @@ class SimulationAnalysis:
         threshold: float | None = None,
         step_size: int = 1,
     ) -> Any:
+        """Extract a triangle mesh for the thresholded implicit surface.
+
+        Parameters
+        ----------
+        threshold
+            Surface threshold. If omitted, ``default_threshold`` is used.
+        step_size
+            Marching-cubes step size passed to mesh extraction.
+
+        Returns
+        -------
+        dds.geometry.TriangleMesh
+            Extracted surface mesh.
+
+        Notes
+        -----
+        This query requires the ``mesh`` extra because it uses the optional
+        geometry mesh backend.
+        """
+
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = _surface_cache_key(threshold_value, step_size=step_size)
         if key not in self._cache.surface_mesh:
@@ -241,6 +295,20 @@ class SimulationAnalysis:
         *,
         threshold: float | None = None,
     ) -> Any:
+        """Derive a signed-distance field from thresholded occupancy.
+
+        Parameters
+        ----------
+        threshold
+            Surface threshold. If omitted, ``default_threshold`` is used.
+
+        Returns
+        -------
+        dds.geometry.GridSDF3
+            Signed-distance field sampled on the simulation domain. Values are
+            negative inside occupied material and positive outside.
+        """
+
         key = self.default_threshold if threshold is None else float(threshold)
         if key not in self._cache.surface_sdf:
             from ..geometry import implicit_field_to_sdf
@@ -258,6 +326,31 @@ class SimulationAnalysis:
         threshold: float | None = None,
         step_size: int = 1,
     ) -> Any:
+        """Build a mesh-backed signed-distance query for the surface mesh.
+
+        Parameters
+        ----------
+        threshold
+            Surface threshold. If omitted, ``default_threshold`` is used.
+        step_size
+            Marching-cubes step size used before constructing the mesh SDF.
+
+        Returns
+        -------
+        dds.geometry.MeshSDF3
+            Mesh-backed signed-distance query.
+
+        Raises
+        ------
+        ValueError
+            If the extracted surface is empty.
+
+        Notes
+        -----
+        This query requires the ``mesh`` extra and expects a watertight
+        extracted surface for reliable signed distances.
+        """
+
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         key = _surface_cache_key(threshold_value, step_size=step_size)
         if key not in self._cache.mesh_sdf:
@@ -279,6 +372,22 @@ class SimulationAnalysis:
         *,
         interpolation: InterpolationMode = "nearest",
     ) -> float:
+        """Sample the implicit field at a world-space point.
+
+        Parameters
+        ----------
+        point
+            World-space ``(x, y, z)`` coordinate.
+        interpolation
+            ``"nearest"`` for voxel lookup or ``"trilinear"`` for continuous
+            interpolation over voxel centers.
+
+        Returns
+        -------
+        float
+            Sampled implicit value. Points outside the domain return ``0``.
+        """
+
         points, _single = _coerce_points(point)
         values = _sample_scalar_field(
             self.domain,
@@ -293,6 +402,15 @@ class SimulationAnalysis:
         self,
         point: tuple[float, float, float] | npt.ArrayLike,
     ) -> int:
+        """Sample the last-touch deposition index at a world-space point.
+
+        Returns
+        -------
+        int
+            Zero-based deposit index, or ``-1`` if the point is untouched or
+            outside the domain.
+        """
+
         points, _single = _coerce_points(point)
         values = _sample_nearest(
             self.domain,
@@ -310,6 +428,26 @@ class SimulationAnalysis:
         source: str = "surface_sdf",
         step_size: int = 1,
     ) -> float:
+        """Evaluate signed distance at a world-space point.
+
+        Parameters
+        ----------
+        point
+            World-space ``(x, y, z)`` coordinate.
+        threshold
+            Surface threshold. If omitted, ``default_threshold`` is used.
+        source
+            ``"surface_sdf"`` for grid-derived signed distance or ``"mesh"``
+            for mesh-backed signed distance.
+        step_size
+            Mesh extraction step size when ``source="mesh"``.
+
+        Returns
+        -------
+        float
+            Signed distance in world units; negative values are inside.
+        """
+
         points, _single = _coerce_points(point)
         if source == "surface_sdf":
             sdf = self.surface_sdf(threshold=threshold)
@@ -327,6 +465,17 @@ class SimulationAnalysis:
         source: str = "surface_sdf",
         step_size: int = 1,
     ) -> tuple[float, float, float]:
+        """Estimate an outward surface normal near a world-space point.
+
+        The normal is computed from central differences of a signed-distance
+        query using half-voxel offsets.
+
+        Returns
+        -------
+        tuple[float, float, float]
+            Unit normal. Returns ``(0, 0, 0)`` when the gradient is too small.
+        """
+
         base_point = np.asarray(ensure_finite_triplet(point, "point"), dtype=float)
         sdf = self.surface_sdf(threshold=threshold) if source == "surface_sdf" else None
         if source == "mesh":
@@ -357,6 +506,23 @@ class SimulationAnalysis:
         interpolation: InterpolationMode = "nearest",
         step_size: int = 1,
     ) -> bool:
+        """Return whether a world-space point is inside the deposited geometry.
+
+        Parameters
+        ----------
+        point
+            World-space ``(x, y, z)`` coordinate.
+        representation
+            Query representation: ``"occupancy"``, ``"implicit"``, ``"sdf"``,
+            or ``"mesh"``.
+        threshold
+            Threshold used by occupancy and implicit queries.
+        interpolation
+            Sampling mode for implicit and non-nearest occupancy queries.
+        step_size
+            Mesh extraction step size when using ``representation="mesh"``.
+        """
+
         coordinates = ensure_finite_triplet(point, "point")
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         if representation == "occupancy":
@@ -412,6 +578,27 @@ class SimulationAnalysis:
         threshold: float | None = None,
         interpolation: InterpolationMode = "nearest",
     ) -> dict[str, npt.NDArray[np.generic]]:
+        """Sample several analysis fields at world-space points.
+
+        Parameters
+        ----------
+        points
+            Array-like coordinates with shape ``(n, 3)``.
+        fields
+            Field names to sample. Supported names are ``"implicit"``,
+            ``"occupancy"``, ``"deposition_index"``, and
+            ``"signed_distance"``.
+        threshold
+            Threshold used for occupancy and signed-distance construction.
+        interpolation
+            Sampling mode for the implicit field.
+
+        Returns
+        -------
+        dict[str, numpy.ndarray]
+            Mapping from requested field name to one value per input point.
+        """
+
         samples, _single = _coerce_points(points)
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         result: dict[str, npt.NDArray[np.generic]] = {}
@@ -461,6 +648,24 @@ class SimulationAnalysis:
         threshold: float | None = None,
         step_size: int = 1,
     ) -> dict[str, float]:
+        """Compute summary statistics inside an axis-aligned world-space box.
+
+        Parameters
+        ----------
+        bounds
+            ``(minimum, maximum)`` world-space corners.
+        threshold
+            Occupancy threshold. If omitted, ``default_threshold`` is used.
+        step_size
+            Mesh extraction step size used for the ``mesh_area`` statistic.
+
+        Returns
+        -------
+        dict[str, float]
+            Counts, occupancy fraction, implicit statistics, deposition-index
+            statistics, and approximate enclosed mesh area.
+        """
+
         minimum, maximum = bounds
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         index_bounds = self.domain.index_bounds_for_aabb(minimum, maximum)
@@ -518,6 +723,8 @@ class SimulationAnalysis:
         *,
         threshold: float | None = None,
     ) -> StratumFieldSet:
+        """Partition occupied voxels by one-based deposition order."""
+
         from .strata import strata
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
@@ -533,6 +740,8 @@ class SimulationAnalysis:
         *,
         threshold: float | None = None,
     ) -> InterfaceAnalysis:
+        """Compute contact and overlap metrics between adjacent strata."""
+
         from .interface import interface
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)
@@ -549,6 +758,18 @@ class SimulationAnalysis:
         critical_angle_deg: float = 45.0,
         threshold: float | None = None,
     ) -> SupportAnalysis:
+        """Compute support-risk and overhang metrics for the surface mesh.
+
+        Parameters
+        ----------
+        build_direction
+            Axis-aligned build direction such as ``"+Z"``.
+        critical_angle_deg
+            Faces at or below this overhang angle are considered support risk.
+        threshold
+            Surface threshold. If omitted, ``default_threshold`` is used.
+        """
+
         from .support import support
 
         threshold_value = self.default_threshold if threshold is None else float(threshold)

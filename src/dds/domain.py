@@ -18,7 +18,25 @@ IndexBounds = tuple[tuple[int, int], tuple[int, int], tuple[int, int]]
 
 @dataclass(frozen=True, slots=True)
 class Domain:
-    """Axis-aligned simulation workspace sampled on a dense 3D grid."""
+    """Axis-aligned simulation workspace sampled on a dense 3D grid.
+
+    Parameters
+    ----------
+    min_corner, max_corner
+        Lower inclusive and upper exclusive world-space bounds.
+    voxel_size
+        Positive voxel spacing in ``(x, y, z)`` order.
+    grid_shape
+        Number of voxels in ``(x, y, z)`` order.
+    length_unit
+        Informational unit label, either ``"mm"`` or ``"m"``.
+
+    Notes
+    -----
+    Dense arrays in 3DP-DDS use ``(x, y, z)`` index order and NumPy
+    ``indexing="ij"`` conventions. ``Domain`` records units but does not
+    convert between them.
+    """
 
     min_corner: tuple[float, float, float]
     max_corner: tuple[float, float, float]
@@ -73,7 +91,12 @@ class Domain:
         voxel_size: float | Sequence[float],
         length_unit: Literal["mm", "m"] = "mm",
     ) -> "Domain":
-        """Create a domain from scalar bounds and isotropic or anisotropic voxel size."""
+        """Create a domain from scalar bounds and voxel size.
+
+        The requested upper bounds are aligned upward to whole voxels. For
+        example, an extent of ``1.1`` with voxel size ``0.5`` produces three
+        voxels and an aligned extent of ``1.5``.
+        """
 
         minimum = ensure_finite_triplet((xmin, ymin, zmin), "minimum bounds")
         maximum = ensure_finite_triplet((xmax, ymax, zmax), "maximum bounds")
@@ -112,7 +135,20 @@ class Domain:
         padding: float | str = "auto",
         length_unit: Literal["mm", "m"] = "mm",
     ) -> "Domain":
-        """Create a padded domain that encloses the support bounds of deposits."""
+        """Create a padded domain that encloses deposit support bounds.
+
+        Parameters
+        ----------
+        deposits
+            One deposit or an iterable of deposits.
+        voxel_size
+            Isotropic scalar spacing or anisotropic ``(x, y, z)`` spacing.
+        padding
+            Nonnegative world-space padding. ``"auto"`` uses the largest voxel
+            size component.
+        length_unit
+            Informational unit label for the resulting domain.
+        """
 
         if isinstance(voxel_size, (int, float)):
             voxel_triplet = ensure_positive_triplet((voxel_size, voxel_size, voxel_size), "voxel_size")
@@ -163,7 +199,7 @@ class Domain:
         }
 
     def contains_point(self, point: Point3D | Sequence[float]) -> bool:
-        """Return True when a point lies inside the half-open domain bounds."""
+        """Return whether a point lies inside the half-open domain bounds."""
 
         x, y, z = ensure_finite_triplet(point, "point")
         return (
@@ -178,7 +214,20 @@ class Domain:
         *,
         clip: bool = False,
     ) -> tuple[int, int, int]:
-        """Convert world coordinates to integer voxel indices."""
+        """Convert world coordinates to integer voxel indices.
+
+        Parameters
+        ----------
+        point
+            World-space coordinate.
+        clip
+            If true, clamp out-of-domain indices to the nearest valid voxel.
+
+        Raises
+        ------
+        ValueError
+            If ``clip`` is false and the point lies outside the domain.
+        """
 
         coordinates = np.asarray(ensure_finite_triplet(point, "point"), dtype=float)
         origin = np.asarray(self.min_corner, dtype=float)
@@ -227,7 +276,7 @@ class Domain:
         self,
         index_bounds: IndexBounds | None = None,
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
-        """Return dense voxel-center coordinate arrays using `(x, y, z)` indexing."""
+        """Return dense voxel-center coordinate arrays using ``(x, y, z)`` indexing."""
 
         if index_bounds is None:
             x_bounds = (0, self.grid_shape[0])
@@ -247,7 +296,10 @@ class Domain:
         minimum: Point3D | Sequence[float],
         maximum: Point3D | Sequence[float],
     ) -> IndexBounds | None:
-        """Return half-open index bounds for voxel centers inside an AABB."""
+        """Return half-open index bounds for voxel centers inside an AABB.
+
+        Returns ``None`` when the requested bounds do not overlap the domain.
+        """
 
         minimum_array = np.asarray(ensure_finite_triplet(minimum, "minimum"), dtype=float)
         maximum_array = np.asarray(ensure_finite_triplet(maximum, "maximum"), dtype=float)

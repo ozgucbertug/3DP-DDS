@@ -1,0 +1,480 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dds.Domain &mdash; 3DP-DDS</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/api/generated/dds.Domain.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=3e6ca1ad"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="dds.Point3D" href="dds.Point3D.html" />
+    <link rel="prev" title="dds.BeadProfile" href="dds.BeadProfile.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            3DP-DDS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#first-simulation">First Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/domains-and-beads.html">Domains And Beads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/index.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">API Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../core.html">Core API</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="dds.BeadProfile.html">dds.BeadProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.BeadProfile.html#dds.BeadProfile"><code class="docutils literal notranslate"><span class="pre">BeadProfile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">dds.Domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#dds.Domain"><code class="docutils literal notranslate"><span class="pre">Domain</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Point3D.html">dds.Point3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Point3D.html#dds.Point3D"><code class="docutils literal notranslate"><span class="pre">Point3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Vector3D.html">dds.Vector3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Vector3D.html#dds.Vector3D"><code class="docutils literal notranslate"><span class="pre">Vector3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Pose3D.html">dds.Pose3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Pose3D.html#dds.Pose3D"><code class="docutils literal notranslate"><span class="pre">Pose3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.DepositionTarget.html">dds.DepositionTarget</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.DepositionTarget.html#dds.DepositionTarget"><code class="docutils literal notranslate"><span class="pre">DepositionTarget</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Line3D.html">dds.Line3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Line3D.html#dds.Line3D"><code class="docutils literal notranslate"><span class="pre">Line3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Polyline3D.html">dds.Polyline3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Polyline3D.html#dds.Polyline3D"><code class="docutils literal notranslate"><span class="pre">Polyline3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.PointDeposit.html">dds.PointDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.PointDeposit.html#dds.PointDeposit"><code class="docutils literal notranslate"><span class="pre">PointDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.LineDeposit.html">dds.LineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.LineDeposit.html#dds.LineDeposit"><code class="docutils literal notranslate"><span class="pre">LineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.PolylineDeposit.html">dds.PolylineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.PolylineDeposit.html#dds.PolylineDeposit"><code class="docutils literal notranslate"><span class="pre">PolylineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.SimulationResult.html">dds.SimulationResult</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.SimulationResult.html#dds.SimulationResult"><code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.Simulator.html">dds.Simulator</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.Simulator.html#dds.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.ChunkedField.html">dds.ChunkedField</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.ChunkedField.html#dds.ChunkedField"><code class="docutils literal notranslate"><span class="pre">ChunkedField</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.simulate.html">dds.simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.simulate.html#dds.simulate"><code class="docutils literal notranslate"><span class="pre">simulate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../primitives.html">Primitive Helpers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.primitives.iter_deposits.html">dds.primitives.iter_deposits</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.primitives.iter_deposits.html#dds.primitives.iter_deposits"><code class="docutils literal notranslate"><span class="pre">iter_deposits()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../fields.html">Field Accumulation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_fields.html">dds.fields.accumulate_fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_fields.html#dds.fields.accumulate_fields"><code class="docutils literal notranslate"><span class="pre">accumulate_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_field.html">dds.fields.accumulate_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_field.html#dds.fields.accumulate_field"><code class="docutils literal notranslate"><span class="pre">accumulate_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_deposition_index.html">dds.fields.accumulate_deposition_index</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_deposition_index.html#dds.fields.accumulate_deposition_index"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_index()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_deposition_order.html">dds.fields.accumulate_deposition_order</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_deposition_order.html#dds.fields.accumulate_deposition_order"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.apply_deposit_to_field.html">dds.fields.apply_deposit_to_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.apply_deposit_to_field.html#dds.fields.apply_deposit_to_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.apply_deposit_to_index_field.html">dds.fields.apply_deposit_to_index_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.apply_deposit_to_index_field.html#dds.fields.apply_deposit_to_index_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_index_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.fields.accumulate_chunked_field.html">dds.fields.accumulate_chunked_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.fields.accumulate_chunked_field.html#dds.fields.accumulate_chunked_field"><code class="docutils literal notranslate"><span class="pre">accumulate_chunked_field()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../analysis.html">Analysis API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.SimulationAnalysis.html">dds.analysis.SimulationAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis"><code class="docutils literal notranslate"><span class="pre">SimulationAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.StratumFieldSet.html">dds.analysis.StratumFieldSet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet"><code class="docutils literal notranslate"><span class="pre">StratumFieldSet</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.InterfacePairSummary.html">dds.analysis.InterfacePairSummary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary"><code class="docutils literal notranslate"><span class="pre">InterfacePairSummary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.InterfaceAnalysis.html">dds.analysis.InterfaceAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis"><code class="docutils literal notranslate"><span class="pre">InterfaceAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.analysis.SupportAnalysis.html">dds.analysis.SupportAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis"><code class="docutils literal notranslate"><span class="pre">SupportAnalysis</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../occupancy.html">Occupancy API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dds.occupancy.occupancy_from_implicit_field.html">dds.occupancy.occupancy_from_implicit_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.occupancy.occupancy_from_implicit_field.html#dds.occupancy.occupancy_from_implicit_field"><code class="docutils literal notranslate"><span class="pre">occupancy_from_implicit_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dds.occupancy.occupancy_fraction.html">dds.occupancy.occupancy_fraction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dds.occupancy.occupancy_fraction.html#dds.occupancy.occupancy_fraction"><code class="docutils literal notranslate"><span class="pre">occupancy_fraction()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">3DP-DDS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">API Reference</a></li>
+          <li class="breadcrumb-item"><a href="../core.html">Core API</a></li>
+      <li class="breadcrumb-item active">dds.Domain</li>
+      <li class="wy-breadcrumbs-aside">
+              <a href="https://github.com/ozgucbertug/3DP-DDS/blob/main/docs/source/api/generated/dds.Domain.rst" class="fa fa-github"> Edit on GitHub</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dds-domain">
+<h1>dds.Domain<a class="headerlink" href="#dds-domain" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="dds.Domain">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dds.</span></span><span class="sig-name descname"><span class="pre">Domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min_corner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_corner</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grid_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mm'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Axis-aligned simulation workspace sampled on a dense 3D grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>min_corner</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>) – Lower inclusive and upper exclusive world-space bounds.</p></li>
+<li><p><strong>max_corner</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>) – Lower inclusive and upper exclusive world-space bounds.</p></li>
+<li><p><strong>voxel_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>) – Positive voxel spacing in <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> order.</p></li>
+<li><p><strong>grid_shape</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>) – Number of voxels in <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> order.</p></li>
+<li><p><strong>length_unit</strong> (<em>Literal</em><em>[</em><em>'mm'</em><em>, </em><em>'m'</em><em>]</em>) – Informational unit label, either <code class="docutils literal notranslate"><span class="pre">&quot;mm&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;m&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Dense arrays in 3DP-DDS use <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> index order and NumPy
+<code class="docutils literal notranslate"><span class="pre">indexing=&quot;ij&quot;</span></code> conventions. <code class="docutils literal notranslate"><span class="pre">Domain</span></code> records units but does not
+convert between them.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.Domain.min_corner">
+<span class="sig-name descname"><span class="pre">min_corner</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.Domain.min_corner" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.Domain.max_corner">
+<span class="sig-name descname"><span class="pre">max_corner</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.Domain.max_corner" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.Domain.voxel_size">
+<span class="sig-name descname"><span class="pre">voxel_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.Domain.voxel_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.Domain.grid_shape">
+<span class="sig-name descname"><span class="pre">grid_shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.Domain.grid_shape" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dds.Domain.length_unit">
+<span class="sig-name descname"><span class="pre">length_unit</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><span class="pre">Literal</span></a><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'mm'</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="s"><span class="pre">'m'</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.Domain.length_unit" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.from_bounds">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_bounds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">xmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ymin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ymax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mm'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.from_bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.from_bounds" title="Link to this definition"></a></dt>
+<dd><p>Create a domain from scalar bounds and voxel size.</p>
+<p>The requested upper bounds are aligned upward to whole voxels. For
+example, an extent of <code class="docutils literal notranslate"><span class="pre">1.1</span></code> with voxel size <code class="docutils literal notranslate"><span class="pre">0.5</span></code> produces three
+voxels and an aligned extent of <code class="docutils literal notranslate"><span class="pre">1.5</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>xmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>ymin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>ymax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>zmin</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>zmax</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>voxel_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>)</p></li>
+<li><p><strong>length_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'mm'</em><em>, </em><em>'m'</em><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#dds.Domain" title="dds.domain.Domain"><em>Domain</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.from_deposits">
+<em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_deposits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deposits</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">voxel_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">padding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length_unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mm'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.from_deposits"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.from_deposits" title="Link to this definition"></a></dt>
+<dd><p>Create a padded domain that encloses deposit support bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deposits</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.14)"><em>Iterable</em></a><em>[</em><a class="reference internal" href="dds.PointDeposit.html#dds.PointDeposit" title="dds.primitives.PointDeposit"><em>PointDeposit</em></a><em> | </em><a class="reference internal" href="dds.LineDeposit.html#dds.LineDeposit" title="dds.primitives.LineDeposit"><em>LineDeposit</em></a><em> | </em><a class="reference internal" href="dds.PolylineDeposit.html#dds.PolylineDeposit" title="dds.primitives.PolylineDeposit"><em>PolylineDeposit</em></a><em>] </em><em>| </em><a class="reference internal" href="dds.PointDeposit.html#dds.PointDeposit" title="dds.primitives.PointDeposit"><em>PointDeposit</em></a><em> | </em><a class="reference internal" href="dds.LineDeposit.html#dds.LineDeposit" title="dds.primitives.LineDeposit"><em>LineDeposit</em></a><em> | </em><a class="reference internal" href="dds.PolylineDeposit.html#dds.PolylineDeposit" title="dds.primitives.PolylineDeposit"><em>PolylineDeposit</em></a>) – One deposit or an iterable of deposits.</p></li>
+<li><p><strong>voxel_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>) – Isotropic scalar spacing or anisotropic <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> spacing.</p></li>
+<li><p><strong>padding</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Nonnegative world-space padding. <code class="docutils literal notranslate"><span class="pre">&quot;auto&quot;</span></code> uses the largest voxel
+size component.</p></li>
+<li><p><strong>length_unit</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Literal" title="(in Python v3.14)"><em>Literal</em></a><em>[</em><em>'mm'</em><em>, </em><em>'m'</em><em>]</em>) – Informational unit label for the resulting domain.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#dds.Domain" title="dds.domain.Domain"><em>Domain</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Return a dictionary representation for export.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)">object</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.contains_point">
+<span class="sig-name descname"><span class="pre">contains_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.contains_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.contains_point" title="Link to this definition"></a></dt>
+<dd><p>Return whether a point lies inside the half-open domain bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>point</strong> (<a class="reference internal" href="dds.Point3D.html#dds.Point3D" title="dds.primitives.Point3D"><em>Point3D</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.world_to_index">
+<span class="sig-name descname"><span class="pre">world_to_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">point</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.world_to_index"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.world_to_index" title="Link to this definition"></a></dt>
+<dd><p>Convert world coordinates to integer voxel indices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>point</strong> (<a class="reference internal" href="dds.Point3D.html#dds.Point3D" title="dds.primitives.Point3D"><em>Point3D</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>) – World-space coordinate.</p></li>
+<li><p><strong>clip</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a>) – If true, clamp out-of-domain indices to the nearest valid voxel.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.14)"><strong>ValueError</strong></a> – If <code class="docutils literal notranslate"><span class="pre">clip</span></code> is false and the point lies outside the domain.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.index_to_world">
+<span class="sig-name descname"><span class="pre">index_to_world</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.index_to_world"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.index_to_world" title="Link to this definition"></a></dt>
+<dd><p>Convert voxel indices to the voxel-center world coordinate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>index</strong> (<a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="dds.Point3D.html#dds.Point3D" title="dds.primitives.Point3D"><em>Point3D</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.axis_centers">
+<span class="sig-name descname"><span class="pre">axis_centers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stop</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.axis_centers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.axis_centers" title="Link to this definition"></a></dt>
+<dd><p>Return voxel-center coordinates along one axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>stop</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.5)"><em>dtype</em></a>[<em>float64</em>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.grid_centers">
+<span class="sig-name descname"><span class="pre">grid_centers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.grid_centers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.grid_centers" title="Link to this definition"></a></dt>
+<dd><p>Return dense voxel-center coordinate arrays using <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> indexing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>index_bounds</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em><em>] </em><em>| </em><em>None</em>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.5)"><em>dtype</em></a>[<em>float64</em>]], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.5)"><em>dtype</em></a>[<em>float64</em>]], <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.5)"><em>ndarray</em></a>[<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>, <a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.5)"><em>dtype</em></a>[<em>float64</em>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dds.Domain.index_bounds_for_aabb">
+<span class="sig-name descname"><span class="pre">index_bounds_for_aabb</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minimum</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maximum</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/dds/domain.html#Domain.index_bounds_for_aabb"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dds.Domain.index_bounds_for_aabb" title="Link to this definition"></a></dt>
+<dd><p>Return half-open index bounds for voxel centers inside an AABB.</p>
+<p>Returns <code class="docutils literal notranslate"><span class="pre">None</span></code> when the requested bounds do not overlap the domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>minimum</strong> (<a class="reference internal" href="dds.Point3D.html#dds.Point3D" title="dds.primitives.Point3D"><em>Point3D</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>)</p></li>
+<li><p><strong>maximum</strong> (<a class="reference internal" href="dds.Point3D.html#dds.Point3D" title="dds.primitives.Point3D"><em>Point3D</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence" title="(in Python v3.14)"><em>Sequence</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>], <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>], <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)">tuple</a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>]] | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dds.BeadProfile.html" class="btn btn-neutral float-left" title="dds.BeadProfile" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dds.Point3D.html" class="btn btn-neutral float-right" title="dds.Point3D" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ozguc Bertug Capunaman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+ 
+<div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
+  This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
+</div>
+
+
+</body>
+</html>

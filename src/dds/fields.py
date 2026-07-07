@@ -45,7 +45,12 @@ def accumulate_fields(
     *,
     include_coverage: bool = False,
 ) -> dict[FieldName, npt.NDArray[np.float64]]:
-    """Accumulate the implicit field and optional additive coverage."""
+    """Accumulate the implicit field and optional additive coverage.
+
+    The implicit field uses maximum composition and represents the fabricated
+    geometry envelope. Coverage uses additive composition and is an overlap
+    diagnostic, not a physical density.
+    """
 
     fields: dict[FieldName, npt.NDArray[np.float64]] = {
         "implicit": np.zeros(domain.grid_shape, dtype=float)
@@ -79,7 +84,10 @@ def accumulate_deposition_index(
     domain: Domain,
     deposits: Iterable[DepositInput] | DepositInput,
 ) -> npt.NDArray[np.intp]:
-    """Record the index of the last deposit touching each voxel."""
+    """Record the zero-based index of the last deposit touching each voxel.
+
+    Untouched voxels contain ``-1``.
+    """
 
     index_field = np.full(domain.grid_shape, -1, dtype=np.intp)
     for deposit_index, deposit in enumerate(iter_deposits(deposits)):
@@ -94,7 +102,10 @@ def accumulate_deposition_order(
     *,
     threshold: float = 0.5,
 ) -> npt.NDArray[np.intp]:
-    """Record the one-based order of the last deposit reaching a threshold."""
+    """Record the one-based order of the last deposit reaching a threshold.
+
+    Untouched voxels contain ``0``.
+    """
 
     threshold_value = ensure_finite_scalar(threshold, "threshold")
     if threshold_value < 0.0:
@@ -119,7 +130,13 @@ def apply_deposit_to_field(
     *,
     field: FieldName = "implicit",
 ) -> bool:
-    """Apply one deposit to an implicit or coverage grid in place."""
+    """Apply one deposit to an implicit or coverage grid in place.
+
+    Returns
+    -------
+    bool
+        ``True`` if at least one sampled kernel tile intersected the domain.
+    """
 
     if field not in {"implicit", "coverage"}:
         raise ValueError("field must be 'implicit' or 'coverage'.")

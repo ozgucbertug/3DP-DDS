@@ -1,0 +1,1140 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dds.primitives &mdash; 3DP-DDS</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/_modules/dds/primitives.html" />
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=3e6ca1ad"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            3DP-DDS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting-started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#first-simulation">First Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../getting-started.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/domains-and-beads.html">Domains And Beads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../concepts/index.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../api/core.html">Core API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.BeadProfile.html">dds.BeadProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.BeadProfile.html#dds.BeadProfile"><code class="docutils literal notranslate"><span class="pre">BeadProfile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Domain.html">dds.Domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Domain.html#dds.Domain"><code class="docutils literal notranslate"><span class="pre">Domain</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Point3D.html">dds.Point3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Point3D.html#dds.Point3D"><code class="docutils literal notranslate"><span class="pre">Point3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Vector3D.html">dds.Vector3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Vector3D.html#dds.Vector3D"><code class="docutils literal notranslate"><span class="pre">Vector3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Pose3D.html">dds.Pose3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Pose3D.html#dds.Pose3D"><code class="docutils literal notranslate"><span class="pre">Pose3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.DepositionTarget.html">dds.DepositionTarget</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget"><code class="docutils literal notranslate"><span class="pre">DepositionTarget</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Line3D.html">dds.Line3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Line3D.html#dds.Line3D"><code class="docutils literal notranslate"><span class="pre">Line3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Polyline3D.html">dds.Polyline3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Polyline3D.html#dds.Polyline3D"><code class="docutils literal notranslate"><span class="pre">Polyline3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.PointDeposit.html">dds.PointDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.PointDeposit.html#dds.PointDeposit"><code class="docutils literal notranslate"><span class="pre">PointDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.LineDeposit.html">dds.LineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.LineDeposit.html#dds.LineDeposit"><code class="docutils literal notranslate"><span class="pre">LineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.PolylineDeposit.html">dds.PolylineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit"><code class="docutils literal notranslate"><span class="pre">PolylineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.SimulationResult.html">dds.SimulationResult</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.SimulationResult.html#dds.SimulationResult"><code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.Simulator.html">dds.Simulator</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.Simulator.html#dds.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.ChunkedField.html">dds.ChunkedField</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.ChunkedField.html#dds.ChunkedField"><code class="docutils literal notranslate"><span class="pre">ChunkedField</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.simulate.html">dds.simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.simulate.html#dds.simulate"><code class="docutils literal notranslate"><span class="pre">simulate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/primitives.html">Primitive Helpers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.primitives.iter_deposits.html">dds.primitives.iter_deposits</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.primitives.iter_deposits.html#dds.primitives.iter_deposits"><code class="docutils literal notranslate"><span class="pre">iter_deposits()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/fields.html">Field Accumulation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_fields.html">dds.fields.accumulate_fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_fields.html#dds.fields.accumulate_fields"><code class="docutils literal notranslate"><span class="pre">accumulate_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_field.html">dds.fields.accumulate_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_field.html#dds.fields.accumulate_field"><code class="docutils literal notranslate"><span class="pre">accumulate_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_deposition_index.html">dds.fields.accumulate_deposition_index</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_deposition_index.html#dds.fields.accumulate_deposition_index"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_index()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_deposition_order.html">dds.fields.accumulate_deposition_order</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_deposition_order.html#dds.fields.accumulate_deposition_order"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.apply_deposit_to_field.html">dds.fields.apply_deposit_to_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.apply_deposit_to_field.html#dds.fields.apply_deposit_to_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.apply_deposit_to_index_field.html">dds.fields.apply_deposit_to_index_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.apply_deposit_to_index_field.html#dds.fields.apply_deposit_to_index_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_index_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_chunked_field.html">dds.fields.accumulate_chunked_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.fields.accumulate_chunked_field.html#dds.fields.accumulate_chunked_field"><code class="docutils literal notranslate"><span class="pre">accumulate_chunked_field()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/analysis.html">Analysis API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.analysis.SimulationAnalysis.html">dds.analysis.SimulationAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis"><code class="docutils literal notranslate"><span class="pre">SimulationAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.analysis.StratumFieldSet.html">dds.analysis.StratumFieldSet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet"><code class="docutils literal notranslate"><span class="pre">StratumFieldSet</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.analysis.InterfacePairSummary.html">dds.analysis.InterfacePairSummary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary"><code class="docutils literal notranslate"><span class="pre">InterfacePairSummary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.analysis.InterfaceAnalysis.html">dds.analysis.InterfaceAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis"><code class="docutils literal notranslate"><span class="pre">InterfaceAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.analysis.SupportAnalysis.html">dds.analysis.SupportAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis"><code class="docutils literal notranslate"><span class="pre">SupportAnalysis</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../api/occupancy.html">Occupancy API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.occupancy.occupancy_from_implicit_field.html">dds.occupancy.occupancy_from_implicit_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.occupancy.occupancy_from_implicit_field.html#dds.occupancy.occupancy_from_implicit_field"><code class="docutils literal notranslate"><span class="pre">occupancy_from_implicit_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../api/generated/dds.occupancy.occupancy_fraction.html">dds.occupancy.occupancy_fraction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../api/generated/dds.occupancy.occupancy_fraction.html#dds.occupancy.occupancy_fraction"><code class="docutils literal notranslate"><span class="pre">occupancy_fraction()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">3DP-DDS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dds.primitives</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dds.primitives</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Geometry primitives and deposition inputs.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">TypeAlias</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial.transform</span><span class="w"> </span><span class="kn">import</span> <span class="n">Rotation</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.attributes</span><span class="w"> </span><span class="kn">import</span> <span class="n">BeadProfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_finite_scalar</span>
+
+<span class="n">Coordinate3D</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+<span class="n">PointLike</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="s2">&quot;Point3D | Coordinate3D&quot;</span>
+<span class="n">VectorLike</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="s2">&quot;Vector3D | Coordinate3D&quot;</span>
+<span class="n">TargetLike</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="s2">&quot;DepositionTarget | Pose3D | Point3D | Coordinate3D&quot;</span>
+<span class="n">SweepResolution</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="s2">&quot;float | None&quot;</span>
+
+<span class="n">DEFAULT_AXIS</span> <span class="o">=</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_coerce_xyz</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">Vector3D</span><span class="p">)):</span>
+        <span class="n">xyz</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">xyz</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">component</span><span class="p">)</span> <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">cast</span><span class="p">(</span><span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">value</span><span class="p">))</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must contain exactly three numeric values&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">xyz</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must contain exactly three values&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">xyz</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> values must be finite&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">xyz</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">xyz</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">xyz</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="Point3D">
+<a class="viewcode-back" href="../../api/generated/dds.Point3D.html#dds.Point3D">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Point3D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A finite position in three-dimensional Cartesian space.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x, y, z</span>
+<span class="sd">        Cartesian coordinates in the same world unit recorded by the</span>
+<span class="sd">        simulation :class:`dds.Domain`.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If any coordinate is not finite.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">z</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;point coordinates must be finite&quot;</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+<div class="viewcode-block" id="Point3D.from_value">
+<a class="viewcode-back" href="../../api/generated/dds.Point3D.html#dds.Point3D.from_value">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_value</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">PointLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Coerce a point-like value into a ``Point3D``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        value</span>
+<span class="sd">            Existing ``Point3D`` or any three-component numeric sequence.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Point3D</span>
+<span class="sd">            The input point itself or a new immutable point instance.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="n">_coerce_xyz</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;point&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Point3D.to_tuple">
+<a class="viewcode-back" href="../../api/generated/dds.Point3D.html#dds.Point3D.to_tuple">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the point as an ``(x, y, z)`` tuple.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span></div>
+
+
+<div class="viewcode-block" id="Point3D.to_array">
+<a class="viewcode-back" href="../../api/generated/dds.Point3D.html#dds.Point3D.to_array">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_array</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the point as a NumPy ``float64`` array.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Vector3D">
+<a class="viewcode-back" href="../../api/generated/dds.Vector3D.html#dds.Vector3D">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Vector3D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A finite direction or displacement in three-dimensional space.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    x, y, z</span>
+<span class="sd">        Vector components in Cartesian order.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If any component is not finite.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">z</span><span class="p">:</span> <span class="nb">float</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">),</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">z</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;vector components must be finite&quot;</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;z&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+
+<div class="viewcode-block" id="Vector3D.from_value">
+<a class="viewcode-back" href="../../api/generated/dds.Vector3D.html#dds.Vector3D.from_value">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_value</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">VectorLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vector3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Coerce a vector-like value into a ``Vector3D``.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">cls</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">*</span><span class="n">_coerce_xyz</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;vector&quot;</span><span class="p">))</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Euclidean vector length.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_array</span><span class="p">()))</span>
+
+<div class="viewcode-block" id="Vector3D.normalized">
+<a class="viewcode-back" href="../../api/generated/dds.Vector3D.html#dds.Vector3D.normalized">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">normalized</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vector3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a unit-length vector in the same direction.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the vector has zero length.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span>
+        <span class="k">if</span> <span class="n">length</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;vector must be non-zero&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Vector3D</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span> <span class="o">/</span> <span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span> <span class="o">/</span> <span class="n">length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span> <span class="o">/</span> <span class="n">length</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Vector3D.to_tuple">
+<a class="viewcode-back" href="../../api/generated/dds.Vector3D.html#dds.Vector3D.to_tuple">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the vector as an ``(x, y, z)`` tuple.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">z</span></div>
+
+
+<div class="viewcode-block" id="Vector3D.to_array">
+<a class="viewcode-back" href="../../api/generated/dds.Vector3D.html#dds.Vector3D.to_array">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_array</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the vector as a NumPy ``float64`` array.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">(),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Pose3D">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">eq</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Pose3D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An active local-to-parent rigid transform.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    position</span>
+<span class="sd">        Translation component of the transform.</span>
+<span class="sd">    orientation</span>
+<span class="sd">        SciPy ``Rotation`` containing exactly one rotation. If omitted, the</span>
+<span class="sd">        identity rotation is used.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    ``Pose3D`` is active: it transforms local coordinates into the parent</span>
+<span class="sd">    frame. Use :meth:`DepositionTarget.from_pose` to convert a tool pose into</span>
+<span class="sd">    the top-referenced target consumed by deposition kernels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">position</span><span class="p">:</span> <span class="n">Point3D</span>
+    <span class="n">orientation</span><span class="p">:</span> <span class="n">Rotation</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="n">PointLike</span><span class="p">,</span>
+        <span class="n">orientation</span><span class="p">:</span> <span class="n">Rotation</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resolved_orientation</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">Rotation</span><span class="o">.</span><span class="n">identity</span><span class="p">()</span> <span class="k">if</span> <span class="n">orientation</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">orientation</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">resolved_orientation</span><span class="p">,</span> <span class="n">Rotation</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;orientation must be a scipy Rotation&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resolved_orientation</span><span class="o">.</span><span class="n">single</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;orientation must contain exactly one rotation&quot;</span><span class="p">)</span>
+        <span class="n">quaternion</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="n">resolved_orientation</span><span class="o">.</span><span class="n">as_quat</span><span class="p">(</span><span class="n">canonical</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">quaternion</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">quaternion</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;orientation must be a finite single rotation&quot;</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">position</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;orientation&quot;</span><span class="p">,</span>
+            <span class="n">Rotation</span><span class="o">.</span><span class="n">from_quat</span><span class="p">(</span><span class="n">quaternion</span><span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Pose3D.transform_point">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.transform_point">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">PointLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Point3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transform a local point into the parent frame.&quot;&quot;&quot;</span>
+
+        <span class="n">transformed</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">point</span><span class="p">)</span><span class="o">.</span><span class="n">to_array</span><span class="p">())</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">transformed</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.transform_vector">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.transform_vector">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">transform_vector</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vector</span><span class="p">:</span> <span class="n">VectorLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vector3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Transform a local vector by orientation only.&quot;&quot;&quot;</span>
+
+        <span class="n">transformed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">Vector3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">vector</span><span class="p">)</span><span class="o">.</span><span class="n">to_array</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">Vector3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">transformed</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.inverse">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.inverse">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pose3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the inverse parent-to-local transform.&quot;&quot;&quot;</span>
+
+        <span class="n">orientation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">inv</span><span class="p">()</span>
+        <span class="n">position</span> <span class="o">=</span> <span class="o">-</span><span class="n">orientation</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">Pose3D</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="n">position</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="n">orientation</span><span class="o">=</span><span class="n">orientation</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.compose">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.compose">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_pose</span><span class="p">:</span> <span class="n">Pose3D</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pose3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compose this transform with a local transform.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        local_pose</span>
+<span class="sd">            Transform applied first in this pose&#39;s local frame.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Pose3D</span>
+<span class="sd">            Transform equivalent to applying ``local_pose`` and then this pose.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">local_pose</span><span class="p">,</span> <span class="n">Pose3D</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;local_pose must be a Pose3D&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Pose3D</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_point</span><span class="p">(</span><span class="n">local_pose</span><span class="o">.</span><span class="n">position</span><span class="p">),</span>
+            <span class="n">orientation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">orientation</span> <span class="o">*</span> <span class="n">local_pose</span><span class="o">.</span><span class="n">orientation</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.as_matrix">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.as_matrix">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">as_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the homogeneous 4x4 transform matrix.&quot;&quot;&quot;</span>
+
+        <span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">matrix</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">as_matrix</span><span class="p">()</span>
+        <span class="n">matrix</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">matrix</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.from_matrix">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.from_matrix">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_matrix</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">matrix</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Pose3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a pose from a homogeneous 4x4 transform matrix.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the matrix is not finite, not homogeneous, or does not contain</span>
+<span class="sd">            a proper orthonormal rotation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pose matrix must have shape (4, 4)&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pose matrix values must be finite&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-12</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pose matrix must have homogeneous final row [0, 0, 0, 1]&quot;</span><span class="p">)</span>
+        <span class="n">rotation_matrix</span> <span class="o">=</span> <span class="n">values</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span>
+            <span class="n">rotation_matrix</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">rotation_matrix</span><span class="p">,</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">),</span>
+            <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">),</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;pose matrix must contain a proper orthonormal rotation&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">values</span><span class="p">[:</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+            <span class="n">orientation</span><span class="o">=</span><span class="n">Rotation</span><span class="o">.</span><span class="n">from_matrix</span><span class="p">(</span><span class="n">rotation_matrix</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.is_close">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.is_close">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_close</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">position_atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+        <span class="n">angle_atol</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-9</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return whether another pose is close under position and angle tolerances.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Pose3D</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="n">position_atol</span> <span class="o">&lt;</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">angle_atol</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;comparison tolerances must be non-negative&quot;</span><span class="p">)</span>
+        <span class="n">position_close</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">allclose</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span>
+            <span class="n">other</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span>
+            <span class="n">rtol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">atol</span><span class="o">=</span><span class="n">position_atol</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">relative_angle</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">inv</span><span class="p">()</span> <span class="o">*</span> <span class="n">other</span><span class="o">.</span><span class="n">orientation</span><span class="p">)</span><span class="o">.</span><span class="n">magnitude</span><span class="p">())</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">position_close</span> <span class="ow">and</span> <span class="n">relative_angle</span> <span class="o">&lt;=</span> <span class="n">angle_atol</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Pose3D.to_dict">
+<a class="viewcode-back" href="../../api/generated/dds.Pose3D.html#dds.Pose3D.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an export-friendly dictionary with scalar-last quaternion.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()),</span>
+            <span class="s2">&quot;orientation_xyzw&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">orientation</span><span class="o">.</span><span class="n">as_quat</span><span class="p">(</span><span class="n">canonical</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DepositionTarget">
+<a class="viewcode-back" href="../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DepositionTarget</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A top-referenced position and deposition normal.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    position</span>
+<span class="sd">        World-space top position of the deposited bead, usually the nozzle</span>
+<span class="sd">        target.</span>
+<span class="sd">    normal</span>
+<span class="sd">        Deposition normal. The vector is normalized during construction.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Targets are top-referenced, not center-referenced: bead geometry extends</span>
+<span class="sd">    opposite the normal by ``BeadProfile.height``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">position</span><span class="p">:</span> <span class="n">Point3D</span>
+    <span class="n">normal</span><span class="p">:</span> <span class="n">Vector3D</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">position</span><span class="p">:</span> <span class="n">PointLike</span><span class="p">,</span>
+        <span class="n">normal</span><span class="p">:</span> <span class="n">VectorLike</span> <span class="o">=</span> <span class="n">DEFAULT_AXIS</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">position</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;normal&quot;</span><span class="p">,</span>
+            <span class="n">Vector3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">normal</span><span class="p">)</span><span class="o">.</span><span class="n">normalized</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="DepositionTarget.from_pose">
+<a class="viewcode-back" href="../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget.from_pose">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_pose</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">pose</span><span class="p">:</span> <span class="n">Pose3D</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">local_axis</span><span class="p">:</span> <span class="n">VectorLike</span> <span class="o">=</span> <span class="n">DEFAULT_AXIS</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DepositionTarget</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a tool pose into a deposition target.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        pose</span>
+<span class="sd">            Tool pose whose position becomes the target position.</span>
+<span class="sd">        local_axis</span>
+<span class="sd">            Tool-local deposition axis transformed into the world normal. The</span>
+<span class="sd">            default is local ``+Z``.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Roll about ``local_axis`` is discarded after conversion because the</span>
+<span class="sd">        current bead model is rotationally symmetric about the deposition</span>
+<span class="sd">        normal.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pose</span><span class="p">,</span> <span class="n">Pose3D</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;pose must be a Pose3D&quot;</span><span class="p">)</span>
+        <span class="n">axis</span> <span class="o">=</span> <span class="n">Vector3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">local_axis</span><span class="p">)</span><span class="o">.</span><span class="n">normalized</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">position</span><span class="o">=</span><span class="n">pose</span><span class="o">.</span><span class="n">position</span><span class="p">,</span>
+            <span class="n">normal</span><span class="o">=</span><span class="n">pose</span><span class="o">.</span><span class="n">transform_vector</span><span class="p">(</span><span class="n">axis</span><span class="p">),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DepositionTarget.from_value">
+<a class="viewcode-back" href="../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget.from_value">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_value</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">TargetLike</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DepositionTarget</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Coerce a target-like value into a ``DepositionTarget``.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">DepositionTarget</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">value</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Pose3D</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">from_pose</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">position</span><span class="o">=</span><span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">value</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="DepositionTarget.to_dict">
+<a class="viewcode-back" href="../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return an export-friendly dictionary representation.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;position&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()),</span>
+            <span class="s2">&quot;normal&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">normal</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()),</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Line3D">
+<a class="viewcode-back" href="../../api/generated/dds.Line3D.html#dds.Line3D">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Line3D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A finite line segment defined by start and end points.&quot;&quot;&quot;</span>
+
+    <span class="n">start</span><span class="p">:</span> <span class="n">PointLike</span>
+    <span class="n">end</span><span class="p">:</span> <span class="n">PointLike</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">direction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Vector3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Vector from ``start`` to ``end``.&quot;&quot;&quot;</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Vector3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">((</span><span class="n">end</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="o">.</span><span class="n">to_array</span><span class="p">())</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Euclidean segment length.&quot;&quot;&quot;</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">)</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">end</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="o">.</span><span class="n">to_array</span><span class="p">()))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">Point3D</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Axis-aligned lower and upper bounds of the segment endpoints.&quot;&quot;&quot;</span>
+
+        <span class="n">start</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="p">)</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
+        <span class="n">end</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="p">)</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()),</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Polyline3D">
+<a class="viewcode-back" href="../../api/generated/dds.Polyline3D.html#dds.Polyline3D">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Polyline3D</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A connected sequence of at least two points.&quot;&quot;&quot;</span>
+
+    <span class="n">points</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PointLike</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">points</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">point</span><span class="p">)</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;polyline requires at least two points&quot;</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;points&quot;</span><span class="p">,</span> <span class="n">points</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">segments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Line3D</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Consecutive line segments making up the polyline.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">Line3D</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Total Euclidean length of all polyline segments.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">segment</span><span class="o">.</span><span class="n">length</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">segments</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">Point3D</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Axis-aligned lower and upper bounds of all polyline points.&quot;&quot;&quot;</span>
+
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">cast</span><span class="p">(</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">point</span><span class="p">)</span><span class="o">.</span><span class="n">to_tuple</span><span class="p">()</span> <span class="k">for</span> <span class="n">point</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="p">],</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">coordinates</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()),</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span>
+            <span class="n">coordinates</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_point_target_support_bounds</span><span class="p">(</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">PointLike</span><span class="p">,</span>
+    <span class="n">normal</span><span class="p">:</span> <span class="n">VectorLike</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">width</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">height</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">padding</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return conservative bounds for a top-referenced oriented bead.&quot;&quot;&quot;</span>
+
+    <span class="n">padding_value</span> <span class="o">=</span> <span class="n">ensure_finite_scalar</span><span class="p">(</span><span class="n">padding</span><span class="p">,</span> <span class="s2">&quot;padding&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">padding_value</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;padding must be non-negative&quot;</span><span class="p">)</span>
+    <span class="n">target_array</span> <span class="o">=</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">target</span><span class="p">)</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
+    <span class="n">normal_array</span> <span class="o">=</span> <span class="n">Vector3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">normal</span><span class="p">)</span><span class="o">.</span><span class="n">normalized</span><span class="p">()</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span>
+    <span class="n">center</span> <span class="o">=</span> <span class="n">target_array</span> <span class="o">-</span> <span class="n">normal_array</span> <span class="o">*</span> <span class="p">(</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+    <span class="n">radius</span> <span class="o">=</span> <span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span>
+    <span class="n">radial_extent</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="n">normal_array</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span>
+    <span class="n">axial_extent</span> <span class="o">=</span> <span class="p">(</span><span class="n">height</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">normal_array</span><span class="p">)</span>
+    <span class="n">extent</span> <span class="o">=</span> <span class="n">radial_extent</span> <span class="o">+</span> <span class="n">axial_extent</span> <span class="o">+</span> <span class="n">padding_value</span>
+    <span class="k">return</span> <span class="n">center</span> <span class="o">-</span> <span class="n">extent</span><span class="p">,</span> <span class="n">center</span> <span class="o">+</span> <span class="n">extent</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_deposit_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">BeadProfile</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;profile must be a BeadProfile&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_validate_sweep_resolution</span><span class="p">(</span>
+    <span class="n">sweep_resolution</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">sweep_resolution</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sweep_resolution</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;sweep_resolution must be None or a positive number&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">resolved</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sweep_resolution</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">&quot;sweep_resolution must be None or a positive number&quot;</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">resolved</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sweep_resolution must be finite&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">resolved</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;sweep_resolution must be positive&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">resolved</span>
+
+
+<div class="viewcode-block" id="PointDeposit">
+<a class="viewcode-back" href="../../api/generated/dds.PointDeposit.html#dds.PointDeposit">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PointDeposit</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A bead deposited at one top-referenced target.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    target</span>
+<span class="sd">        Deposition target, pose, point, or coordinate triplet. Coordinate</span>
+<span class="sd">        triplets are interpreted as world ``+Z`` targets.</span>
+<span class="sd">    profile</span>
+<span class="sd">        Bead dimensions used by deposition kernels.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">target</span><span class="p">:</span> <span class="n">DepositionTarget</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">target</span><span class="p">:</span> <span class="n">TargetLike</span><span class="p">,</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_validate_deposit_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="n">DepositionTarget</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="n">profile</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PointDeposit.support_bounds">
+<a class="viewcode-back" href="../../api/generated/dds.PointDeposit.html#dds.PointDeposit.support_bounds">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">support_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">padding</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">Point3D</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return conservative world-space support bounds for the bead.&quot;&quot;&quot;</span>
+
+        <span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span> <span class="o">=</span> <span class="n">_point_target_support_bounds</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">position</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">target</span><span class="o">.</span><span class="n">normal</span><span class="p">,</span>
+            <span class="n">width</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+            <span class="n">height</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">height</span><span class="p">,</span>
+            <span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">minimum</span><span class="o">.</span><span class="n">tolist</span><span class="p">()),</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span>
+            <span class="n">maximum</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LineDeposit">
+<a class="viewcode-back" href="../../api/generated/dds.LineDeposit.html#dds.LineDeposit">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">LineDeposit</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A bead swept between two top-referenced deposition targets.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    start, end</span>
+<span class="sd">        Endpoint targets, poses, points, or coordinate triplets.</span>
+<span class="sd">    profile</span>
+<span class="sd">        Bead dimensions used by deposition kernels.</span>
+<span class="sd">    sweep_resolution</span>
+<span class="sd">        Optional world-space spacing for explicit sweep subdivision. ``None``</span>
+<span class="sd">        lets the kernel choose a conservative resolution from the domain and</span>
+<span class="sd">        bead profile.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If endpoint normals are antiparallel.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">start</span><span class="p">:</span> <span class="n">DepositionTarget</span>
+    <span class="n">end</span><span class="p">:</span> <span class="n">DepositionTarget</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span>
+    <span class="n">sweep_resolution</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">start</span><span class="p">:</span> <span class="n">TargetLike</span><span class="p">,</span>
+        <span class="n">end</span><span class="p">:</span> <span class="n">TargetLike</span><span class="p">,</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span><span class="p">,</span>
+        <span class="n">sweep_resolution</span><span class="p">:</span> <span class="n">SweepResolution</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resolved_start</span> <span class="o">=</span> <span class="n">DepositionTarget</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+        <span class="n">resolved_end</span> <span class="o">=</span> <span class="n">DepositionTarget</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">end</span><span class="p">)</span>
+        <span class="n">_validate_deposit_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+        <span class="n">resolved_sweep_resolution</span> <span class="o">=</span> <span class="n">_validate_sweep_resolution</span><span class="p">(</span><span class="n">sweep_resolution</span><span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span>
+                    <span class="n">resolved_start</span><span class="o">.</span><span class="n">normal</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span>
+                    <span class="n">resolved_end</span><span class="o">.</span><span class="n">normal</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="o">&lt;=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">1e-12</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;line endpoint normals cannot be antiparallel&quot;</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;start&quot;</span><span class="p">,</span> <span class="n">resolved_start</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;end&quot;</span><span class="p">,</span> <span class="n">resolved_end</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="n">profile</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;sweep_resolution&quot;</span><span class="p">,</span>
+            <span class="n">resolved_sweep_resolution</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">line</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Line3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Centerline connecting the endpoint target positions.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">Line3D</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+
+<div class="viewcode-block" id="LineDeposit.support_bounds">
+<a class="viewcode-back" href="../../api/generated/dds.LineDeposit.html#dds.LineDeposit.support_bounds">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">support_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">padding</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">Point3D</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return conservative world-space support bounds for the swept bead.&quot;&quot;&quot;</span>
+
+        <span class="n">padding_value</span> <span class="o">=</span> <span class="n">ensure_finite_scalar</span><span class="p">(</span><span class="n">padding</span><span class="p">,</span> <span class="s2">&quot;padding&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">padding_value</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;padding must be non-negative&quot;</span><span class="p">)</span>
+        <span class="n">support_radius</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">width</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">height</span><span class="o">**</span><span class="mi">2</span>
+        <span class="p">)</span> <span class="o">+</span> <span class="n">padding_value</span>
+        <span class="n">endpoints</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">end</span><span class="o">.</span><span class="n">position</span><span class="o">.</span><span class="n">to_array</span><span class="p">()),</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span>
+            <span class="n">endpoints</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="n">support_radius</span>
+        <span class="p">),</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">endpoints</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">support_radius</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PolylineDeposit">
+<a class="viewcode-back" href="../../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PolylineDeposit</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;One ordered multi-segment bead sweep through deposition targets.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    targets</span>
+<span class="sd">        Sequence of at least two target-like values.</span>
+<span class="sd">    profile</span>
+<span class="sd">        Bead dimensions used by all segments.</span>
+<span class="sd">    sweep_resolution</span>
+<span class="sd">        Optional world-space spacing shared by generated line segments.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">targets</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">DepositionTarget</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span>
+    <span class="n">sweep_resolution</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">targets</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">TargetLike</span><span class="p">],</span>
+        <span class="n">profile</span><span class="p">:</span> <span class="n">BeadProfile</span><span class="p">,</span>
+        <span class="n">sweep_resolution</span><span class="p">:</span> <span class="n">SweepResolution</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">resolved_targets</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">DepositionTarget</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span>
+        <span class="p">)</span>
+        <span class="n">resolved_sweep_resolution</span> <span class="o">=</span> <span class="n">_validate_sweep_resolution</span><span class="p">(</span><span class="n">sweep_resolution</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">resolved_targets</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;polyline deposit requires at least two targets&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">resolved_targets</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">resolved_targets</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+            <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">start</span><span class="o">.</span><span class="n">normal</span><span class="o">.</span><span class="n">to_array</span><span class="p">(),</span> <span class="n">end</span><span class="o">.</span><span class="n">normal</span><span class="o">.</span><span class="n">to_array</span><span class="p">()))</span>
+                <span class="o">&lt;=</span> <span class="o">-</span><span class="mf">1.0</span> <span class="o">+</span> <span class="mf">1e-12</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;consecutive polyline target normals cannot be antiparallel&quot;</span>
+                <span class="p">)</span>
+        <span class="n">_validate_deposit_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;targets&quot;</span><span class="p">,</span> <span class="n">resolved_targets</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;profile&quot;</span><span class="p">,</span> <span class="n">profile</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="p">,</span>
+            <span class="s2">&quot;sweep_resolution&quot;</span><span class="p">,</span>
+            <span class="n">resolved_sweep_resolution</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">polyline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Polyline3D</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Polyline through the target positions.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">Polyline3D</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">target</span><span class="o">.</span><span class="n">position</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">))</span>
+
+<div class="viewcode-block" id="PolylineDeposit.segments">
+<a class="viewcode-back" href="../../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit.segments">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">segments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">LineDeposit</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the polyline as consecutive ``LineDeposit`` segments.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">LineDeposit</span><span class="p">(</span>
+                <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+                <span class="n">profile</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">profile</span><span class="p">,</span>
+                <span class="n">sweep_resolution</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">sweep_resolution</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">targets</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+                <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PolylineDeposit.support_bounds">
+<a class="viewcode-back" href="../../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit.support_bounds">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">support_bounds</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">padding</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Point3D</span><span class="p">,</span> <span class="n">Point3D</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return conservative world-space support bounds for all segments.&quot;&quot;&quot;</span>
+
+        <span class="n">segment_bounds</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">segment</span><span class="o">.</span><span class="n">support_bounds</span><span class="p">(</span><span class="n">padding</span><span class="o">=</span><span class="n">padding</span><span class="p">)</span> <span class="k">for</span> <span class="n">segment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">segments</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="n">lower</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">([</span><span class="n">bound</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span> <span class="k">for</span> <span class="n">bound</span> <span class="ow">in</span> <span class="n">segment_bounds</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">upper</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">bound</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">to_array</span><span class="p">()</span> <span class="k">for</span> <span class="n">bound</span> <span class="ow">in</span> <span class="n">segment_bounds</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">lower</span><span class="p">),</span> <span class="n">Point3D</span><span class="o">.</span><span class="n">from_value</span><span class="p">(</span><span class="n">upper</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="n">Deposit</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">PointDeposit</span> <span class="o">|</span> <span class="n">LineDeposit</span> <span class="o">|</span> <span class="n">PolylineDeposit</span>
+<span class="n">DepositInput</span><span class="p">:</span> <span class="n">TypeAlias</span> <span class="o">=</span> <span class="n">Deposit</span>
+
+
+<div class="viewcode-block" id="iter_deposits">
+<a class="viewcode-back" href="../../api/generated/dds.primitives.iter_deposits.html#dds.iter_deposits">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">iter_deposits</span><span class="p">(</span><span class="n">deposits</span><span class="p">:</span> <span class="n">DepositInput</span> <span class="o">|</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">DepositInput</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Deposit</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Yield normalized deposition events from one deposit or an iterable.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    deposits</span>
+<span class="sd">        A single deposit or an iterable containing point, line, or polyline</span>
+<span class="sd">        deposits.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    Deposit</span>
+<span class="sd">        Deposits in input order.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If the input is not a deposit or iterable of deposits.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deposits</span><span class="p">,</span> <span class="p">(</span><span class="n">PointDeposit</span><span class="p">,</span> <span class="n">LineDeposit</span><span class="p">,</span> <span class="n">PolylineDeposit</span><span class="p">)):</span>
+        <span class="k">yield</span> <span class="n">deposits</span>
+        <span class="k">return</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deposits</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;deposits must contain deposition primitives&quot;</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">deposits</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;deposits must be a deposit or iterable of deposits&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+    <span class="k">for</span> <span class="n">deposit</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">deposit</span><span class="p">,</span> <span class="p">(</span><span class="n">PointDeposit</span><span class="p">,</span> <span class="n">LineDeposit</span><span class="p">,</span> <span class="n">PolylineDeposit</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;deposits must contain PointDeposit, LineDeposit, or PolylineDeposit&quot;</span>
+            <span class="p">)</span>
+        <span class="k">yield</span> <span class="n">deposit</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ozguc Bertug Capunaman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+ 
+<div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
+  This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
+</div>
+
+
+</body>
+</html>

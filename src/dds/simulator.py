@@ -15,7 +15,22 @@ from .results import SimulationResult
 
 
 class Simulator:
-    """Stateful deposit collection with incrementally updated dense caches."""
+    """Stateful deposit collection with incrementally updated dense caches.
+
+    Parameters
+    ----------
+    domain
+        Simulation domain used for all deposits and result snapshots.
+    deposits
+        Optional initial deposit or iterable of deposits.
+
+    Notes
+    -----
+    ``Simulator`` is the mutable construction API. Calls to :meth:`result`
+    return immutable snapshots; later calls to :meth:`add_deposit`,
+    :meth:`add_deposits`, or :meth:`clear_deposits` do not mutate snapshots
+    that have already been returned.
+    """
 
     def __init__(
         self,
@@ -31,6 +46,8 @@ class Simulator:
 
     @property
     def deposits(self) -> tuple[Deposit, ...]:
+        """Deposits currently stored by the simulator in simulation order."""
+
         return tuple(self._deposits)
 
     def _apply_incremental(self, deposit: Deposit) -> None:
@@ -86,21 +103,27 @@ class Simulator:
             self._coverage_field()
 
     def add_deposit(self, deposit: DepositInput) -> None:
-        """Add one deposit, updating any warm dense caches."""
+        """Add one deposit, updating any warm dense caches.
+
+        Parameters
+        ----------
+        deposit
+            Point, line, or polyline deposit to append.
+        """
 
         for leaf in iter_deposits(deposit):
             self._deposits.append(leaf)
             self._apply_incremental(leaf)
 
     def add_deposits(self, deposits: Iterable[DepositInput] | DepositInput) -> None:
-        """Add multiple deposits, updating any warm dense caches."""
+        """Add one or more deposits, updating any warm dense caches."""
 
         for leaf in iter_deposits(deposits):
             self._deposits.append(leaf)
             self._apply_incremental(leaf)
 
     def clear_deposits(self) -> None:
-        """Remove all deposits while retaining allocated dense caches."""
+        """Remove all deposits while retaining allocated dense arrays."""
 
         self._deposits.clear()
         if self._coverage_cache is not None:
@@ -114,7 +137,20 @@ class Simulator:
         include_coverage: bool = False,
         threshold: float = 0.5,
     ) -> SimulationResult:
-        """Return an immutable snapshot of the current simulation."""
+        """Return an immutable snapshot of the current simulation.
+
+        Parameters
+        ----------
+        include_coverage
+            Include additive coverage diagnostics in the result.
+        threshold
+            Default threshold stored on the result for analysis queries.
+
+        Returns
+        -------
+        SimulationResult
+            Snapshot containing read-only copies of the computed fields.
+        """
 
         self._warm_result_fields(include_coverage=include_coverage)
         coverage = self._coverage_cache if include_coverage else None

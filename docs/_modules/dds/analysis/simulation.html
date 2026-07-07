@@ -1,0 +1,1103 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dds.analysis.simulation &mdash; 3DP-DDS</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/_modules/dds/analysis/simulation.html" />
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=3e6ca1ad"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            3DP-DDS
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting-started.html">Getting Started</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting-started.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting-started.html#first-simulation">First Simulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../getting-started.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../tutorials/index.html">Tutorials</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/domains-and-beads.html">Domains And Beads</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../concepts/index.html">Concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/architecture.html">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/core.html">Core API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.BeadProfile.html">dds.BeadProfile</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.BeadProfile.html#dds.BeadProfile"><code class="docutils literal notranslate"><span class="pre">BeadProfile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Domain.html">dds.Domain</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Domain.html#dds.Domain"><code class="docutils literal notranslate"><span class="pre">Domain</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Point3D.html">dds.Point3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Point3D.html#dds.Point3D"><code class="docutils literal notranslate"><span class="pre">Point3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Vector3D.html">dds.Vector3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Vector3D.html#dds.Vector3D"><code class="docutils literal notranslate"><span class="pre">Vector3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Pose3D.html">dds.Pose3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Pose3D.html#dds.Pose3D"><code class="docutils literal notranslate"><span class="pre">Pose3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.DepositionTarget.html">dds.DepositionTarget</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.DepositionTarget.html#dds.DepositionTarget"><code class="docutils literal notranslate"><span class="pre">DepositionTarget</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Line3D.html">dds.Line3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Line3D.html#dds.Line3D"><code class="docutils literal notranslate"><span class="pre">Line3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Polyline3D.html">dds.Polyline3D</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Polyline3D.html#dds.Polyline3D"><code class="docutils literal notranslate"><span class="pre">Polyline3D</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.PointDeposit.html">dds.PointDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.PointDeposit.html#dds.PointDeposit"><code class="docutils literal notranslate"><span class="pre">PointDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.LineDeposit.html">dds.LineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.LineDeposit.html#dds.LineDeposit"><code class="docutils literal notranslate"><span class="pre">LineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.PolylineDeposit.html">dds.PolylineDeposit</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit"><code class="docutils literal notranslate"><span class="pre">PolylineDeposit</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.SimulationResult.html">dds.SimulationResult</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.SimulationResult.html#dds.SimulationResult"><code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.Simulator.html">dds.Simulator</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.Simulator.html#dds.Simulator"><code class="docutils literal notranslate"><span class="pre">Simulator</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.ChunkedField.html">dds.ChunkedField</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.ChunkedField.html#dds.ChunkedField"><code class="docutils literal notranslate"><span class="pre">ChunkedField</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.simulate.html">dds.simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.simulate.html#dds.simulate"><code class="docutils literal notranslate"><span class="pre">simulate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/primitives.html">Primitive Helpers</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.primitives.iter_deposits.html">dds.primitives.iter_deposits</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.primitives.iter_deposits.html#dds.primitives.iter_deposits"><code class="docutils literal notranslate"><span class="pre">iter_deposits()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/fields.html">Field Accumulation API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_fields.html">dds.fields.accumulate_fields</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_fields.html#dds.fields.accumulate_fields"><code class="docutils literal notranslate"><span class="pre">accumulate_fields()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_field.html">dds.fields.accumulate_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_field.html#dds.fields.accumulate_field"><code class="docutils literal notranslate"><span class="pre">accumulate_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_index.html">dds.fields.accumulate_deposition_index</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_index.html#dds.fields.accumulate_deposition_index"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_index()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_order.html">dds.fields.accumulate_deposition_order</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_deposition_order.html#dds.fields.accumulate_deposition_order"><code class="docutils literal notranslate"><span class="pre">accumulate_deposition_order()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_field.html">dds.fields.apply_deposit_to_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_field.html#dds.fields.apply_deposit_to_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_index_field.html">dds.fields.apply_deposit_to_index_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.apply_deposit_to_index_field.html#dds.fields.apply_deposit_to_index_field"><code class="docutils literal notranslate"><span class="pre">apply_deposit_to_index_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_chunked_field.html">dds.fields.accumulate_chunked_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.fields.accumulate_chunked_field.html#dds.fields.accumulate_chunked_field"><code class="docutils literal notranslate"><span class="pre">accumulate_chunked_field()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/analysis.html">Analysis API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.SimulationAnalysis.html">dds.analysis.SimulationAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis"><code class="docutils literal notranslate"><span class="pre">SimulationAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.StratumFieldSet.html">dds.analysis.StratumFieldSet</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet"><code class="docutils literal notranslate"><span class="pre">StratumFieldSet</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfacePairSummary.html">dds.analysis.InterfacePairSummary</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary"><code class="docutils literal notranslate"><span class="pre">InterfacePairSummary</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfaceAnalysis.html">dds.analysis.InterfaceAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis"><code class="docutils literal notranslate"><span class="pre">InterfaceAnalysis</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.analysis.SupportAnalysis.html">dds.analysis.SupportAnalysis</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis"><code class="docutils literal notranslate"><span class="pre">SupportAnalysis</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="../../../api/occupancy.html">Occupancy API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_from_implicit_field.html">dds.occupancy.occupancy_from_implicit_field</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_from_implicit_field.html#dds.occupancy.occupancy_from_implicit_field"><code class="docutils literal notranslate"><span class="pre">occupancy_from_implicit_field()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_fraction.html">dds.occupancy.occupancy_fraction</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../../../api/generated/dds.occupancy.occupancy_fraction.html#dds.occupancy.occupancy_fraction"><code class="docutils literal notranslate"><span class="pre">occupancy_fraction()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">3DP-DDS</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dds.analysis.simulation</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dds.analysis.simulation</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Reusable headless query and analysis helpers for dense simulation results.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Literal</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy.typing</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">npt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..domain</span><span class="w"> </span><span class="kn">import</span> <span class="n">Domain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..geometry.sdf</span><span class="w"> </span><span class="kn">import</span> <span class="n">_coerce_points</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..occupancy</span><span class="w"> </span><span class="kn">import</span> <span class="n">occupancy_from_implicit_field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..primitives</span><span class="w"> </span><span class="kn">import</span> <span class="n">Deposit</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">EPSILON</span><span class="p">,</span> <span class="n">ensure_finite_triplet</span><span class="p">,</span> <span class="n">readonly_array</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterfaceAnalysis</span><span class="p">,</span> <span class="n">StratumFieldSet</span><span class="p">,</span> <span class="n">SupportAnalysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.support</span><span class="w"> </span><span class="kn">import</span> <span class="n">BuildDirection</span>
+
+<span class="n">InterpolationMode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;nearest&quot;</span><span class="p">,</span> <span class="s2">&quot;trilinear&quot;</span><span class="p">]</span>
+<span class="n">RepresentationMode</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;occupancy&quot;</span><span class="p">,</span> <span class="s2">&quot;implicit&quot;</span><span class="p">,</span> <span class="s2">&quot;sdf&quot;</span><span class="p">,</span> <span class="s2">&quot;mesh&quot;</span><span class="p">]</span>
+<span class="n">SampleFieldName</span> <span class="o">=</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;implicit&quot;</span><span class="p">,</span> <span class="s2">&quot;occupancy&quot;</span><span class="p">,</span> <span class="s2">&quot;deposition_index&quot;</span><span class="p">,</span> <span class="s2">&quot;signed_distance&quot;</span><span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_surface_cache_key</span><span class="p">(</span><span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">step_size</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_freeze_generated_array</span><span class="p">(</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dtype</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">DTypeLike</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">result</span><span class="o">.</span><span class="n">setflags</span><span class="p">(</span><span class="n">write</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_face_centroids_and_areas</span><span class="p">(</span>
+    <span class="n">vertices</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+    <span class="n">faces</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]]:</span>
+    <span class="n">triangles</span> <span class="o">=</span> <span class="n">vertices</span><span class="p">[</span><span class="n">faces</span><span class="p">]</span>
+    <span class="n">centroids</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">triangles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">cross</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span>
+        <span class="n">triangles</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">triangles</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+        <span class="n">triangles</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">triangles</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">centroids</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">cross</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sample_nearest</span><span class="p">(</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">],</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">fill_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">points</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fill_value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">origin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">min_corner</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">spacing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">voxel_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">shape_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">grid_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">points</span> <span class="o">-</span> <span class="n">origin</span><span class="p">)</span> <span class="o">/</span> <span class="n">spacing</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+    <span class="n">inside</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">((</span><span class="n">raw</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">raw</span> <span class="o">&lt;</span> <span class="n">shape_array</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">inside</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">clipped</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">raw</span><span class="p">[</span><span class="n">inside</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">shape_array</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">inside</span><span class="p">]</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="n">clipped</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">clipped</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">clipped</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sample_trilinear</span><span class="p">(</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">fill_value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.ndimage</span><span class="w"> </span><span class="kn">import</span> <span class="n">map_coordinates</span>
+
+    <span class="n">min_corner</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">min_corner</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">spacing</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">domain</span><span class="o">.</span><span class="n">voxel_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">first_center</span> <span class="o">=</span> <span class="n">min_corner</span> <span class="o">+</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">spacing</span>
+
+    <span class="c1"># Compute fractional voxel coordinates for all points at once.</span>
+    <span class="n">fractional</span> <span class="o">=</span> <span class="p">(</span><span class="n">points</span> <span class="o">-</span> <span class="n">first_center</span><span class="p">)</span> <span class="o">/</span> <span class="n">spacing</span>  <span class="c1"># (n, 3)</span>
+
+    <span class="c1"># Points outside the domain get fill_value via mode=&#39;constant&#39;.</span>
+    <span class="c1"># map_coordinates expects coordinates as (ndim, n).</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">fractional</span><span class="o">.</span><span class="n">T</span>  <span class="c1"># (3, n)</span>
+    <span class="n">sampled</span> <span class="o">=</span> <span class="n">map_coordinates</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;constant&quot;</span><span class="p">,</span> <span class="n">cval</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">sampled</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sample_scalar_field</span><span class="p">(</span>
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+    <span class="n">points</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">interpolation</span><span class="p">:</span> <span class="n">InterpolationMode</span><span class="p">,</span>
+    <span class="n">fill_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">interpolation</span> <span class="o">==</span> <span class="s2">&quot;nearest&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_sample_nearest</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">interpolation</span> <span class="o">==</span> <span class="s2">&quot;trilinear&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_sample_trilinear</span><span class="p">(</span><span class="n">domain</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="n">fill_value</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;interpolation must be &#39;nearest&#39; or &#39;trilinear&#39;.&quot;</span><span class="p">)</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_AnalysisCache</span><span class="p">:</span>
+    <span class="n">deposition_index</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">deposition_order</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">occupancy</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">surface_mesh</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">surface_sdf</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">mesh_sdf</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">strata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">StratumFieldSet</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">interface</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">InterfaceAnalysis</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">support</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
+        <span class="nb">tuple</span><span class="p">[</span><span class="n">BuildDirection</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span>
+        <span class="n">SupportAnalysis</span><span class="p">,</span>
+    <span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SimulationAnalysis">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimulationAnalysis</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cached queries derived lazily from an immutable simulation field.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    domain</span>
+<span class="sd">        Simulation domain that defines bounds, voxel size, and grid shape.</span>
+<span class="sd">    implicit_field</span>
+<span class="sd">        Nonnegative union-like deposition field with shape</span>
+<span class="sd">        ``domain.grid_shape``.</span>
+<span class="sd">    deposits</span>
+<span class="sd">        Deposits that produced the field, in simulation order.</span>
+<span class="sd">    default_threshold</span>
+<span class="sd">        Threshold used when query methods are called without an explicit</span>
+<span class="sd">        threshold.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The stored implicit field is not a signed-distance field. It is clipped to</span>
+<span class="sd">    ``[0, 1]`` and uses the threshold, commonly ``0.5``, as the nominal</span>
+<span class="sd">    fabricated surface. Use :meth:`surface_sdf` or :meth:`signed_distance_at`</span>
+<span class="sd">    for metric distances.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span>
+    <span class="n">deposits</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Deposit</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">default_threshold</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">_implicit_field</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">_cache</span><span class="p">:</span> <span class="n">_AnalysisCache</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+        <span class="n">implicit_field</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">],</span>
+        <span class="n">deposits</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Deposit</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">default_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">_copy_implicit_field</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">readonly_array</span><span class="p">(</span><span class="n">implicit_field</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_copy_implicit_field</span>
+            <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">implicit_field</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">domain</span><span class="o">.</span><span class="n">grid_shape</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;implicit_field shape &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> does not match domain grid shape &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">domain</span><span class="o">.</span><span class="n">grid_shape</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">_copy_implicit_field</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">values</span><span class="p">))</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">values</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;implicit_field must contain only finite, non-negative values.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">flags</span><span class="o">.</span><span class="n">writeable</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;implicit_field must be read-only when sharing storage.&quot;</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;domain&quot;</span><span class="p">,</span> <span class="n">domain</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;deposits&quot;</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">deposits</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;default_threshold&quot;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">default_threshold</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_implicit_field&quot;</span><span class="p">,</span> <span class="n">values</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_cache&quot;</span><span class="p">,</span> <span class="n">_AnalysisCache</span><span class="p">())</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implicit_field</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the immutable field shared with the simulation result.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span>
+
+<div class="viewcode-block" id="SimulationAnalysis.deposition_index_field">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.deposition_index_field">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deposition_index_field</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build and cache the last-touch deposition index on first use.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">deposition_index</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">accumulate_deposition_index</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">deposition_index</span> <span class="o">=</span> <span class="n">_freeze_generated_array</span><span class="p">(</span>
+                <span class="n">accumulate_deposition_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deposits</span><span class="p">),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">deposition_index</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.deposition_order_field">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.deposition_order_field">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deposition_order_field</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the cached one-based deposit order for thresholded voxels.&quot;&quot;&quot;</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">..fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">accumulate_deposition_order</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">deposition_order</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">deposition_order</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_freeze_generated_array</span><span class="p">(</span>
+                <span class="n">accumulate_deposition_order</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">deposits</span><span class="p">,</span>
+                    <span class="n">threshold</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">deposition_order</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.occupancy">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.occupancy">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">occupancy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return thresholded occupancy for the implicit field.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Occupancy threshold. If omitted, ``default_threshold`` is used.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        numpy.ndarray</span>
+<span class="sd">            Read-only boolean array with shape ``domain.grid_shape``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">occupancy</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">occupancy</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">_freeze_generated_array</span><span class="p">(</span>
+                <span class="n">occupancy_from_implicit_field</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">key</span><span class="p">),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">occupancy</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.surface_mesh">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.surface_mesh">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">surface_mesh</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract a triangle mesh for the thresholded implicit surface.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Surface threshold. If omitted, ``default_threshold`` is used.</span>
+<span class="sd">        step_size</span>
+<span class="sd">            Marching-cubes step size passed to mesh extraction.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dds.geometry.TriangleMesh</span>
+<span class="sd">            Extracted surface mesh.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This query requires the ``mesh`` extra because it uses the optional</span>
+<span class="sd">        geometry mesh backend.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">_surface_cache_key</span><span class="p">(</span><span class="n">threshold_value</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">surface_mesh</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">implicit_field_to_mesh</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">surface_mesh</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">implicit_field_to_mesh</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">,</span>
+                <span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">,</span>
+                <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">surface_mesh</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.surface_sdf">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.surface_sdf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">surface_sdf</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Derive a signed-distance field from thresholded occupancy.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Surface threshold. If omitted, ``default_threshold`` is used.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dds.geometry.GridSDF3</span>
+<span class="sd">            Signed-distance field sampled on the simulation domain. Values are</span>
+<span class="sd">            negative inside occupied material and positive outside.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">surface_sdf</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">implicit_field_to_sdf</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">surface_sdf</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">implicit_field_to_sdf</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">,</span>
+                <span class="n">threshold</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">surface_sdf</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.mesh_sdf">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.mesh_sdf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mesh_sdf</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a mesh-backed signed-distance query for the surface mesh.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Surface threshold. If omitted, ``default_threshold`` is used.</span>
+<span class="sd">        step_size</span>
+<span class="sd">            Marching-cubes step size used before constructing the mesh SDF.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dds.geometry.MeshSDF3</span>
+<span class="sd">            Mesh-backed signed-distance query.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the extracted surface is empty.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        This query requires the ``mesh`` extra and expects a watertight</span>
+<span class="sd">        extracted surface for reliable signed distances.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">_surface_cache_key</span><span class="p">(</span><span class="n">threshold_value</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">mesh_sdf</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">..geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">MeshSDF3</span>
+
+            <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_mesh</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mesh</span><span class="o">.</span><span class="n">is_empty</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot construct a mesh SDF from an empty analysis surface.&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">mesh_sdf</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">MeshSDF3</span><span class="p">(</span>
+                <span class="n">mesh</span><span class="p">,</span>
+                <span class="n">require_watertight</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;analysis_surface_mesh&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">mesh_sdf</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.sample_implicit_value">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.sample_implicit_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_implicit_value</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">point</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">interpolation</span><span class="p">:</span> <span class="n">InterpolationMode</span> <span class="o">=</span> <span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample the implicit field at a world-space point.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        point</span>
+<span class="sd">            World-space ``(x, y, z)`` coordinate.</span>
+<span class="sd">        interpolation</span>
+<span class="sd">            ``&quot;nearest&quot;`` for voxel lookup or ``&quot;trilinear&quot;`` for continuous</span>
+<span class="sd">            interpolation over voxel centers.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            Sampled implicit value. Points outside the domain return ``0``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">points</span><span class="p">,</span> <span class="n">_single</span> <span class="o">=</span> <span class="n">_coerce_points</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">_sample_scalar_field</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">,</span>
+            <span class="n">points</span><span class="p">,</span>
+            <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
+            <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.sample_deposition_index">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.sample_deposition_index">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_deposition_index</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">point</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample the last-touch deposition index at a world-space point.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        int</span>
+<span class="sd">            Zero-based deposit index, or ``-1`` if the point is untouched or</span>
+<span class="sd">            outside the domain.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">points</span><span class="p">,</span> <span class="n">_single</span> <span class="o">=</span> <span class="n">_coerce_points</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">_sample_nearest</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">deposition_index_field</span><span class="p">(),</span>
+            <span class="n">points</span><span class="p">,</span>
+            <span class="n">fill_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.signed_distance_at">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.signed_distance_at">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">signed_distance_at</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">point</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;surface_sdf&quot;</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate signed distance at a world-space point.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        point</span>
+<span class="sd">            World-space ``(x, y, z)`` coordinate.</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Surface threshold. If omitted, ``default_threshold`` is used.</span>
+<span class="sd">        source</span>
+<span class="sd">            ``&quot;surface_sdf&quot;`` for grid-derived signed distance or ``&quot;mesh&quot;``</span>
+<span class="sd">            for mesh-backed signed distance.</span>
+<span class="sd">        step_size</span>
+<span class="sd">            Mesh extraction step size when ``source=&quot;mesh&quot;``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            Signed distance in world units; negative values are inside.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">points</span><span class="p">,</span> <span class="n">_single</span> <span class="o">=</span> <span class="n">_coerce_points</span><span class="p">(</span><span class="n">point</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;surface_sdf&quot;</span><span class="p">:</span>
+            <span class="n">sdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_sdf</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;mesh&quot;</span><span class="p">:</span>
+            <span class="n">sdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh_sdf</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;source must be &#39;surface_sdf&#39; or &#39;mesh&#39;.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">sdf</span><span class="p">(</span><span class="n">points</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.surface_normal_at">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.surface_normal_at">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">surface_normal_at</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">point</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;surface_sdf&quot;</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate an outward surface normal near a world-space point.</span>
+
+<span class="sd">        The normal is computed from central differences of a signed-distance</span>
+<span class="sd">        query using half-voxel offsets.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple[float, float, float]</span>
+<span class="sd">            Unit normal. Returns ``(0, 0, 0)`` when the gradient is too small.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">base_point</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ensure_finite_triplet</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="s2">&quot;point&quot;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">sdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_sdf</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">)</span> <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;surface_sdf&quot;</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;mesh&quot;</span><span class="p">:</span>
+            <span class="n">sdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh_sdf</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">sdf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;source must be &#39;surface_sdf&#39; or &#39;mesh&#39;.&quot;</span><span class="p">)</span>
+
+        <span class="n">steps</span> <span class="o">=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="o">.</span><span class="n">voxel_size</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">offsets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">steps</span><span class="p">),</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">steps</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">sampled</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sdf</span><span class="p">(</span><span class="n">base_point</span> <span class="o">+</span> <span class="n">offsets</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">gradient</span> <span class="o">=</span> <span class="p">(</span><span class="n">sampled</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span> <span class="o">-</span> <span class="n">sampled</span><span class="p">[</span><span class="mi">3</span><span class="p">:])</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">steps</span><span class="p">)</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gradient</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">norm</span> <span class="o">&lt;=</span> <span class="n">EPSILON</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="n">normalized</span> <span class="o">=</span> <span class="n">gradient</span> <span class="o">/</span> <span class="n">norm</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">normalized</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">normalized</span><span class="p">[</span><span class="mi">1</span><span class="p">]),</span>
+            <span class="nb">float</span><span class="p">(</span><span class="n">normalized</span><span class="p">[</span><span class="mi">2</span><span class="p">]),</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.contains_point">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.contains_point">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">contains_point</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">point</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">representation</span><span class="p">:</span> <span class="n">RepresentationMode</span> <span class="o">=</span> <span class="s2">&quot;occupancy&quot;</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interpolation</span><span class="p">:</span> <span class="n">InterpolationMode</span> <span class="o">=</span> <span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return whether a world-space point is inside the deposited geometry.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        point</span>
+<span class="sd">            World-space ``(x, y, z)`` coordinate.</span>
+<span class="sd">        representation</span>
+<span class="sd">            Query representation: ``&quot;occupancy&quot;``, ``&quot;implicit&quot;``, ``&quot;sdf&quot;``,</span>
+<span class="sd">            or ``&quot;mesh&quot;``.</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Threshold used by occupancy and implicit queries.</span>
+<span class="sd">        interpolation</span>
+<span class="sd">            Sampling mode for implicit and non-nearest occupancy queries.</span>
+<span class="sd">        step_size</span>
+<span class="sd">            Mesh extraction step size when using ``representation=&quot;mesh&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">coordinates</span> <span class="o">=</span> <span class="n">ensure_finite_triplet</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="s2">&quot;point&quot;</span><span class="p">)</span>
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">representation</span> <span class="o">==</span> <span class="s2">&quot;occupancy&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">interpolation</span> <span class="o">==</span> <span class="s2">&quot;nearest&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="o">.</span><span class="n">contains_point</span><span class="p">(</span><span class="n">coordinates</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+                <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">occupancy</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">)[</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="o">.</span><span class="n">world_to_index</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">clip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="p">]</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sample_implicit_value</span><span class="p">(</span>
+                    <span class="n">coordinates</span><span class="p">,</span>
+                    <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="o">&gt;=</span> <span class="n">threshold_value</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">representation</span> <span class="o">==</span> <span class="s2">&quot;implicit&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">sample_implicit_value</span><span class="p">(</span>
+                    <span class="n">coordinates</span><span class="p">,</span>
+                    <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="o">&gt;=</span> <span class="n">threshold_value</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">representation</span> <span class="o">==</span> <span class="s2">&quot;sdf&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">signed_distance_at</span><span class="p">(</span><span class="n">coordinates</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="n">representation</span> <span class="o">==</span> <span class="s2">&quot;mesh&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signed_distance_at</span><span class="p">(</span>
+                    <span class="n">coordinates</span><span class="p">,</span>
+                    <span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">,</span>
+                    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;mesh&quot;</span><span class="p">,</span>
+                    <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="o">&lt;=</span> <span class="mf">0.0</span>
+            <span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;representation must be &#39;occupancy&#39;, &#39;implicit&#39;, &#39;sdf&#39;, or &#39;mesh&#39;.&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.sample_points">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.sample_points">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample_points</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">points</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">SampleFieldName</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;implicit&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;occupancy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;deposition_index&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;signed_distance&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">interpolation</span><span class="p">:</span> <span class="n">InterpolationMode</span> <span class="o">=</span> <span class="s2">&quot;nearest&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sample several analysis fields at world-space points.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        points</span>
+<span class="sd">            Array-like coordinates with shape ``(n, 3)``.</span>
+<span class="sd">        fields</span>
+<span class="sd">            Field names to sample. Supported names are ``&quot;implicit&quot;``,</span>
+<span class="sd">            ``&quot;occupancy&quot;``, ``&quot;deposition_index&quot;``, and</span>
+<span class="sd">            ``&quot;signed_distance&quot;``.</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Threshold used for occupancy and signed-distance construction.</span>
+<span class="sd">        interpolation</span>
+<span class="sd">            Sampling mode for the implicit field.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict[str, numpy.ndarray]</span>
+<span class="sd">            Mapping from requested field name to one value per input point.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">samples</span><span class="p">,</span> <span class="n">_single</span> <span class="o">=</span> <span class="n">_coerce_points</span><span class="p">(</span><span class="n">points</span><span class="p">)</span>
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="n">result</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">generic</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">implicit_samples</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">field_name</span> <span class="o">==</span> <span class="s2">&quot;implicit&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">implicit_samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">implicit_samples</span> <span class="o">=</span> <span class="n">_sample_scalar_field</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">,</span>
+                        <span class="n">samples</span><span class="p">,</span>
+                        <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
+                        <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">implicit_samples</span>
+            <span class="k">elif</span> <span class="n">field_name</span> <span class="o">==</span> <span class="s2">&quot;deposition_index&quot;</span><span class="p">:</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">_sample_nearest</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">deposition_index_field</span><span class="p">(),</span>
+                    <span class="n">samples</span><span class="p">,</span>
+                    <span class="n">fill_value</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">field_name</span> <span class="o">==</span> <span class="s2">&quot;occupancy&quot;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">implicit_samples</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">implicit_samples</span> <span class="o">=</span> <span class="n">_sample_scalar_field</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">,</span>
+                        <span class="n">samples</span><span class="p">,</span>
+                        <span class="n">interpolation</span><span class="o">=</span><span class="n">interpolation</span><span class="p">,</span>
+                        <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">implicit_samples</span> <span class="o">&gt;=</span> <span class="n">threshold_value</span>
+            <span class="k">elif</span> <span class="n">field_name</span> <span class="o">==</span> <span class="s2">&quot;signed_distance&quot;</span><span class="p">:</span>
+                <span class="n">sdf</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_sdf</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">)</span>
+                <span class="n">result</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">sdf</span><span class="p">(</span><span class="n">samples</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;fields entries must be &#39;implicit&#39;, &#39;occupancy&#39;, &quot;</span>
+                    <span class="s2">&quot;&#39;deposition_index&#39;, or &#39;signed_distance&#39;.&quot;</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.subvolume_stats">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.subvolume_stats">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subvolume_stats</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">bounds</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">step_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute summary statistics inside an axis-aligned world-space box.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bounds</span>
+<span class="sd">            ``(minimum, maximum)`` world-space corners.</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Occupancy threshold. If omitted, ``default_threshold`` is used.</span>
+<span class="sd">        step_size</span>
+<span class="sd">            Mesh extraction step size used for the ``mesh_area`` statistic.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        dict[str, float]</span>
+<span class="sd">            Counts, occupancy fraction, implicit statistics, deposition-index</span>
+<span class="sd">            statistics, and approximate enclosed mesh area.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span> <span class="o">=</span> <span class="n">bounds</span>
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="n">index_bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="o">.</span><span class="n">index_bounds_for_aabb</span><span class="p">(</span><span class="n">minimum</span><span class="p">,</span> <span class="n">maximum</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">index_bounds</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;voxel_count&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;occupied_voxel_count&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;occupied_fraction&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;implicit_mean&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;implicit_max&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;deposition_index_mean&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;deposition_index_max&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                <span class="s2">&quot;mesh_area&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="p">}</span>
+
+        <span class="n">slices</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">slice</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">)</span> <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">stop</span> <span class="ow">in</span> <span class="n">index_bounds</span><span class="p">)</span>
+        <span class="n">implicit_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_implicit_field</span><span class="p">[</span><span class="n">slices</span><span class="p">]</span>
+        <span class="n">deposition_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">deposition_index_field</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
+            <span class="nb">float</span><span class="p">,</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)[</span><span class="n">slices</span><span class="p">]</span>
+        <span class="n">occupancy</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">occupancy</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">)[</span><span class="n">slices</span><span class="p">]</span>
+        <span class="n">voxel_count</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">implicit_field</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+        <span class="n">occupied_voxel_count</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">count_nonzero</span><span class="p">(</span><span class="n">occupancy</span><span class="p">))</span>
+
+        <span class="n">mesh_area</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">mesh</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">surface_mesh</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="n">step_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">mesh</span><span class="o">.</span><span class="n">is_empty</span><span class="p">:</span>
+            <span class="n">centroids</span><span class="p">,</span> <span class="n">areas</span> <span class="o">=</span> <span class="n">_face_centroids_and_areas</span><span class="p">(</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">vertices</span><span class="p">,</span>
+                <span class="n">mesh</span><span class="o">.</span><span class="n">faces</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">min_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ensure_finite_triplet</span><span class="p">(</span><span class="n">minimum</span><span class="p">,</span> <span class="s2">&quot;minimum&quot;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">max_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ensure_finite_triplet</span><span class="p">(</span><span class="n">maximum</span><span class="p">,</span> <span class="s2">&quot;maximum&quot;</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+            <span class="n">inside</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">((</span><span class="n">centroids</span> <span class="o">&gt;=</span> <span class="n">min_array</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">centroids</span> <span class="o">&lt;=</span> <span class="n">max_array</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">mesh_area</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">areas</span><span class="p">[</span><span class="n">inside</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;voxel_count&quot;</span><span class="p">:</span> <span class="n">voxel_count</span><span class="p">,</span>
+            <span class="s2">&quot;occupied_voxel_count&quot;</span><span class="p">:</span> <span class="n">occupied_voxel_count</span><span class="p">,</span>
+            <span class="s2">&quot;occupied_fraction&quot;</span><span class="p">:</span> <span class="n">occupied_voxel_count</span> <span class="o">/</span> <span class="n">voxel_count</span> <span class="k">if</span> <span class="n">voxel_count</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;implicit_mean&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">implicit_field</span><span class="p">))</span> <span class="k">if</span> <span class="n">implicit_field</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;implicit_max&quot;</span><span class="p">:</span> <span class="p">(</span>
+                <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">implicit_field</span><span class="p">))</span> <span class="k">if</span> <span class="n">implicit_field</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span>
+            <span class="p">),</span>
+            <span class="s2">&quot;deposition_index_mean&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">deposition_index</span><span class="p">))</span> <span class="k">if</span> <span class="n">deposition_index</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;deposition_index_max&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">deposition_index</span><span class="p">))</span> <span class="k">if</span> <span class="n">deposition_index</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="mf">0.0</span><span class="p">,</span>
+            <span class="s2">&quot;mesh_area&quot;</span><span class="p">:</span> <span class="n">mesh_area</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.strata">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.strata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">strata</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StratumFieldSet</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Partition occupied voxels by one-based deposition order.&quot;&quot;&quot;</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.strata</span><span class="w"> </span><span class="kn">import</span> <span class="n">strata</span>
+
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">threshold_value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">strata</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">strata</span><span class="p">[</span><span class="n">threshold_value</span><span class="p">]</span> <span class="o">=</span> <span class="n">strata</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">strata</span><span class="p">[</span><span class="n">threshold_value</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.interface">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.interface">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">interface</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InterfaceAnalysis</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute contact and overlap metrics between adjacent strata.&quot;&quot;&quot;</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.interface</span><span class="w"> </span><span class="kn">import</span> <span class="n">interface</span>
+
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">threshold_value</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">interface</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">interface</span><span class="p">[</span><span class="n">threshold_value</span><span class="p">]</span> <span class="o">=</span> <span class="n">interface</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">strata</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">interface</span><span class="p">[</span><span class="n">threshold_value</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="SimulationAnalysis.support">
+<a class="viewcode-back" href="../../../api/generated/dds.analysis.SimulationAnalysis.html#dds.analysis.SimulationAnalysis.support">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">support</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">build_direction</span><span class="p">:</span> <span class="n">BuildDirection</span> <span class="o">=</span> <span class="s2">&quot;+Z&quot;</span><span class="p">,</span>
+        <span class="n">critical_angle_deg</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">45.0</span><span class="p">,</span>
+        <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SupportAnalysis</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute support-risk and overhang metrics for the surface mesh.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        build_direction</span>
+<span class="sd">            Axis-aligned build direction such as ``&quot;+Z&quot;``.</span>
+<span class="sd">        critical_angle_deg</span>
+<span class="sd">            Faces at or below this overhang angle are considered support risk.</span>
+<span class="sd">        threshold</span>
+<span class="sd">            Surface threshold. If omitted, ``default_threshold`` is used.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">from</span><span class="w"> </span><span class="nn">.support</span><span class="w"> </span><span class="kn">import</span> <span class="n">support</span>
+
+        <span class="n">threshold_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_threshold</span> <span class="k">if</span> <span class="n">threshold</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">threshold</span><span class="p">)</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="p">(</span><span class="n">build_direction</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">critical_angle_deg</span><span class="p">),</span> <span class="n">threshold_value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">support</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">support</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">support</span><span class="p">(</span>
+                <span class="bp">self</span><span class="p">,</span>
+                <span class="n">build_direction</span><span class="o">=</span><span class="n">build_direction</span><span class="p">,</span>
+                <span class="n">critical_angle_deg</span><span class="o">=</span><span class="n">critical_angle_deg</span><span class="p">,</span>
+                <span class="n">threshold</span><span class="o">=</span><span class="n">threshold_value</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cache</span><span class="o">.</span><span class="n">support</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ozguc Bertug Capunaman.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+ 
+<div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
+  This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
+</div>
+
+
+</body>
+</html>
