@@ -1,5 +1,11 @@
 # 3DP-DDS
 
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ozgucbertug.github.io/3DP-DDS/)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)](pyproject.toml)
+[![License](https://img.shields.io/github/license/ozgucbertug/3DP-DDS)](LICENSE)
+[![Typing](https://img.shields.io/badge/typing-py.typed-blue)](src/dds/py.typed)
+[![Status](https://img.shields.io/badge/status-pre--alpha-orange)](pyproject.toml)
+
 `3DP-DDS` is a Python library for geometry-first deposition simulation on a
 3D voxel grid. The import package is `dds`.
 
