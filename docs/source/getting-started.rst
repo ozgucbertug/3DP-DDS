@@ -4,7 +4,7 @@ Getting Started
 Installation
 ------------
 
-3DP-DDS requires Python 3.11 or newer. From a local clone, install the core
+3DP-DDS requires Python 3.9 or newer. From a local clone, install the core
 package in editable mode:
 
 .. code-block:: bash
@@ -18,6 +18,8 @@ Optional extras are installed only when needed:
 
    * - Extra
      - Capability
+   * - ``cli``
+     - Tyro-backed helpers for typed example CLIs
    * - ``formats``
      - YAML target loading
    * - ``mesh``

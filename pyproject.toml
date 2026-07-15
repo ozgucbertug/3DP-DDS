@@ -8,7 +8,7 @@ name = "3dp-dds"
 version = "0.0.0"
 description = "Voxel-based digital-twin simulation for robotic additive manufacturing"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.9"
 license = { file = "LICENSE" }
 authors = [
     { name = "Ozguc Bertug Capunaman" },
@@ -25,6 +25,8 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -33,14 +35,14 @@ classifiers = [
 dependencies = [
     "numpy>=1.26",
     "scipy>=1.10",
-    "tyro>=0.8",
 ]
 
 [project.optional-dependencies]
+cli = ["tyro>=0.8"]
 formats = ["pyyaml>=6.0"]
 mesh = [
     "rtree>=1.2",
-    "scikit-image>=0.23",
+    "scikit-image>=0.22",
     "trimesh>=4.0",
 ]
 viz = [
@@ -48,7 +50,7 @@ viz = [
     "pyvista>=0.43",
     "pyvistaqt>=0.11",
     "rtree>=1.2",
-    "scikit-image>=0.23",
+    "scikit-image>=0.22",
     "trimesh>=4.0",
 ]
 all = [
@@ -57,8 +59,9 @@ all = [
     "pyvistaqt>=0.11",
     "pyyaml>=6.0",
     "rtree>=1.2",
-    "scikit-image>=0.23",
+    "scikit-image>=0.22",
     "trimesh>=4.0",
+    "tyro>=0.8",
 ]
 
 [project.urls]
@@ -70,14 +73,14 @@ addopts = "-ra"
 testpaths = ["tests"]
 
 [tool.ruff]
-target-version = "py311"
+target-version = "py39"
 line-length = 120
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I", "B"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.9"
 files = ["src/dds"]
 ignore_missing_imports = true
 check_untyped_defs = true

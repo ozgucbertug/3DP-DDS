@@ -1,7 +1,7 @@
 # 3DP-DDS
 
 [![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://ozgucbertug.github.io/3DP-DDS/)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)](pyproject.toml)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.9-blue)](pyproject.toml)
 [![License](https://img.shields.io/github/license/ozgucbertug/3DP-DDS)](LICENSE)
 [![Typing](https://img.shields.io/badge/typing-py.typed-blue)](src/dds/py.typed)
 [![Status](https://img.shields.io/badge/status-pre--alpha-orange)](pyproject.toml)
@@ -22,22 +22,24 @@ intentionally outside the model.
 
 ## Installation
 
-3DP-DDS requires Python 3.11 or newer. From a local clone, install the core
+3DP-DDS requires Python 3.9 or newer. From a local clone, install the core
 library in editable mode:
 
 ```bash
 python -m pip install -e .
 ```
 
-The core dependencies are NumPy, SciPy, and Tyro. Optional capabilities are
-installed through extras:
+The core dependencies are NumPy and SciPy. Command-line helpers, mesh I/O,
+YAML loading, and visualization are installed only when their extras are
+requested.
 
 | Extra | Adds | Install |
 | --- | --- | --- |
+| `cli` | Tyro-backed helpers for typed example CLIs | `python -m pip install -e ".[cli]"` |
 | `formats` | YAML target loading through PyYAML | `python -m pip install -e ".[formats]"` |
 | `mesh` | Trimesh-backed mesh and point-cloud I/O, extraction, containment, and signed-distance operations | `python -m pip install -e ".[mesh]"` |
 | `viz` | PyVistaQt interactive workbench and mesh dependencies | `python -m pip install -e ".[viz]"` |
-| `all` | All `formats`, `mesh`, and `viz` capabilities | `python -m pip install -e ".[all]"` |
+| `all` | All `cli`, `formats`, `mesh`, and `viz` capabilities | `python -m pip install -e ".[all]"` |
 
 ## Quick Start
 
