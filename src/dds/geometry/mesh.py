@@ -24,7 +24,7 @@ def _load_skimage_measure() -> Any:
         ) from exc
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class TriangleMesh:
     """A simple triangle mesh container."""
 

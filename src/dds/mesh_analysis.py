@@ -19,7 +19,7 @@ from .utils import normalize_axis
 # Public batch data-holder and factory
 # ---------------------------------------------------------------------------
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FaceData:
     """Pre-computed per-face geometry for a consistently oriented mesh.
 

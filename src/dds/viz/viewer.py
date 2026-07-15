@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import Any, Literal, Union, cast
 
 try:
     import pyvista as pv
@@ -58,29 +58,29 @@ VisualKind = Literal[
     "target",
     "deposits",
 ]
-VisualSource = (
-    TriangleMesh
-    | PointCloud
-    | tuple[Point3D, ...]
-    | Line3D
-    | Polyline3D
-    | tuple[Point3D, Vector3D]
-    | Pose3D
-    | DepositionTarget
-    | tuple[Deposit, ...]
-)
-VisualStyle = (
-    MeshStyle
-    | PointCloudStyle
-    | PointStyle
-    | LineStyle
-    | FrameStyle
-    | TargetStyle
-    | DepositStyle
-)
+VisualSource = Union[
+    TriangleMesh,
+    PointCloud,
+    tuple[Point3D, ...],
+    Line3D,
+    Polyline3D,
+    tuple[Point3D, Vector3D],
+    Pose3D,
+    DepositionTarget,
+    tuple[Deposit, ...],
+]
+VisualStyle = Union[
+    MeshStyle,
+    PointCloudStyle,
+    PointStyle,
+    LineStyle,
+    FrameStyle,
+    TargetStyle,
+    DepositStyle,
+]
 
 
-@dataclass(slots=True)
+@dataclass
 class _VisualRecord:
     kind: VisualKind
     source: VisualSource

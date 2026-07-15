@@ -12,7 +12,7 @@ import numpy.typing as npt
 from ._utils import load_trimesh, validate_colors
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PointCloud:
     """A collection of 3D points with optional per-point RGB or RGBA colors."""
 

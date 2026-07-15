@@ -28,7 +28,7 @@ _LINE_SWEEP_MAX_SUBSEGMENTS = 128
 _LINE_SWEEP_GEOMETRY_TOLERANCE = 1e-12
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class _SampledKernel:
     """Private local kernel sample and its target array window."""
 
@@ -36,7 +36,7 @@ class _SampledKernel:
     values: npt.NDArray[np.float64]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class _ResolvedBeadProfile:
     """Private resolved bead geometry and transition settings."""
 

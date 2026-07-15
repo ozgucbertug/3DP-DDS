@@ -110,7 +110,7 @@ def _deposit_to_dict(deposit: Deposit) -> dict[str, Any]:
     raise TypeError(f"Cannot serialise deposit of type {type(deposit).__name__!r}.")
 
 
-def _sweep_resolution_from_dict(d: dict[str, Any]) -> object:
+def _sweep_resolution_from_dict(d: dict[str, Any]) -> Any:
     value = d.get("sweep_resolution")
     return None if value == "auto" else value
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Literal, TypeAlias
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -13,7 +13,7 @@ from .kernels import _SampledKernel, iter_deposit_kernels
 from .primitives import Deposit, DepositInput, iter_deposits
 from .utils import ensure_finite_scalar
 
-FieldName: TypeAlias = Literal["implicit", "coverage"]
+FieldName = Literal["implicit", "coverage"]
 
 
 def _apply_kernel_to_field(

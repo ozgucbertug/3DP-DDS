@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -18,16 +18,16 @@ if TYPE_CHECKING:
     from .results import SimulationResult
 
 ChunkIndex = tuple[int, int, int]
-ChunkFieldName: TypeAlias = Literal["implicit", "coverage"]
+ChunkFieldName = Literal["implicit", "coverage"]
 
 
-@dataclass(slots=True)
+@dataclass
 class _Chunk:
     implicit: npt.NDArray[np.float64]
     coverage: npt.NDArray[np.float64] | None
 
 
-@dataclass(slots=True)
+@dataclass
 class ChunkedField:
     """Sparse field backed by fixed-size dense chunks.
 
@@ -96,7 +96,7 @@ class ChunkedField:
         starts = tuple(int(axis_slice.start) for axis_slice in sampled.slices)
         stops = tuple(int(axis_slice.stop) for axis_slice in sampled.slices)
         expected_shape = tuple(stops[axis] - starts[axis] for axis in range(3))
-        if any(stop <= start for start, stop in zip(starts, stops, strict=True)):
+        if any(stop <= start for start, stop in zip(starts, stops)):
             raise ValueError("Kernel slices must be nonempty.")
         if sampled.values.shape != expected_shape:
             raise ValueError(

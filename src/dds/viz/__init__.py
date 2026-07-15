@@ -80,7 +80,7 @@ def _occupied_index_bounds(
     )
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class ViewConfig:
     """Initial state for the optional interactive workbench."""
 

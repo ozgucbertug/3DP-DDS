@@ -16,7 +16,7 @@ from .utils import ensure_finite_triplet, ensure_positive_triplet
 IndexBounds = tuple[tuple[int, int], tuple[int, int], tuple[int, int]]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Domain:
     """Axis-aligned simulation workspace sampled on a dense 3D grid.
 
@@ -58,12 +58,12 @@ class Domain:
         shape = tuple(int(value) for value in self.grid_shape)
         if any(value <= 0 for value in shape):
             raise ValueError("grid_shape values must all be positive.")
-        if any(lower >= upper for lower, upper in zip(minimum, maximum, strict=True)):
+        if any(lower >= upper for lower, upper in zip(minimum, maximum)):
             raise ValueError("Domain bounds must be strictly increasing on every axis.")
 
         expected_maximum = tuple(
             lower + count * step
-            for lower, count, step in zip(minimum, shape, spacing, strict=True)
+            for lower, count, step in zip(minimum, shape, spacing)
         )
         if not np.allclose(maximum, expected_maximum, rtol=1e-12, atol=1e-12):
             raise ValueError(
@@ -105,17 +105,17 @@ class Domain:
         else:
             voxel_triplet = ensure_positive_triplet(voxel_size, "voxel_size")
 
-        if any(lower >= upper for lower, upper in zip(minimum, maximum, strict=True)):
+        if any(lower >= upper for lower, upper in zip(minimum, maximum)):
             raise ValueError("Domain bounds must be strictly increasing on every axis.")
 
         shape_values = tuple(
             int(math.ceil((upper - lower) / step))
-            for lower, upper, step in zip(minimum, maximum, voxel_triplet, strict=True)
+            for lower, upper, step in zip(minimum, maximum, voxel_triplet)
         )
         shape = (shape_values[0], shape_values[1], shape_values[2])
         aligned_values = tuple(
             lower + count * step
-            for lower, count, step in zip(minimum, shape, voxel_triplet, strict=True)
+            for lower, count, step in zip(minimum, shape, voxel_triplet)
         )
         aligned_maximum = (aligned_values[0], aligned_values[1], aligned_values[2])
         return cls(

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Union
 
 import numpy as np
 
-Color = str | tuple[float, float, float]
+Color = Union[str, tuple[float, float, float]]
 
 
 def _validate_color(value: Color, name: str) -> None:
@@ -34,7 +35,7 @@ def _opacity(value: float) -> None:
         raise ValueError("opacity must be between 0 and 1")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class MeshStyle:
     color: Color | None = None
     opacity: float = 1.0
@@ -47,7 +48,7 @@ class MeshStyle:
         _opacity(self.opacity)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PointStyle:
     color: Color = "#d64292"
     size: float = 10.0
@@ -60,7 +61,7 @@ class PointStyle:
         _opacity(self.opacity)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class PointCloudStyle:
     color: Color | None = None
     size: float = 3.0
@@ -74,7 +75,7 @@ class PointCloudStyle:
         _opacity(self.opacity)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class LineStyle:
     color: Color = "#34495e"
     width: float = 3.0
@@ -87,7 +88,7 @@ class LineStyle:
         _opacity(self.opacity)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class FrameStyle:
     scale: float = 1.0
     line_width: float = 3.0
@@ -101,7 +102,7 @@ class FrameStyle:
         _positive(self.line_width, "line_width")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class TargetStyle:
     scale: float = 1.0
     point_style: PointStyle = field(default_factory=PointStyle)
@@ -114,7 +115,7 @@ class TargetStyle:
         _positive(self.normal_width, "normal_width")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class DepositStyle:
     line_style: LineStyle = field(
         default_factory=lambda: LineStyle(color="#355c9a", width=4.0)

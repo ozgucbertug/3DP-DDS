@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Iterator, Sequence
 from dataclasses import dataclass
-from typing import Any, TypeAlias, cast
+from typing import Any, Optional, Union, cast
 
 import numpy as np
 from scipy.spatial.transform import Rotation
@@ -13,11 +13,11 @@ from scipy.spatial.transform import Rotation
 from .attributes import BeadProfile
 from .utils import ensure_finite_scalar
 
-Coordinate3D: TypeAlias = Sequence[float]
-PointLike: TypeAlias = "Point3D | Coordinate3D"
-VectorLike: TypeAlias = "Vector3D | Coordinate3D"
-TargetLike: TypeAlias = "DepositionTarget | Pose3D | Point3D | Coordinate3D"
-SweepResolution: TypeAlias = "float | None"
+Coordinate3D = Sequence[float]
+PointLike = Union["Point3D", Coordinate3D]
+VectorLike = Union["Vector3D", Coordinate3D]
+TargetLike = Union["DepositionTarget", "Pose3D", "Point3D", Coordinate3D]
+SweepResolution = Optional[float]
 
 DEFAULT_AXIS = (0.0, 0.0, 1.0)
 
@@ -37,7 +37,7 @@ def _coerce_xyz(value: object, *, name: str) -> tuple[float, float, float]:
     return xyz[0], xyz[1], xyz[2]
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Point3D:
     """A finite position in three-dimensional Cartesian space.
 
@@ -95,7 +95,7 @@ class Point3D:
         return np.asarray(self.to_tuple(), dtype=np.float64)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Vector3D:
     """A finite direction or displacement in three-dimensional space.
 
@@ -161,7 +161,7 @@ class Vector3D:
         return np.asarray(self.to_tuple(), dtype=np.float64)
 
 
-@dataclass(frozen=True, slots=True, init=False, eq=False)
+@dataclass(frozen=True, init=False, eq=False)
 class Pose3D:
     """An active local-to-parent rigid transform.
 
@@ -320,7 +320,7 @@ class Pose3D:
         }
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@dataclass(frozen=True, init=False)
 class DepositionTarget:
     """A top-referenced position and deposition normal.
 
@@ -404,7 +404,7 @@ class DepositionTarget:
         }
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Line3D:
     """A finite line segment defined by start and end points."""
 
@@ -442,7 +442,7 @@ class Line3D:
         )
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Polyline3D:
     """A connected sequence of at least two points."""
 
@@ -460,7 +460,7 @@ class Polyline3D:
 
         return tuple(
             Line3D(start, end)
-            for start, end in zip(self.points[:-1], self.points[1:], strict=True)
+            for start, end in zip(self.points[:-1], self.points[1:])
         )
 
     @property
@@ -518,7 +518,7 @@ def _validate_sweep_resolution(
     if isinstance(sweep_resolution, bool):
         raise TypeError("sweep_resolution must be None or a positive number")
     try:
-        resolved = float(sweep_resolution)
+        resolved = float(cast(Any, sweep_resolution))
     except (TypeError, ValueError) as exc:
         raise TypeError(
             "sweep_resolution must be None or a positive number"
@@ -530,7 +530,7 @@ def _validate_sweep_resolution(
     return resolved
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@dataclass(frozen=True, init=False)
 class PointDeposit:
     """A bead deposited at one top-referenced target.
 
@@ -570,7 +570,7 @@ class PointDeposit:
         )
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@dataclass(frozen=True, init=False)
 class LineDeposit:
     """A bead swept between two top-referenced deposition targets.
 
@@ -650,7 +650,7 @@ class LineDeposit:
         ), Point3D.from_value(endpoints.max(axis=0) + support_radius)
 
 
-@dataclass(frozen=True, slots=True, init=False)
+@dataclass(frozen=True, init=False)
 class PolylineDeposit:
     """One ordered multi-segment bead sweep through deposition targets.
 
@@ -683,7 +683,6 @@ class PolylineDeposit:
         for start, end in zip(
             resolved_targets[:-1],
             resolved_targets[1:],
-            strict=True,
         ):
             if (
                 float(np.dot(start.normal.to_array(), end.normal.to_array()))
@@ -720,7 +719,6 @@ class PolylineDeposit:
             for start, end in zip(
                 self.targets[:-1],
                 self.targets[1:],
-                strict=True,
             )
         )
 
@@ -735,8 +733,8 @@ class PolylineDeposit:
         return Point3D.from_value(lower), Point3D.from_value(upper)
 
 
-Deposit: TypeAlias = PointDeposit | LineDeposit | PolylineDeposit
-DepositInput: TypeAlias = Deposit
+Deposit = Union[PointDeposit, LineDeposit, PolylineDeposit]
+DepositInput = Deposit
 
 
 def iter_deposits(deposits: DepositInput | Iterable[DepositInput]) -> Iterator[Deposit]:

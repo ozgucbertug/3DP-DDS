@@ -12,7 +12,7 @@ from ..geometry.mesh import TriangleMesh
 from ..utils import readonly_array
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class StratumFieldSet:
     """Implicit and occupancy fields partitioned by deposit order.
 
@@ -80,7 +80,7 @@ class StratumFieldSet:
         return self.occupancy_fields[self.stratum_index(stratum_id)]
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class InterfacePairSummary:
     """Summary metrics for one adjacent ordered-deposit pair.
 
@@ -100,7 +100,7 @@ class InterfacePairSummary:
     overlap_fraction: float
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class InterfaceAnalysis:
     """Interface, contact, and overlap result for ordered strata."""
 
@@ -125,7 +125,7 @@ class InterfaceAnalysis:
         object.__setattr__(self, "pair_summaries", tuple(self.pair_summaries))
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class SupportAnalysis:
     """Support and overhang analysis result for one build direction.
 

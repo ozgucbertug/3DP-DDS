@@ -105,7 +105,7 @@ def _sample_scalar_field(
     raise ValueError("interpolation must be 'nearest' or 'trilinear'.")
 
 
-@dataclass(slots=True)
+@dataclass
 class _AnalysisCache:
     deposition_index: npt.NDArray[np.intp] | None = None
     deposition_order: dict[float, npt.NDArray[np.intp]] = field(default_factory=dict)
@@ -121,7 +121,7 @@ class _AnalysisCache:
     ] = field(default_factory=dict)
 
 
-@dataclass(slots=True, frozen=True, init=False)
+@dataclass(frozen=True, init=False)
 class SimulationAnalysis:
     """Cached queries derived lazily from an immutable simulation field.
 

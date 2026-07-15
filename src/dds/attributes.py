@@ -8,7 +8,7 @@ from typing import Any
 from .utils import ensure_finite_scalar
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class BeadProfile:
     """Nominal bead geometry used by deposition kernels.
 

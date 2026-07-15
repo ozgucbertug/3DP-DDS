@@ -79,7 +79,6 @@ def line_deposits_from_targets(
         for start, end in zip(
             normalized_targets[:-1],
             normalized_targets[1:],
-            strict=True,
         )
     )
 

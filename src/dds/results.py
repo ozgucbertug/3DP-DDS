@@ -17,7 +17,7 @@ from .primitives import Deposit, DepositInput, iter_deposits
 from .utils import ensure_finite_scalar, readonly_array
 
 
-@dataclass(slots=True, frozen=True)
+@dataclass(frozen=True)
 class SimulationResult:
     """Immutable simulation fields and deposit metadata.
 
