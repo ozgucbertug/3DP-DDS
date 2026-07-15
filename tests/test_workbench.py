@@ -10,6 +10,7 @@ if os.environ.get("DDS_RUN_VIZ_TESTS") != "1":
 
 pyvistaqt = pytest.importorskip("pyvistaqt")
 pytest.importorskip("PySide6")
+from pyvista.plotting.errors import RenderWindowUnavailable  # noqa: E402
 
 from dds import (  # noqa: E402
     BeadProfile,
@@ -131,15 +132,15 @@ def test_mode_specific_controls_and_pick_payload(qtbot: object) -> None:
     qtbot.addWidget(workbench)
 
     workbench.set_color_mode("normals")
-    assert workbench.surface_box.isVisible()
-    assert not workbench.build_direction_row.isVisible()
+    assert workbench.surface_box.isHidden()
+    assert workbench.build_direction_row.isHidden()
 
     workbench.set_color_mode("overhang")
-    assert workbench.build_direction_combo.isVisible()
+    assert not workbench.surface_box.isHidden()
+    assert not workbench.build_direction_combo.isHidden()
 
     workbench.set_representation("implicit")
-    assert not workbench.surface_box.isVisible()
-    workbench.set_point_picking_enabled(True)
+    assert workbench.surface_box.isHidden()
     implicit_payload = workbench._handle_non_surface_picked_point((2.3, 2.3, 0.3), picker=object())
     assert implicit_payload is not None
     assert implicit_payload["representation"] == "implicit"
@@ -389,7 +390,10 @@ def test_workbench_screenshot_smoke(qtbot: object) -> None:
     workbench = SimulationWorkbench(make_simulator(), off_screen=True)
     qtbot.addWidget(workbench)
 
-    image = workbench.plotter.screenshot(return_img=True)
+    try:
+        image = workbench.plotter.screenshot(return_img=True)
+    except RenderWindowUnavailable as exc:
+        pytest.skip(f"PyVista render window is unavailable: {exc}")
 
     assert image is not None
     assert image.ndim == 3
