@@ -340,7 +340,7 @@ def curve_to_deposit(
     )
 
 
-def triangle_mesh_to_rhino(mesh: object) -> object:
+def triangle_mesh_to_rhino(mesh: Any) -> object:
     """Convert a DDS ``TriangleMesh`` to ``Rhino.Geometry.Mesh``."""
 
     rhino = _require_rhino()
@@ -429,10 +429,13 @@ def stable_signature(*values: object) -> str:
 
 
 def _xyz_tuple(value: object, *, name: str) -> tuple[float, float, float]:
+    xyz: tuple[object, ...]
     if all(hasattr(value, attr) for attr in ("X", "Y", "Z")):
-        xyz = (value.X, value.Y, value.Z)
+        point = cast(Any, value)
+        xyz = (point.X, point.Y, point.Z)
     elif all(hasattr(value, attr) for attr in ("x", "y", "z")):
-        xyz = (value.x, value.y, value.z)
+        point = cast(Any, value)
+        xyz = (point.x, point.y, point.z)
     else:
         try:
             xyz = tuple(cast(Iterable[object], value))
@@ -440,7 +443,7 @@ def _xyz_tuple(value: object, *, name: str) -> tuple[float, float, float]:
             raise TypeError(f"{name} must be a point/vector object or a three-value sequence") from exc
     if len(xyz) != 3:
         raise ValueError(f"{name} must contain exactly three values")
-    floats = tuple(float(component) for component in xyz)
+    floats = tuple(float(cast(Any, component)) for component in xyz)
     if not np.all(np.isfinite(floats)):
         raise ValueError(f"{name} values must be finite")
     return floats[0], floats[1], floats[2]
@@ -479,8 +482,10 @@ def _bounds_min_max(bounds: object) -> tuple[tuple[float, float, float], tuple[f
     if hasattr(bounds, "GetCorners"):
         corners = tuple(bounds.GetCorners())
         coords = np.asarray([point3d_to_tuple(point) for point in corners], dtype=float)
-        minimum = tuple(float(value) for value in coords.min(axis=0).tolist())
-        maximum = tuple(float(value) for value in coords.max(axis=0).tolist())
+        minimum_values = tuple(float(value) for value in coords.min(axis=0).tolist())
+        maximum_values = tuple(float(value) for value in coords.max(axis=0).tolist())
+        minimum = (minimum_values[0], minimum_values[1], minimum_values[2])
+        maximum = (maximum_values[0], maximum_values[1], maximum_values[2])
         return minimum, maximum
     raise TypeError("bounds must be a BoundingBox, two points, six bounds, or expose GetCorners()")
 
@@ -579,11 +584,11 @@ def _collect_deposits(value: object, deposits: list[dds.Deposit]) -> None:
         _collect_deposits(item, deposits)
 
 
-def _apply_vertex_colors(rhino_mesh: object, vertex_colors: object) -> None:
+def _apply_vertex_colors(rhino_mesh: Any, vertex_colors: object) -> None:
     if vertex_colors is None:
         return
     try:
-        from System.Drawing import Color  # type: ignore[import-not-found]
+        from System.Drawing import Color
     except ImportError:
         return
     for color in np.asarray(vertex_colors, dtype=np.uint8):
@@ -595,7 +600,7 @@ def _apply_vertex_colors(rhino_mesh: object, vertex_colors: object) -> None:
 
 def _require_rhino() -> Any:
     try:
-        import Rhino  # type: ignore[import-not-found]
+        import Rhino
     except ImportError as exc:
         raise RuntimeError("This function requires RhinoCommon and must run inside Rhino/Grasshopper.") from exc
     return Rhino

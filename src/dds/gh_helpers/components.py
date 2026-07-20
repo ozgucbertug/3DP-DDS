@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import MutableMapping
+from collections.abc import Iterable, MutableMapping
 from typing import MutableMapping as MutableMappingType
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, cast
 
 import dds
 
@@ -164,21 +164,21 @@ def _coerce_points(points: object) -> tuple[object, ...]:
     if points is None:
         return ()
     if hasattr(points, "Branches"):
-        flat = []
+        flat: list[object] = []
         for branch in points.Branches:
             flat.extend(_coerce_points(branch))
         return tuple(flat)
     if all(hasattr(points, attr) for attr in ("X", "Y", "Z")):
         return (points,)
     try:
-        return tuple(points)  # type: ignore[arg-type]
+        return tuple(cast(Iterable[object], points))
     except TypeError:
         return (points,)
 
 
 def _simulation_cache() -> Optional[MutableMappingType[str, dds.SimulationResult]]:
     try:
-        import scriptcontext  # type: ignore[import-not-found]
+        import scriptcontext
     except ImportError:
         return None
     sticky = getattr(scriptcontext, "sticky", None)
