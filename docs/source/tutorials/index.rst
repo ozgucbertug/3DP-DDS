@@ -9,3 +9,4 @@ Tutorials
    simulation-workflows
    results-and-analysis
    chunked-fields
+   grasshopper
