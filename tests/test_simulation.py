@@ -19,7 +19,7 @@ from dds import (
     Vector3D,
     simulate,
 )
-from dds.fields import apply_deposit_to_field, apply_deposit_to_index_field
+from dds.fields import accumulate_fields, apply_deposit_to_field, apply_deposit_to_index_field
 from dds.viz import ViewConfig
 
 
@@ -1074,6 +1074,32 @@ def test_apply_deposit_to_field_accumulates_in_place() -> None:
 
     assert hit is True
     assert grid.sum() > 0.0
+
+
+def test_accumulate_fields_can_build_coverage_without_implicit_field() -> None:
+    domain = make_domain()
+    deposit = PointDeposit(target=(5.0, 5.0, 5.0), profile=make_profile(width=2.0, height=2.0))
+
+    fields = accumulate_fields(
+        domain,
+        [deposit],
+        include_implicit=False,
+        include_coverage=True,
+    )
+
+    assert tuple(fields) == ("coverage",)
+    assert fields["coverage"].shape == domain.grid_shape
+    assert fields["coverage"].sum() > 0.0
+
+
+def test_accumulate_fields_rejects_empty_field_request() -> None:
+    with pytest.raises(ValueError, match="At least one field"):
+        accumulate_fields(
+            make_domain(),
+            _two_deposits(),
+            include_implicit=False,
+            include_coverage=False,
+        )
 
 
 def test_implicit_field_is_geometric_envelope_and_coverage_is_additive() -> None:

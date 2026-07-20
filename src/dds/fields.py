@@ -43,6 +43,7 @@ def accumulate_fields(
     domain: Domain,
     deposits: Union[Iterable[DepositInput], DepositInput],
     *,
+    include_implicit: bool = True,
     include_coverage: bool = False,
 ) -> dict[FieldName, npt.NDArray[np.float64]]:
     """Accumulate the implicit field and optional additive coverage.
@@ -52,9 +53,12 @@ def accumulate_fields(
     diagnostic, not a physical density.
     """
 
-    fields: dict[FieldName, npt.NDArray[np.float64]] = {
-        "implicit": np.zeros(domain.grid_shape, dtype=float)
-    }
+    if not include_implicit and not include_coverage:
+        raise ValueError("At least one field must be requested.")
+
+    fields: dict[FieldName, npt.NDArray[np.float64]] = {}
+    if include_implicit:
+        fields["implicit"] = np.zeros(domain.grid_shape, dtype=float)
     if include_coverage:
         fields["coverage"] = np.zeros(domain.grid_shape, dtype=float)
     for deposit in iter_deposits(deposits):
@@ -76,6 +80,7 @@ def accumulate_field(
     return accumulate_fields(
         domain,
         deposits,
+        include_implicit=field == "implicit",
         include_coverage=field == "coverage",
     )[field]
 
