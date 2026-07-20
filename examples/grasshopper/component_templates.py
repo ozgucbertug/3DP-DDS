@@ -8,9 +8,9 @@ listed input and output names.
 
 # DDS Setup
 # Inputs: package_path, run
-# Outputs: OK, DDSPath
+# Outputs: DDSPath
+# r: numpy==2.0.2, scipy==1.13.1, scikit-image==0.24.0
 #
-# Assumptions:
 # - package_path points at the repository `src` folder, not the repository root.
 # - Use a Button for run. The path is stored in scriptcontext.sticky so it
 #   remains available after the button releases.
@@ -18,6 +18,7 @@ listed input and output names.
 #   runtime dependencies such as numpy, scipy, or scikit-image.
 # - DDSPath should resolve to `.../3DP-DDS/src/dds/__init__.py`; any other path
 #   means Rhino is importing a different DDS copy.
+
 import sys
 import scriptcontext as sc
 
@@ -40,13 +41,11 @@ if DDS_SRC:
         import dds.gh_helpers
 
         DDSPath = dds.__file__
-        OK = bool(DDSPath and DDSPath.startswith(DDS_SRC))
-        if OK:
+        if bool(DDSPath and DDSPath.startswith(DDS_SRC)):
             print("DDS loaded from:", DDSPath)
         else:
             print("DDS imported from unexpected path:", DDSPath)
     except Exception as exc:
-        OK = False
         DDSPath = None
         print("DDS setup failed:", repr(exc))
 else:
@@ -57,7 +56,6 @@ else:
 # Inputs: Box, voxel_size
 # Outputs: Domain, PreviewBox
 #
-# Assumptions / algorithm:
 # - Box is a Rhino box or any object with a bounding box.
 # - DDS domains are axis-aligned dense voxel grids; rotated Rhino boxes are
 #   converted through their world-axis bounding box.
@@ -82,7 +80,6 @@ except Exception as exc:
 # Inputs: width, height
 # Outputs: Profile
 #
-# Assumptions:
 # - width and height use the same units as the Domain and Target coordinates.
 # - Profile describes the nominal bead cross-section used by all deposits wired
 #   to it.
@@ -103,7 +100,6 @@ except Exception as exc:
 # Inputs: Position, Normal
 # Outputs: Target
 #
-# Assumptions / algorithm:
 # - Position can be a Rhino point, Rhino plane/frame, or an existing DDS target.
 # - If Position is a plane/frame, its origin and normal define the target and
 #   the Normal input is ignored.
@@ -124,7 +120,6 @@ except Exception as exc:
 # Inputs: Plane
 # Outputs: Target
 #
-# Assumptions:
 # - This is a convenience version of DDS Target for explicit plane/frame input.
 # - The plane origin becomes target position.
 # - The plane normal/ZAxis becomes deposition normal.
@@ -144,7 +139,6 @@ except Exception as exc:
 # Inputs: Target, Profile
 # Outputs: Deposit
 #
-# Assumptions / algorithm:
 # - Target can be a DDS target, Rhino plane/frame, or Rhino point.
 # - If Target is a point, world +Z is used as its normal.
 # - The deposit represents one bead centered below the top/nozzle-referenced
@@ -164,7 +158,6 @@ except Exception as exc:
 # Inputs: StartTarget, EndTarget, Profile, sweep_resolution
 # Outputs: Deposit
 #
-# Assumptions / algorithm:
 # - StartTarget and EndTarget can each be a DDS target, Rhino plane/frame, or
 #   Rhino point.
 # - If either endpoint is a point, world +Z is used for that endpoint normal.
@@ -191,7 +184,6 @@ except Exception as exc:
 # Inputs: Targets, Profile, sweep_resolution
 # Outputs: Deposit
 #
-# Assumptions / algorithm:
 # - Targets should use List Access.
 # - Each item can be a DDS target, Rhino plane/frame, or Rhino point.
 # - Points default to world +Z; planes carry their own normals.
@@ -216,7 +208,6 @@ except Exception as exc:
 # Inputs: Domain, Deposits, run, reset, include_coverage
 # Outputs: Result
 #
-# Assumptions / algorithm:
 # - Deposits should use List Access and may receive one or many deposit objects.
 # - run gates the expensive dense-field computation. Keep it False while
 #   editing sliders, then set True when you want a result.
@@ -251,7 +242,6 @@ except Exception as exc:
 # Inputs: Result, threshold, step_size
 # Outputs: Mesh
 #
-# Assumptions / algorithm:
 # - Mesh extraction runs marching cubes on Result.implicit_field.
 # - This requires scikit-image in Rhino's Python environment.
 # - threshold defaults to the Result threshold when empty.
