@@ -29,9 +29,9 @@ library in editable mode:
 python -m pip install -e .
 ```
 
-The core dependencies are NumPy and SciPy. Command-line helpers, mesh I/O,
-YAML loading, and visualization are installed only when their extras are
-requested.
+The core dependencies are NumPy and SciPy. Example command-line helpers, YAML
+loading, mesh operations, and visualization are installed only when their extras
+are requested.
 
 | Extra | Adds | Install |
 | --- | --- | --- |

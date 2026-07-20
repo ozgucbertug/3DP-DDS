@@ -6,12 +6,12 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chunked Fields &mdash; 3DP-DDS</title>
+  <title>Grasshopper Python 3 &mdash; 3DP-DDS</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
 
 
-    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/tutorials/chunked-fields.html" />
+    <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/tutorials/grasshopper.html" />
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../_static/documentation_options.js?v=3e6ca1ad"></script>
@@ -20,8 +20,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Grasshopper Python 3" href="grasshopper.html" />
-    <link rel="prev" title="Results And Analysis" href="results-and-analysis.html" />
+    <link rel="next" title="Concepts" href="../concepts/index.html" />
+    <link rel="prev" title="Chunked Fields" href="chunked-fields.html" />
 </head>
 
 <body class="wy-body-for-nav">
@@ -56,8 +56,8 @@
 <li class="toctree-l2"><a class="reference internal" href="deposits.html">Deposits</a></li>
 <li class="toctree-l2"><a class="reference internal" href="simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="results-and-analysis.html">Results And Analysis</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Chunked Fields</a></li>
-<li class="toctree-l2"><a class="reference internal" href="grasshopper.html">Grasshopper Python 3</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chunked-fields.html">Chunked Fields</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Grasshopper Python 3</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a><ul>
@@ -225,9 +225,9 @@
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
           <li class="breadcrumb-item"><a href="index.html">Tutorials</a></li>
-      <li class="breadcrumb-item active">Chunked Fields</li>
+      <li class="breadcrumb-item active">Grasshopper Python 3</li>
       <li class="wy-breadcrumbs-aside">
-              <a href="https://github.com/ozgucbertug/3DP-DDS/blob/main/docs/source/tutorials/chunked-fields.rst" class="fa fa-github"> Edit on GitHub</a>
+              <a href="https://github.com/ozgucbertug/3DP-DDS/blob/main/docs/source/tutorials/grasshopper.rst" class="fa fa-github"> Edit on GitHub</a>
       </li>
   </ul>
   <hr/>
@@ -235,32 +235,54 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
 
-  <section id="chunked-fields">
-<h1>Chunked Fields<a class="headerlink" href="#chunked-fields" title="Link to this heading"></a></h1>
-<p><a class="reference internal" href="../api/generated/dds.ChunkedField.html#dds.ChunkedField" title="dds.ChunkedField"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.ChunkedField</span></code></a> stores fixed-size dense chunks only where deposition
-touches the domain. It is useful for large workspaces with localized paths.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dds.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">accumulate_chunked_field</span>
-
-<span class="n">chunked</span> <span class="o">=</span> <span class="n">accumulate_chunked_field</span><span class="p">(</span>
-    <span class="n">domain</span><span class="p">,</span>
-    <span class="n">deposits</span><span class="p">,</span>
-    <span class="n">chunk_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">32</span><span class="p">),</span>
-    <span class="n">include_coverage</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">dense</span> <span class="o">=</span> <span class="n">chunked</span><span class="o">.</span><span class="n">to_dense</span><span class="p">(</span><span class="s2">&quot;implicit&quot;</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">chunked</span><span class="o">.</span><span class="n">to_result</span><span class="p">(</span><span class="n">deposits</span><span class="p">,</span> <span class="n">threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+  <section id="grasshopper-python-3">
+<h1>Grasshopper Python 3<a class="headerlink" href="#grasshopper-python-3" title="Link to this heading"></a></h1>
+<p>DDS can be used inside Rhino 8 Grasshopper Python 3 as a simulation backend.
+The recommended workflow keeps Rhino and Grasshopper responsible for previews
+while DDS creates domains, deposits, simulation fields, and extracted meshes.</p>
+<p>For editable workshop development, point the <code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Setup</span></code> component at the
+repository <code class="docutils literal notranslate"><span class="pre">src</span></code> directory. This uses the same source tree you are editing and
+does not require a DDS wheel.</p>
+<p>If you install DDS into Rhino’s Python environment instead, install the base
+package first:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>3dp-dds
 </pre></div>
 </div>
-<p>Chunked storage is a standalone sparse workflow. Use <a class="reference internal" href="../api/generated/dds.Simulator.html#dds.Simulator" title="dds.Simulator"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.Simulator</span></code></a>
-when you need mutable dense snapshots.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Mesh</span></code> component extracts a marching-cubes surface. For that component
+only, install the <code class="docutils literal notranslate"><span class="pre">mesh</span></code> extra so <code class="docutils literal notranslate"><span class="pre">scikit-image</span></code> is available:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;3dp-dds[mesh]&quot;</span>
+</pre></div>
+</div>
+<p>Grasshopper and Rhino own visualization. Do not install the <code class="docutils literal notranslate"><span class="pre">viz</span></code> extra for a
+Rhino workflow unless you also want DDS’ separate PyVista/PySide workbench.</p>
+<p>The adapter package is <code class="docutils literal notranslate"><span class="pre">dds.gh_helpers</span></code>. It can be imported outside Rhino, but
+functions that create Rhino geometry import RhinoCommon lazily and raise a clear
+runtime error outside Rhino.</p>
+<p>Recommended component flow:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Setup</span></code> adds a local repository <code class="docutils literal notranslate"><span class="pre">src</span></code> path for editable workshop
+development. When DDS is installed into Rhino Python, this component can be
+skipped.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Domain</span> <span class="pre">Box</span></code> converts a Rhino box or bounding box to <code class="docutils literal notranslate"><span class="pre">dds.Domain</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">BeadProfile</span></code> creates a reusable <code class="docutils literal notranslate"><span class="pre">dds.BeadProfile</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Target</span></code> converts a point, plane/frame, or existing target to
+<code class="docutils literal notranslate"><span class="pre">dds.DepositionTarget</span></code>. Points use world <code class="docutils literal notranslate"><span class="pre">+Z</span></code> when no normal is supplied.</p></li>
+<li><p>Point, line, and polyline deposit components consume target-like inputs plus
+<code class="docutils literal notranslate"><span class="pre">dds.BeadProfile</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Simulate</span></code> combines the domain and deposits into <code class="docutils literal notranslate"><span class="pre">SimulationResult</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DDS</span> <span class="pre">Mesh</span></code> converts the result surface to <code class="docutils literal notranslate"><span class="pre">Rhino.Geometry.Mesh</span></code>.</p></li>
+</ul>
+<p>DDS objects should be passed directly through Grasshopper wires. Use sticky
+state only for setup and optional simulation caching; do not append deposits to
+sticky state during recompute.</p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="results-and-analysis.html" class="btn btn-neutral float-left" title="Results And Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="grasshopper.html" class="btn btn-neutral float-right" title="Grasshopper Python 3" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="chunked-fields.html" class="btn btn-neutral float-left" title="Chunked Fields" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../concepts/index.html" class="btn btn-neutral float-right" title="Concepts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

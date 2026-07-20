@@ -6,18 +6,19 @@ layer.
 
 ## Install Options
 
-For a workshop wheelhouse install, build the DDS wheel and install the
-Grasshopper-focused extra into Rhino's Python environment:
+For editable workshop development, use `DDS Setup` to add the local repository
+`src` path inside Grasshopper. This avoids building or installing a DDS wheel
+while you are iterating on the source.
+
+If DDS is installed into Rhino's Python environment, `DDS Setup` is optional.
+Install the `mesh` extra only when using the `DDS Mesh` component:
 
 ```bash
-python -m pip wheel ".[gh]" -w wheelhouse
+python -m pip install "3dp-dds[mesh]"
 ```
 
-Inside Grasshopper, use `DDS Setup` to add the local repository `src` path during
-editable workshop development. If DDS is installed into Rhino's Python
-environment, `DDS Setup` is optional. The `gh` extra only adds mesh extraction
-support through `scikit-image`; it does not install PyVista, PySide, CLI, or YAML
-dependencies.
+Grasshopper and Rhino handle visualization. DDS' `viz` extra is for the separate
+PyVista/PySide workbench and is not needed for this workflow.
 
 ## Component Dataflow
 

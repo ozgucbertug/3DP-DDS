@@ -40,7 +40,6 @@ dependencies = [
 [project.optional-dependencies]
 cli = ["tyro>=0.8"]
 formats = ["pyyaml>=6.0"]
-gh = ["scikit-image>=0.22"]
 mesh = [
     "rtree>=1.2",
     "scikit-image>=0.22",

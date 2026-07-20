@@ -5,14 +5,26 @@ DDS can be used inside Rhino 8 Grasshopper Python 3 as a simulation backend.
 The recommended workflow keeps Rhino and Grasshopper responsible for previews
 while DDS creates domains, deposits, simulation fields, and extracted meshes.
 
-Install the Grasshopper-focused extra when preparing a workshop environment:
+For editable workshop development, point the ``DDS Setup`` component at the
+repository ``src`` directory. This uses the same source tree you are editing and
+does not require a DDS wheel.
+
+If you install DDS into Rhino's Python environment instead, install the base
+package first:
 
 .. code-block:: bash
 
-   python -m pip wheel ".[gh]" -w wheelhouse
+   python -m pip install 3dp-dds
 
-The ``gh`` extra includes ``scikit-image`` for marching-cubes mesh extraction.
-It intentionally avoids the visualization, CLI, and YAML extras.
+The ``DDS Mesh`` component extracts a marching-cubes surface. For that component
+only, install the ``mesh`` extra so ``scikit-image`` is available:
+
+.. code-block:: bash
+
+   python -m pip install "3dp-dds[mesh]"
+
+Grasshopper and Rhino own visualization. Do not install the ``viz`` extra for a
+Rhino workflow unless you also want DDS' separate PyVista/PySide workbench.
 
 The adapter package is ``dds.gh_helpers``. It can be imported outside Rhino, but
 functions that create Rhino geometry import RhinoCommon lazily and raise a clear

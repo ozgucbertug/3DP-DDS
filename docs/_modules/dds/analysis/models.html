@@ -9,7 +9,7 @@
       <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
 
-  
+
     <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/_modules/dds/analysis/models.html" />
       <script src="../../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
@@ -18,17 +18,17 @@
       <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" /> 
+    <link rel="search" title="Search" href="../../../search.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search"  style="background: #2980B9" >
 
-          
-          
+
+
           <a href="../../../index.html" class="icon icon-home">
             3DP-DDS
           </a>
@@ -54,6 +54,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../tutorials/grasshopper.html">Grasshopper Python 3</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../../concepts/index.html">Concepts</a><ul>
@@ -229,7 +230,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <h1>Source code for dds.analysis.models</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;Typed analysis result models for dense simulation workflows.&quot;&quot;&quot;</span>
 
@@ -247,7 +248,7 @@
 
 <div class="viewcode-block" id="StratumFieldSet">
 <a class="viewcode-back" href="../../../api/generated/dds.analysis.StratumFieldSet.html#dds.analysis.StratumFieldSet">[docs]</a>
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">StratumFieldSet</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implicit and occupancy fields partitioned by deposit order.</span>
 
@@ -327,7 +328,7 @@
 
 <div class="viewcode-block" id="InterfacePairSummary">
 <a class="viewcode-back" href="../../../api/generated/dds.analysis.InterfacePairSummary.html#dds.analysis.InterfacePairSummary">[docs]</a>
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">InterfacePairSummary</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Summary metrics for one adjacent ordered-deposit pair.</span>
 
@@ -350,7 +351,7 @@
 
 <div class="viewcode-block" id="InterfaceAnalysis">
 <a class="viewcode-back" href="../../../api/generated/dds.analysis.InterfaceAnalysis.html#dds.analysis.InterfaceAnalysis">[docs]</a>
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">InterfaceAnalysis</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface, contact, and overlap result for ordered strata.&quot;&quot;&quot;</span>
 
@@ -378,7 +379,7 @@
 
 <div class="viewcode-block" id="SupportAnalysis">
 <a class="viewcode-back" href="../../../api/generated/dds.analysis.SupportAnalysis.html#dds.analysis.SupportAnalysis">[docs]</a>
-<span class="nd">@dataclass</span><span class="p">(</span><span class="n">slots</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SupportAnalysis</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Support and overhang analysis result for one build direction.</span>
 
@@ -433,7 +434,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+
 
 </footer>
         </div>
@@ -445,7 +446,7 @@
           SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
- 
+
 <div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
   This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
 </div>

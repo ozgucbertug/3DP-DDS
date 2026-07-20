@@ -10,7 +10,7 @@
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
 
-  
+
     <link rel="canonical" href="https://ozgucbertug.github.io/3DP-DDS/api/generated/dds.ChunkedField.html" />
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
@@ -21,17 +21,17 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="dds.simulate" href="dds.simulate.html" />
-    <link rel="prev" title="dds.Simulator" href="dds.Simulator.html" /> 
+    <link rel="prev" title="dds.Simulator" href="dds.Simulator.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search"  style="background: #2980B9" >
 
-          
-          
+
+
           <a href="../../index.html" class="icon icon-home">
             3DP-DDS
           </a>
@@ -57,6 +57,7 @@
 <li class="toctree-l2"><a class="reference internal" href="../../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tutorials/results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../../tutorials/chunked-fields.html">Chunked Fields</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../tutorials/grasshopper.html">Grasshopper Python 3</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../../concepts/index.html">Concepts</a><ul>
@@ -234,7 +235,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <section id="dds-chunkedfield">
 <h1>dds.ChunkedField<a class="headerlink" href="#dds-chunkedfield" title="Link to this heading"></a></h1>
 <dl class="py class">
@@ -260,12 +261,12 @@ requested. Empty chunks are never stored.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="dds.ChunkedField.chunk_shape">
-<span class="sig-name descname"><span class="pre">chunk_shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#dds.ChunkedField.chunk_shape" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">chunk_shape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(32,</span> <span class="pre">32,</span> <span class="pre">32)</span></em><a class="headerlink" href="#dds.ChunkedField.chunk_shape" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="dds.ChunkedField.include_coverage">
-<span class="sig-name descname"><span class="pre">include_coverage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><a class="headerlink" href="#dds.ChunkedField.include_coverage" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">include_coverage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#dds.ChunkedField.include_coverage" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -417,7 +418,7 @@ to the full analysis interface.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>deposits</strong> (<em>Iterable</em><em>[</em><em>DepositInput</em><em>] </em><em>| </em><em>DepositInput</em>) – The same deposit sequence that was used to build this field.</p></li>
+<li><p><strong>deposits</strong> (<em>Union</em><em>[</em><em>Iterable</em><em>[</em><em>DepositInput</em><em>]</em><em>, </em><em>DepositInput</em><em>]</em>) – The same deposit sequence that was used to build this field.</p></li>
 <li><p><strong>threshold</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Occupancy threshold forwarded to the result’s <code class="docutils literal notranslate"><span class="pre">default_threshold</span></code>.</p></li>
 </ul>
 </dd>
@@ -448,7 +449,7 @@ to the full analysis interface.</p>
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+
 
 </footer>
         </div>
@@ -460,7 +461,7 @@ to the full analysis interface.</p>
           SphinxRtdTheme.Navigation.enable(true);
       });
   </script>
- 
+
 <div style="color: #777; font-size: 12px; margin: 16px 0 8px;">
   This documentation was generated automatically with assistance from a large language model (LLM). Verify critical behavior against the source code and tests.
 </div>
