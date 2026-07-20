@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -35,12 +36,12 @@ class Simulator:
     def __init__(
         self,
         domain: Domain,
-        deposits: Iterable[DepositInput] | DepositInput | None = None,
+        deposits: Optional[Union[Iterable[DepositInput], DepositInput]] = None,
     ) -> None:
         self.domain = domain
         self._deposits: list[Deposit] = []
-        self._coverage_cache: npt.NDArray[np.float64] | None = None
-        self._implicit_field_cache: npt.NDArray[np.float64] | None = None
+        self._coverage_cache: Optional[npt.NDArray[np.float64]] = None
+        self._implicit_field_cache: Optional[npt.NDArray[np.float64]] = None
         if deposits is not None:
             self.add_deposits(deposits)
 
@@ -115,7 +116,7 @@ class Simulator:
             self._deposits.append(leaf)
             self._apply_incremental(leaf)
 
-    def add_deposits(self, deposits: Iterable[DepositInput] | DepositInput) -> None:
+    def add_deposits(self, deposits: Union[Iterable[DepositInput], DepositInput]) -> None:
         """Add one or more deposits, updating any warm dense caches."""
 
         for leaf in iter_deposits(deposits):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Optional
+
 import numpy as np
 
 from .models import InterfaceAnalysis, InterfacePairSummary, StratumFieldSet
@@ -12,7 +14,7 @@ def _contact_for_pair(
     next_field: np.ndarray,
     *,
     voxel_size: tuple[float, float, float],
-    overlap: np.ndarray | None = None,
+    overlap: Optional[np.ndarray] = None,
 ) -> tuple[np.ndarray, int, float]:
     contact = (previous & next_field) if overlap is None else overlap.copy()
     face_count = 0

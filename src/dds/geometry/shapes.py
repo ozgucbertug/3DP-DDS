@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Optional, Union
 
 import numpy as np
 
@@ -16,11 +17,11 @@ Y = np.asarray((0.0, 1.0, 0.0), dtype=float)
 Z = np.asarray((0.0, 0.0, 1.0), dtype=float)
 
 
-def _vector(value: Sequence[float] | np.ndarray, *, name: str) -> np.ndarray:
+def _vector(value: Union[Sequence[float], np.ndarray], *, name: str) -> np.ndarray:
     return np.asarray(ensure_finite_triplet(value, name), dtype=float)
 
 
-def _size_vector(value: float | Sequence[float], *, name: str) -> np.ndarray:
+def _size_vector(value: Union[float, Sequence[float]], *, name: str) -> np.ndarray:
     if isinstance(value, (int, float)):
         scalar = float(value)
         if scalar <= 0.0:
@@ -31,8 +32,8 @@ def _size_vector(value: float | Sequence[float], *, name: str) -> np.ndarray:
 
 def _radius_from_inputs(
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
     name: str = "radius",
 ) -> float:
     result = _radius_value(radius=radius, diameter=diameter, name=name)
@@ -43,8 +44,8 @@ def _radius_from_inputs(
 
 def _radius_value(
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
     name: str = "radius",
     allow_zero: bool = False,
 ) -> float:
@@ -63,7 +64,7 @@ def _radius_value(
     return result
 
 
-def _normalize_axis(axis: Sequence[float] | np.ndarray) -> np.ndarray:
+def _normalize_axis(axis: Union[Sequence[float], np.ndarray]) -> np.ndarray:
     axis_array = _vector(axis, name="axis")
     length = float(np.linalg.norm(axis_array))
     if length == 0.0:
@@ -72,8 +73,8 @@ def _normalize_axis(axis: Sequence[float] | np.ndarray) -> np.ndarray:
 
 
 def _axis_frame(
-    a: Sequence[float] | np.ndarray,
-    b: Sequence[float] | np.ndarray,
+    a: Union[Sequence[float], np.ndarray],
+    b: Union[Sequence[float], np.ndarray],
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     start = _vector(a, name="a")
     end = _vector(b, name="b")
@@ -86,9 +87,9 @@ def _axis_frame(
 
 def sphere(
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
-    center: Sequence[float] | np.ndarray = ORIGIN,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
 ) -> SDF3:
     """Return a sphere SDF."""
 
@@ -98,8 +99,8 @@ def sphere(
 
 
 def plane(
-    normal: Sequence[float] | np.ndarray = Z,
-    point: Sequence[float] | np.ndarray = ORIGIN,
+    normal: Union[Sequence[float], np.ndarray] = Z,
+    point: Union[Sequence[float], np.ndarray] = ORIGIN,
 ) -> SDF3:
     """Return a plane SDF with negative values in the half-space pointed to by `normal`."""
 
@@ -110,15 +111,15 @@ def plane(
 
 def slab(
     *,
-    x0: float | None = None,
-    y0: float | None = None,
-    z0: float | None = None,
-    x1: float | None = None,
-    y1: float | None = None,
-    z1: float | None = None,
-    dx: float | None = None,
-    dy: float | None = None,
-    dz: float | None = None,
+    x0: Optional[float] = None,
+    y0: Optional[float] = None,
+    z0: Optional[float] = None,
+    x1: Optional[float] = None,
+    y1: Optional[float] = None,
+    z1: Optional[float] = None,
+    dx: Optional[float] = None,
+    dy: Optional[float] = None,
+    dz: Optional[float] = None,
 ) -> SDF3:
     """Return an axis-aligned slab or bounded intersection of half-spaces."""
 
@@ -158,10 +159,10 @@ def slab(
 
 def box(
     *,
-    size: float | Sequence[float] = 1.0,
-    center: Sequence[float] | np.ndarray = ORIGIN,
-    a: Sequence[float] | np.ndarray | None = None,
-    b: Sequence[float] | np.ndarray | None = None,
+    size: Union[float, Sequence[float]] = 1.0,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
+    a: Optional[Union[Sequence[float], np.ndarray]] = None,
+    b: Optional[Union[Sequence[float], np.ndarray]] = None,
 ) -> SDF3:
     """Return an axis-aligned box SDF."""
 
@@ -185,9 +186,9 @@ def box(
 
 def rounded_box(
     *,
-    size: float | Sequence[float] = 1.0,
+    size: Union[float, Sequence[float]] = 1.0,
     radius: float,
-    center: Sequence[float] | np.ndarray = ORIGIN,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
 ) -> SDF3:
     """Return an axis-aligned box with rounded edges."""
 
@@ -208,11 +209,11 @@ def rounded_box(
 
 def cylinder(
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
-    height: float | None = None,
-    center: Sequence[float] | np.ndarray = ORIGIN,
-    axis: Sequence[float] | np.ndarray = Z,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
+    height: Optional[float] = None,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
+    axis: Union[Sequence[float], np.ndarray] = Z,
 ) -> SDF3:
     """Return an infinite or capped cylinder SDF."""
 
@@ -239,11 +240,11 @@ def cylinder(
 
 
 def capped_cylinder(
-    a: Sequence[float] | np.ndarray,
-    b: Sequence[float] | np.ndarray,
+    a: Union[Sequence[float], np.ndarray],
+    b: Union[Sequence[float], np.ndarray],
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
 ) -> SDF3:
     """Return a finite cylinder between two cap centers."""
 
@@ -267,12 +268,12 @@ def capped_cylinder(
 
 def rounded_cylinder(
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
     height: float,
     rounding_radius: float,
-    center: Sequence[float] | np.ndarray = ORIGIN,
-    axis: Sequence[float] | np.ndarray = Z,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
+    axis: Union[Sequence[float], np.ndarray] = Z,
 ) -> SDF3:
     """Return a finite cylinder with rounded cap edges."""
 
@@ -308,11 +309,11 @@ def rounded_cylinder(
 
 
 def capsule(
-    a: Sequence[float] | np.ndarray,
-    b: Sequence[float] | np.ndarray,
+    a: Union[Sequence[float], np.ndarray],
+    b: Union[Sequence[float], np.ndarray],
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
 ) -> SDF3:
     """Return a capsule SDF between two endpoints."""
 
@@ -334,13 +335,13 @@ def capsule(
 
 
 def capped_cone(
-    a: Sequence[float] | np.ndarray,
-    b: Sequence[float] | np.ndarray,
+    a: Union[Sequence[float], np.ndarray],
+    b: Union[Sequence[float], np.ndarray],
     *,
-    radius_a: float | None = None,
-    radius_b: float | None = None,
-    diameter_a: float | None = None,
-    diameter_b: float | None = None,
+    radius_a: Optional[float] = None,
+    radius_b: Optional[float] = None,
+    diameter_a: Optional[float] = None,
+    diameter_b: Optional[float] = None,
 ) -> SDF3:
     """Return a flat-capped cone or frustum between two cap centers."""
 
@@ -374,12 +375,12 @@ def capped_cone(
 def cone(
     *,
     height: float,
-    radius_bottom: float | None = None,
-    radius_top: float | None = None,
-    diameter_bottom: float | None = None,
-    diameter_top: float | None = None,
-    center: Sequence[float] | np.ndarray = ORIGIN,
-    axis: Sequence[float] | np.ndarray = Z,
+    radius_bottom: Optional[float] = None,
+    radius_top: Optional[float] = None,
+    diameter_bottom: Optional[float] = None,
+    diameter_top: Optional[float] = None,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
+    axis: Union[Sequence[float], np.ndarray] = Z,
 ) -> SDF3:
     """Return a centered flat-capped cone or frustum."""
 
@@ -402,13 +403,13 @@ def cone(
 
 
 def rounded_cone(
-    a: Sequence[float] | np.ndarray,
-    b: Sequence[float] | np.ndarray,
+    a: Union[Sequence[float], np.ndarray],
+    b: Union[Sequence[float], np.ndarray],
     *,
-    radius_a: float | None = None,
-    radius_b: float | None = None,
-    diameter_a: float | None = None,
-    diameter_b: float | None = None,
+    radius_a: Optional[float] = None,
+    radius_b: Optional[float] = None,
+    diameter_a: Optional[float] = None,
+    diameter_b: Optional[float] = None,
 ) -> SDF3:
     """Return a cone-like swept shape with spherical end caps."""
 
@@ -438,9 +439,9 @@ def rounded_cone(
 def capsule_chain(
     points: Sequence[Sequence[float] | np.ndarray],
     *,
-    radius: float | None = None,
-    diameter: float | None = None,
-    radii: Sequence[float] | np.ndarray | None = None,
+    radius: Optional[float] = None,
+    diameter: Optional[float] = None,
+    radii: Optional[Union[Sequence[float], np.ndarray]] = None,
     union_radius: float = 0.0,
     chamfer: float = 0.0,
 ) -> SDF3:
@@ -481,8 +482,8 @@ def capsule_chain(
 
 def ellipsoid(
     *,
-    size: float | Sequence[float],
-    center: Sequence[float] | np.ndarray = ORIGIN,
+    size: Union[float, Sequence[float]],
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
 ) -> SDF3:
     """Return an ellipsoid SDF using the standard IQ approximation."""
 
@@ -503,12 +504,12 @@ def ellipsoid(
 
 def torus(
     *,
-    major_radius: float | None = None,
-    minor_radius: float | None = None,
-    r1: float | None = None,
-    r2: float | None = None,
-    center: Sequence[float] | np.ndarray = ORIGIN,
-    axis: Sequence[float] | np.ndarray = Z,
+    major_radius: Optional[float] = None,
+    minor_radius: Optional[float] = None,
+    r1: Optional[float] = None,
+    r2: Optional[float] = None,
+    center: Union[Sequence[float], np.ndarray] = ORIGIN,
+    axis: Union[Sequence[float], np.ndarray] = Z,
 ) -> SDF3:
     """Return a torus SDF around the given axis."""
 

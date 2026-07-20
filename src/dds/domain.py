@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -88,7 +88,7 @@ class Domain:
         ymax: float,
         zmin: float,
         zmax: float,
-        voxel_size: float | Sequence[float],
+        voxel_size: Union[float, Sequence[float]],
         length_unit: Literal["mm", "m"] = "mm",
     ) -> "Domain":
         """Create a domain from scalar bounds and voxel size.
@@ -129,10 +129,10 @@ class Domain:
     @classmethod
     def from_deposits(
         cls,
-        deposits: Iterable[DepositInput] | DepositInput,
+        deposits: Union[Iterable[DepositInput], DepositInput],
         *,
-        voxel_size: float | Sequence[float],
-        padding: float | str = "auto",
+        voxel_size: Union[float, Sequence[float]],
+        padding: Union[float, str] = "auto",
         length_unit: Literal["mm", "m"] = "mm",
     ) -> "Domain":
         """Create a padded domain that encloses deposit support bounds.
@@ -198,7 +198,7 @@ class Domain:
             "length_unit": self.length_unit,
         }
 
-    def contains_point(self, point: Point3D | Sequence[float]) -> bool:
+    def contains_point(self, point: Union[Point3D, Sequence[float]]) -> bool:
         """Return whether a point lies inside the half-open domain bounds."""
 
         x, y, z = ensure_finite_triplet(point, "point")
@@ -210,7 +210,7 @@ class Domain:
 
     def world_to_index(
         self,
-        point: Point3D | Sequence[float],
+        point: Union[Point3D, Sequence[float]],
         *,
         clip: bool = False,
     ) -> tuple[int, int, int]:
@@ -257,7 +257,7 @@ class Domain:
         )
         return Point3D.from_value(coordinate)
 
-    def axis_centers(self, axis: int, start: int = 0, stop: int | None = None) -> npt.NDArray[np.float64]:
+    def axis_centers(self, axis: int, start: int = 0, stop: Optional[int] = None) -> npt.NDArray[np.float64]:
         """Return voxel-center coordinates along one axis."""
 
         if axis not in (0, 1, 2):
@@ -274,7 +274,7 @@ class Domain:
 
     def grid_centers(
         self,
-        index_bounds: IndexBounds | None = None,
+        index_bounds: Optional[IndexBounds] = None,
     ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """Return dense voxel-center coordinate arrays using ``(x, y, z)`` indexing."""
 
@@ -293,9 +293,9 @@ class Domain:
 
     def index_bounds_for_aabb(
         self,
-        minimum: Point3D | Sequence[float],
-        maximum: Point3D | Sequence[float],
-    ) -> IndexBounds | None:
+        minimum: Union[Point3D, Sequence[float]],
+        maximum: Union[Point3D, Sequence[float]],
+    ) -> Optional[IndexBounds]:
         """Return half-open index bounds for voxel centers inside an AABB.
 
         Returns ``None`` when the requested bounds do not overlap the domain.

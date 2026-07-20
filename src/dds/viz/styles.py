@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -37,7 +37,7 @@ def _opacity(value: float) -> None:
 
 @dataclass(frozen=True)
 class MeshStyle:
-    color: Color | None = None
+    color: Optional[Color] = None
     opacity: float = 1.0
     show_edges: bool = False
     smooth_shading: bool = True
@@ -63,7 +63,7 @@ class PointStyle:
 
 @dataclass(frozen=True)
 class PointCloudStyle:
-    color: Color | None = None
+    color: Optional[Color] = None
     size: float = 3.0
     render_as_spheres: bool = False
     opacity: float = 1.0

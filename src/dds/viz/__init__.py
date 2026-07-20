@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from importlib import import_module
-from typing import TYPE_CHECKING, ClassVar, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -56,7 +56,7 @@ def __getattr__(name: str) -> object:
 
 def _occupied_index_bounds(
     occupancy: npt.ArrayLike,
-) -> tuple[tuple[int, int, int], tuple[int, int, int]] | None:
+) -> Optional[tuple[tuple[int, int, int], tuple[int, int, int]]]:
     """Return inclusive occupied index bounds without materializing coordinates."""
 
     values = np.asarray(occupancy, dtype=bool)
@@ -85,9 +85,9 @@ class ViewConfig:
     """Initial state for the optional interactive workbench."""
 
     view_mode: ViewMode = "surface"
-    scalar_field: ViewScalarField | None = None
-    color_mode: ViewColorMode | None = None
-    build_direction: str | tuple[float, float, float] = "+Z"
+    scalar_field: Optional[ViewScalarField] = None
+    color_mode: Optional[ViewColorMode] = None
+    build_direction: Union[str, tuple[float, float, float]] = "+Z"
     show_toolpath: bool = False
     show_targets: bool = False
     show_world_axes: bool = False
@@ -107,11 +107,11 @@ class ViewConfig:
 
 
 def show(
-    simulator_or_result: Simulator | SimulationResult,
+    simulator_or_result: Union[Simulator, SimulationResult],
     *,
     view_mode: ViewMode = "surface",
-    initial_view: ViewConfig | None = None,
-    threshold: float | None = None,
+    initial_view: Optional[ViewConfig] = None,
+    threshold: Optional[float] = None,
     off_screen: bool = False,
 ) -> SimulationWorkbench:
     """Open the interactive workbench for a simulator or result snapshot."""

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Union
+
 import numpy as np
 import numpy.typing as npt
 
@@ -33,7 +35,7 @@ def maximum(a: npt.NDArray[np.float64], b: npt.NDArray[np.float64], radius: floa
     return np.maximum(a, b)
 
 
-def union(*sdfs: SDF3 | SDFCallable, radius: float = 0.0, chamfer: float = 0.0) -> SDF3:
+def union(*sdfs: Union[SDF3, SDFCallable], radius: float = 0.0, chamfer: float = 0.0) -> SDF3:
     """Return the hard or smooth union of multiple SDFs."""
 
     wrapped = [as_sdf3(sdf) for sdf in sdfs]
@@ -55,7 +57,7 @@ def union(*sdfs: SDF3 | SDFCallable, radius: float = 0.0, chamfer: float = 0.0) 
     return SDF3(evaluate, name="union")
 
 
-def intersection(*sdfs: SDF3 | SDFCallable, radius: float = 0.0, chamfer: float = 0.0) -> SDF3:
+def intersection(*sdfs: Union[SDF3, SDFCallable], radius: float = 0.0, chamfer: float = 0.0) -> SDF3:
     """Return the hard or smooth intersection of multiple SDFs."""
 
     wrapped = [as_sdf3(sdf) for sdf in sdfs]
@@ -78,8 +80,8 @@ def intersection(*sdfs: SDF3 | SDFCallable, radius: float = 0.0, chamfer: float 
 
 
 def difference(
-    a: SDF3 | SDFCallable,
-    *bs: SDF3 | SDFCallable,
+    a: Union[SDF3, SDFCallable],
+    *bs: Union[SDF3, SDFCallable],
     radius: float = 0.0,
     chamfer: float = 0.0,
 ) -> SDF3:
@@ -105,7 +107,7 @@ def difference(
     return SDF3(evaluate, name="difference")
 
 
-def dilate(other: SDF3 | SDFCallable, radius: float) -> SDF3:
+def dilate(other: Union[SDF3, SDFCallable], radius: float) -> SDF3:
     """Expand an SDF by subtracting a scalar radius."""
 
     sdf = as_sdf3(other)
@@ -115,7 +117,7 @@ def dilate(other: SDF3 | SDFCallable, radius: float) -> SDF3:
     return SDF3(lambda points: sdf._evaluate(points) - radius, name="dilate")
 
 
-def erode(other: SDF3 | SDFCallable, radius: float) -> SDF3:
+def erode(other: Union[SDF3, SDFCallable], radius: float) -> SDF3:
     """Shrink an SDF by adding a scalar radius."""
 
     sdf = as_sdf3(other)
@@ -125,7 +127,7 @@ def erode(other: SDF3 | SDFCallable, radius: float) -> SDF3:
     return SDF3(lambda points: sdf._evaluate(points) + radius, name="erode")
 
 
-def shell(other: SDF3 | SDFCallable, thickness: float = 1.0, *, type: str = "center") -> SDF3:
+def shell(other: Union[SDF3, SDFCallable], thickness: float = 1.0, *, type: str = "center") -> SDF3:
     """Keep only a shell around the SDF boundary."""
 
     sdf = as_sdf3(other)

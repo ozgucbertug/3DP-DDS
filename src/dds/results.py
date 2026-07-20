@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -39,9 +40,9 @@ class SimulationResult:
     domain: Domain
     deposits: tuple[Deposit, ...]
     implicit_field: npt.NDArray[np.float64]
-    coverage: npt.NDArray[np.float64] | None = None
+    coverage: Optional[npt.NDArray[np.float64]] = None
     default_threshold: float = 0.5
-    _analysis_cache: SimulationAnalysis | None = field(
+    _analysis_cache: Optional[SimulationAnalysis] = field(
         default=None,
         init=False,
         repr=False,
@@ -110,9 +111,9 @@ class SimulationResult:
 
     def save(
         self,
-        directory: str | Path,
+        directory: Union[str, Path],
         *,
-        metadata: dict[str, object] | None = None,
+        metadata: Optional[dict[str, object]] = None,
     ) -> dict[str, Path]:
         """Write array bundle files for this result.
 
@@ -145,7 +146,7 @@ class SimulationResult:
             )
         return written
 
-    def checkpoint(self, path: str | Path) -> Path:
+    def checkpoint(self, path: Union[str, Path]) -> Path:
         """Save this result as a typed round-trip checkpoint."""
 
         from .io import save_checkpoint
@@ -153,7 +154,7 @@ class SimulationResult:
         return save_checkpoint(path, self)
 
     @classmethod
-    def load(cls, path: str | Path) -> SimulationResult:
+    def load(cls, path: Union[str, Path]) -> SimulationResult:
         """Restore a result from a typed checkpoint."""
 
         from .io import load_checkpoint
@@ -163,7 +164,7 @@ class SimulationResult:
 
 def simulate(
     domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
+    deposits: Union[Iterable[DepositInput], DepositInput],
     *,
     include_coverage: bool = False,
     threshold: float = 0.5,

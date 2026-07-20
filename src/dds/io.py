@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -30,7 +30,7 @@ def _json_default(value: Any) -> Any:
     raise TypeError(f"Object of type {type(value).__name__} is not JSON serializable.")
 
 
-def save_array(path: str | Path, array: npt.NDArray[np.generic]) -> Path:
+def save_array(path: Union[str, Path], array: npt.NDArray[np.generic]) -> Path:
     """Save an array to disk using NumPy's native `.npy` format."""
 
     target = Path(path)
@@ -42,13 +42,13 @@ def save_array(path: str | Path, array: npt.NDArray[np.generic]) -> Path:
 
 
 def save_simulation_bundle(
-    directory: str | Path,
+    directory: Union[str, Path],
     *,
     domain: Domain,
-    occupancy: npt.NDArray[np.bool_] | None = None,
-    deposition_index: npt.NDArray[np.integer[Any]] | npt.NDArray[np.float64] | None = None,
-    implicit_field: npt.NDArray[np.float64] | None = None,
-    metadata: dict[str, Any] | None = None,
+    occupancy: Optional[npt.NDArray[np.bool_]] = None,
+    deposition_index: Optional[Union[npt.NDArray[np.integer[Any]], npt.NDArray[np.float64]]] = None,
+    implicit_field: Optional[npt.NDArray[np.float64]] = None,
+    metadata: Optional[dict[str, Any]] = None,
 ) -> dict[str, Path]:
     """Save simulation outputs and metadata into a directory."""
 
@@ -163,7 +163,7 @@ def _deposit_from_dict(d: dict[str, Any]) -> Deposit:
     raise AssertionError("unreachable")
 
 
-def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:
+def save_checkpoint(path: Union[str, Path], result: SimulationResult) -> Path:
     """Save a :class:`~dds.results.SimulationResult` as a typed checkpoint.
 
     The checkpoint is a single compressed ``npz`` file containing the implicit
@@ -207,7 +207,7 @@ def save_checkpoint(path: str | Path, result: SimulationResult) -> Path:
     return target.resolve()
 
 
-def load_checkpoint(path: str | Path) -> SimulationResult:
+def load_checkpoint(path: Union[str, Path]) -> SimulationResult:
     """Restore a :class:`~dds.results.SimulationResult` from a typed checkpoint.
 
     Parameters

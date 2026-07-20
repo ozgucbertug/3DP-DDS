@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
 from ..primitives import DepositionTarget
 
@@ -38,7 +38,7 @@ def _parse_origin_value(value: Any, *, name: str) -> tuple[float, float, float]:
     return _parse_vector(",".join(str(component) for component in value), name=name)
 
 
-def load_targets(path: str | Path) -> tuple[DepositionTarget, ...]:
+def load_targets(path: Union[str, Path]) -> tuple[DepositionTarget, ...]:
     """Load ordered deposition targets from a YAML file."""
 
     try:

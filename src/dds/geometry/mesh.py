@@ -6,7 +6,7 @@ import warnings
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -30,8 +30,8 @@ class TriangleMesh:
 
     vertices: npt.NDArray[np.float64]
     faces: npt.NDArray[np.int64]
-    vertex_colors: npt.NDArray[np.uint8] | None = None
-    face_colors: npt.NDArray[np.uint8] | None = None
+    vertex_colors: Optional[npt.NDArray[np.uint8]] = None
+    face_colors: Optional[npt.NDArray[np.uint8]] = None
 
     def __post_init__(self) -> None:
         vertices = np.array(self.vertices, dtype=float, copy=True)
@@ -139,7 +139,7 @@ def _ensure_watertight(mesh: Any, *, require_watertight: bool, context: str) -> 
     warnings.warn(message, RuntimeWarning, stacklevel=2)
 
 
-def read_mesh(path: str | Path) -> TriangleMesh:
+def read_mesh(path: Union[str, Path]) -> TriangleMesh:
     """Read a triangle mesh from disk using trimesh."""
 
     trimesh = load_trimesh()
@@ -155,7 +155,7 @@ def read_mesh(path: str | Path) -> TriangleMesh:
     return TriangleMesh.from_trimesh(loaded)
 
 
-def write_mesh(path: str | Path, mesh: TriangleMesh) -> Path:
+def write_mesh(path: Union[str, Path], mesh: TriangleMesh) -> Path:
     """Write a triangle mesh to disk using trimesh."""
 
     if not isinstance(mesh, TriangleMesh):

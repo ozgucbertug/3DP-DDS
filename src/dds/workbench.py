@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal, cast
+from typing import Any, Literal, Optional, Union, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -102,13 +102,13 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def __init__(
         self,
-        simulator_or_result: Simulator | SimulationResult,
+        simulator_or_result: Union[Simulator, SimulationResult],
         *,
         threshold: float = 0.5,
-        build_direction: str | tuple[float, float, float] = "+Z",
-        initial_view: ViewConfig | None = None,
+        build_direction: Union[str, tuple[float, float, float]] = "+Z",
+        initial_view: Optional[ViewConfig] = None,
         off_screen: bool = False,
-        parent: QtWidgets.QWidget | None = None,
+        parent: Optional[QtWidgets.QWidget] = None,
     ) -> None:
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         super().__init__(parent)
@@ -135,21 +135,21 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self.point_picking_enabled = False
         self.roi_enabled = False
 
-        self._surface_actor: Any | None = None
-        self._occupancy_actor: Any | None = None
-        self._implicit_actor: Any | None = None
+        self._surface_actor: Optional[Any] = None
+        self._occupancy_actor: Optional[Any] = None
+        self._implicit_actor: Optional[Any] = None
         self._dirty_representations: set[Representation] = {
             "surface",
             "occupancy",
             "implicit",
         }
-        self._clip_actor: Any | None = None
-        self._clip_widget: Any | None = None
-        self._roi_widget: Any | None = None
-        self._pick_marker_actor: Any | None = None
-        self._roi_bounds: tuple[tuple[float, float, float], tuple[float, float, float]] | None = None
-        self._last_pick_payload: dict[str, Any] | None = None
-        self._last_roi_stats: dict[str, float] | None = None
+        self._clip_actor: Optional[Any] = None
+        self._clip_widget: Optional[Any] = None
+        self._roi_widget: Optional[Any] = None
+        self._pick_marker_actor: Optional[Any] = None
+        self._roi_bounds: Optional[tuple[tuple[float, float, float], tuple[float, float, float]]] = None
+        self._last_pick_payload: Optional[dict[str, Any]] = None
+        self._last_roi_stats: Optional[dict[str, float]] = None
         self._surface_polydata_cache: dict[float, Any] = {}
         self._occupied_bounds_cache: dict[float, tuple[float, float, float, float, float, float]] = {}
         self._coverage = self.result.coverage
@@ -204,8 +204,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _resolve_initial_view_config(
         self,
-        initial_view: ViewConfig | None,
-        build_direction: str | tuple[float, float, float],
+        initial_view: Optional[ViewConfig],
+        build_direction: Union[str, tuple[float, float, float]],
     ) -> ViewConfig:
         config = initial_view or ViewConfig(build_direction=build_direction)
         view_mode = config.view_mode
@@ -577,7 +577,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
 
     def _coerce_build_direction(
         self,
-        axis_or_vector: str | tuple[float, float, float] | npt.ArrayLike,
+        axis_or_vector: Union[str, tuple[float, float, float], npt.ArrayLike],
     ) -> tuple[float, float, float]:
         if isinstance(axis_or_vector, str):
             if axis_or_vector not in self._BUILD_DIRECTIONS:
@@ -903,11 +903,11 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             self.opacity_spin.setValue(value)
             self.opacity_spin.blockSignals(False)
 
-    def _remove_actor(self, actor: Any | None) -> None:
+    def _remove_actor(self, actor: Optional[Any]) -> None:
         if actor is not None:
             self.plotter.remove_actor(actor, render=False)
 
-    def _capture_camera_state(self) -> dict[str, Any] | None:
+    def _capture_camera_state(self) -> Optional[dict[str, Any]]:
         if self._surface_actor is None and self._occupancy_actor is None and self._implicit_actor is None:
             return None
         camera = self.plotter.camera
@@ -920,7 +920,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             "clipping_range": tuple(float(value) for value in camera.clipping_range),
         }
 
-    def _restore_camera_state(self, state: dict[str, Any] | None) -> None:
+    def _restore_camera_state(self, state: Optional[dict[str, Any]]) -> None:
         if state is None:
             return
         camera = self.plotter.camera
@@ -983,7 +983,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             except (AttributeError, KeyError, ValueError):
                 continue
 
-    def _mapper_from_actor(self, actor: Any | None) -> Any | None:
+    def _mapper_from_actor(self, actor: Optional[Any]) -> Optional[Any]:
         if actor is None:
             return None
         mapper = getattr(actor, "mapper", None)
@@ -1157,8 +1157,8 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _update_surface_clip(
         self,
         dataset: Any,
-        normal: tuple[float, float, float] | npt.ArrayLike,
-        origin: tuple[float, float, float] | npt.ArrayLike,
+        normal: Union[tuple[float, float, float], npt.ArrayLike],
+        origin: Union[tuple[float, float, float], npt.ArrayLike],
     ) -> None:
         if self._clip_actor is None:
             return
@@ -1304,7 +1304,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._sync_overlay_controls()
         self._refresh_scene_overlays()
 
-    def _set_row_visible(self, label_widget: QtWidgets.QWidget | None, field_widget: QtWidgets.QWidget, visible: bool) -> None:
+    def _set_row_visible(self, label_widget: Optional[QtWidgets.QWidget], field_widget: QtWidgets.QWidget, visible: bool) -> None:
         if label_widget is not None:
             label_widget.setVisible(visible)
         field_widget.setVisible(visible)
@@ -1443,7 +1443,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
     def _marker_radius(self) -> float:
         return 0.5 * min(self.bundle.domain.voxel_size)
 
-    def _handle_picked_point(self, point: tuple[float, float, float] | npt.ArrayLike) -> dict[str, Any]:
+    def _handle_picked_point(self, point: Union[tuple[float, float, float], npt.ArrayLike]) -> dict[str, Any]:
         coordinates = tuple(float(value) for value in np.asarray(point, dtype=float).reshape(3))
         domain = self.bundle.domain
         payload = {
@@ -1498,7 +1498,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if self.point_picking_enabled:
             self._install_point_picking()
 
-    def refresh(self, simulator_or_result: Simulator | SimulationResult) -> None:
+    def refresh(self, simulator_or_result: Union[Simulator, SimulationResult]) -> None:
         """Refresh the workbench from the latest simulator state or result snapshot."""
 
         result = (
@@ -1550,7 +1550,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         self._rebuild_scene()
         self._sync_opacity_controls()
 
-    def set_scalar_field(self, field_name: ScalarFieldName | None) -> None:
+    def set_scalar_field(self, field_name: Optional[ScalarFieldName]) -> None:
         if self.representation not in {"occupancy", "implicit"} or field_name is None:
             return
         representation = cast(ScalarRepresentation, self.representation)
@@ -1585,7 +1585,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
         if self.representation == "surface":
             self._rebuild_scene()
 
-    def set_build_direction(self, axis_or_vector: str | tuple[float, float, float] | npt.ArrayLike) -> None:
+    def set_build_direction(self, axis_or_vector: Union[str, tuple[float, float, float], npt.ArrayLike]) -> None:
         build_direction = self._coerce_build_direction(axis_or_vector)
         if np.allclose(self.build_direction, build_direction):
             self._set_combo_current_data(
@@ -1639,7 +1639,7 @@ class SimulationWorkbench(QtWidgets.QMainWindow):
             pickable_window=self.representation == "implicit",
         )
 
-    def _handle_non_surface_picked_point(self, point: npt.ArrayLike, picker: Any) -> dict[str, Any] | None:
+    def _handle_non_surface_picked_point(self, point: npt.ArrayLike, picker: Any) -> Optional[dict[str, Any]]:
         coordinates = tuple(float(value) for value in np.asarray(point, dtype=float).reshape(3))
         if self.representation == "implicit" and not self.bundle.domain.contains_point(coordinates):
             self.clear_pick()

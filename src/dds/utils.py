@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -141,7 +141,7 @@ def slerp_unit_vectors(
 def readonly_array(
     values: npt.ArrayLike,
     *,
-    dtype: npt.DTypeLike | None = None,
+    dtype: Optional[npt.DTypeLike] = None,
 ) -> npt.NDArray[Any]:
     """Return an owning, read-only NumPy array snapshot."""
 

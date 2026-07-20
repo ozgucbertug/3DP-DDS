@@ -186,7 +186,7 @@ class Pose3D:
     def __init__(
         self,
         position: PointLike,
-        orientation: Rotation | None = None,
+        orientation: Optional[Rotation] = None,
     ) -> None:
         resolved_orientation = (
             Rotation.identity() if orientation is None else orientation
@@ -512,7 +512,7 @@ def _validate_deposit_profile(profile: BeadProfile) -> None:
 
 def _validate_sweep_resolution(
     sweep_resolution: object,
-) -> float | None:
+) -> Optional[float]:
     if sweep_resolution is None:
         return None
     if isinstance(sweep_resolution, bool):
@@ -594,7 +594,7 @@ class LineDeposit:
     start: DepositionTarget
     end: DepositionTarget
     profile: BeadProfile
-    sweep_resolution: float | None
+    sweep_resolution: Optional[float]
 
     def __init__(
         self,
@@ -666,7 +666,7 @@ class PolylineDeposit:
 
     targets: tuple[DepositionTarget, ...]
     profile: BeadProfile
-    sweep_resolution: float | None
+    sweep_resolution: Optional[float]
 
     def __init__(
         self,
@@ -737,7 +737,7 @@ Deposit = Union[PointDeposit, LineDeposit, PolylineDeposit]
 DepositInput = Deposit
 
 
-def iter_deposits(deposits: DepositInput | Iterable[DepositInput]) -> Iterator[Deposit]:
+def iter_deposits(deposits: Union[DepositInput, Iterable[DepositInput]]) -> Iterator[Deposit]:
     """Yield normalized deposition events from one deposit or an iterable.
 
     Parameters

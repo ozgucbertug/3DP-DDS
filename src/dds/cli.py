@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TypeVar
+from typing import Optional, TypeVar
 
 import tyro
 
 T = TypeVar("T")
 
 
-def parse_cli(config_type: type[T], argv: Sequence[str] | None = None) -> T:
+def parse_cli(config_type: type[T], argv: Optional[Sequence[str]] = None) -> T:
     """Parse a typed CLI configuration with tyro."""
 
     args = list(argv) if argv is not None else None
@@ -20,7 +20,7 @@ def parse_cli(config_type: type[T], argv: Sequence[str] | None = None) -> T:
 def run_cli(
     config_type: type[T],
     handler: Callable[[T], None],
-    argv: Sequence[str] | None = None,
+    argv: Optional[Sequence[str]] = None,
 ) -> None:
     """Parse a typed CLI configuration and dispatch to a handler."""
 

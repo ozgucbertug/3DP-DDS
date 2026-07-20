@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Callable
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -49,7 +49,7 @@ class SDF3:
     The sign convention is `negative inside, positive outside, zero on the surface`.
     """
 
-    def __init__(self, func: SDFCallable, *, name: str | None = None) -> None:
+    def __init__(self, func: SDFCallable, *, name: Optional[str] = None) -> None:
         self._func = func
         self.name = name or getattr(func, "__name__", "sdf3")
 
@@ -59,7 +59,7 @@ class SDF3:
             raise ValueError(f"SDF {self.name!r} returned non-finite values.")
         return values
 
-    def __call__(self, points: npt.ArrayLike) -> float | npt.NDArray[np.float64]:
+    def __call__(self, points: npt.ArrayLike) -> Union[float, npt.NDArray[np.float64]]:
         array, single = _coerce_points(points)
         values = self._evaluate(array)
         return float(values[0]) if single else values
@@ -99,7 +99,7 @@ class SDF3:
 
         return translate(self, offset)
 
-    def scale(self, factor: float | Sequence[float]) -> "SDF3":
+    def scale(self, factor: Union[float, Sequence[float]]) -> "SDF3":
         from .transforms import scale
 
         return scale(self, factor)
@@ -140,7 +140,7 @@ class SDF3:
         domain: Domain,
         values: npt.ArrayLike,
         *,
-        fill_value: float | None = None,
+        fill_value: Optional[float] = None,
         name: str = "grid_sdf",
     ) -> "GridSDF3":
         """Construct a sampled-grid SDF wrapper."""
@@ -156,7 +156,7 @@ class GridSDF3(SDF3):
         domain: Domain,
         values: npt.ArrayLike,
         *,
-        fill_value: float | None = None,
+        fill_value: Optional[float] = None,
         name: str = "grid_sdf",
     ) -> None:
         self._domain = domain
@@ -167,7 +167,7 @@ class GridSDF3(SDF3):
             )
         self._values.setflags(write=False)
         self._fill_value = fill_value if fill_value is not None else self._default_fill_value()
-        self._interpolator: Any | None = None
+        self._interpolator: Optional[Any] = None
         super().__init__(self._evaluate_grid, name=name)
 
     @property

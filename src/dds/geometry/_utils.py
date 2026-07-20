@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Any
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -21,11 +21,11 @@ def load_trimesh() -> Any:
 
 
 def validate_colors(
-    values: npt.ArrayLike | None,
+    values: Optional[npt.ArrayLike],
     *,
     count: int,
     name: str,
-) -> npt.NDArray[np.uint8] | None:
+) -> Optional[npt.NDArray[np.uint8]]:
     """Return an immutable RGB or RGBA color array."""
 
     if values is None:

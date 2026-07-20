@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -107,7 +107,7 @@ def _sample_scalar_field(
 
 @dataclass
 class _AnalysisCache:
-    deposition_index: npt.NDArray[np.intp] | None = None
+    deposition_index: Optional[npt.NDArray[np.intp]] = None
     deposition_order: dict[float, npt.NDArray[np.intp]] = field(default_factory=dict)
     occupancy: dict[float, npt.NDArray[np.bool_]] = field(default_factory=dict)
     surface_mesh: dict[tuple[float, int], Any] = field(default_factory=dict)
@@ -207,7 +207,7 @@ class SimulationAnalysis:
     def deposition_order_field(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
     ) -> npt.NDArray[np.intp]:
         """Return the cached one-based deposit order for thresholded voxels."""
 
@@ -228,7 +228,7 @@ class SimulationAnalysis:
     def occupancy(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
     ) -> npt.NDArray[np.bool_]:
         """Return thresholded occupancy for the implicit field.
 
@@ -254,7 +254,7 @@ class SimulationAnalysis:
     def surface_mesh(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         step_size: int = 1,
     ) -> Any:
         """Extract a triangle mesh for the thresholded implicit surface.
@@ -293,7 +293,7 @@ class SimulationAnalysis:
     def surface_sdf(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
     ) -> Any:
         """Derive a signed-distance field from thresholded occupancy.
 
@@ -323,7 +323,7 @@ class SimulationAnalysis:
     def mesh_sdf(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         step_size: int = 1,
     ) -> Any:
         """Build a mesh-backed signed-distance query for the surface mesh.
@@ -368,7 +368,7 @@ class SimulationAnalysis:
 
     def sample_implicit_value(
         self,
-        point: tuple[float, float, float] | npt.ArrayLike,
+        point: Union[tuple[float, float, float], npt.ArrayLike],
         *,
         interpolation: InterpolationMode = "nearest",
     ) -> float:
@@ -400,7 +400,7 @@ class SimulationAnalysis:
 
     def sample_deposition_index(
         self,
-        point: tuple[float, float, float] | npt.ArrayLike,
+        point: Union[tuple[float, float, float], npt.ArrayLike],
     ) -> int:
         """Sample the last-touch deposition index at a world-space point.
 
@@ -422,9 +422,9 @@ class SimulationAnalysis:
 
     def signed_distance_at(
         self,
-        point: tuple[float, float, float] | npt.ArrayLike,
+        point: Union[tuple[float, float, float], npt.ArrayLike],
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         source: str = "surface_sdf",
         step_size: int = 1,
     ) -> float:
@@ -459,9 +459,9 @@ class SimulationAnalysis:
 
     def surface_normal_at(
         self,
-        point: tuple[float, float, float] | npt.ArrayLike,
+        point: Union[tuple[float, float, float], npt.ArrayLike],
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         source: str = "surface_sdf",
         step_size: int = 1,
     ) -> tuple[float, float, float]:
@@ -499,10 +499,10 @@ class SimulationAnalysis:
 
     def contains_point(
         self,
-        point: tuple[float, float, float] | npt.ArrayLike,
+        point: Union[tuple[float, float, float], npt.ArrayLike],
         *,
         representation: RepresentationMode = "occupancy",
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         interpolation: InterpolationMode = "nearest",
         step_size: int = 1,
     ) -> bool:
@@ -575,7 +575,7 @@ class SimulationAnalysis:
             "deposition_index",
             "signed_distance",
         ),
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         interpolation: InterpolationMode = "nearest",
     ) -> dict[str, npt.NDArray[np.generic]]:
         """Sample several analysis fields at world-space points.
@@ -602,7 +602,7 @@ class SimulationAnalysis:
         samples, _single = _coerce_points(points)
         threshold_value = self.default_threshold if threshold is None else float(threshold)
         result: dict[str, npt.NDArray[np.generic]] = {}
-        implicit_samples: npt.NDArray[np.float64] | None = None
+        implicit_samples: Optional[npt.NDArray[np.float64]] = None
         for field_name in fields:
             if field_name == "implicit":
                 if implicit_samples is None:
@@ -645,7 +645,7 @@ class SimulationAnalysis:
         self,
         bounds: tuple[tuple[float, float, float], tuple[float, float, float]],
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
         step_size: int = 1,
     ) -> dict[str, float]:
         """Compute summary statistics inside an axis-aligned world-space box.
@@ -721,7 +721,7 @@ class SimulationAnalysis:
     def strata(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
     ) -> StratumFieldSet:
         """Partition occupied voxels by one-based deposition order."""
 
@@ -738,7 +738,7 @@ class SimulationAnalysis:
     def interface(
         self,
         *,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
     ) -> InterfaceAnalysis:
         """Compute contact and overlap metrics between adjacent strata."""
 
@@ -756,7 +756,7 @@ class SimulationAnalysis:
         *,
         build_direction: BuildDirection = "+Z",
         critical_angle_deg: float = 45.0,
-        threshold: float | None = None,
+        threshold: Optional[float] = None,
     ) -> SupportAnalysis:
         """Compute support-risk and overhang metrics for the surface mesh.
 

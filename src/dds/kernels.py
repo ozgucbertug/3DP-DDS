@@ -6,6 +6,7 @@ import heapq
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from itertools import count
+from typing import Union
 
 import numpy as np
 import numpy.typing as npt
@@ -741,7 +742,7 @@ def _iter_polyline_kernels(
 
 def iter_deposit_kernels(
     domain: Domain,
-    deposit: PointDeposit | LineDeposit | PolylineDeposit,
+    deposit: Union[PointDeposit, LineDeposit, PolylineDeposit],
     *,
     tile_shape: Sequence[int] = (32, 32, 32),
 ) -> Iterator[_SampledKernel]:

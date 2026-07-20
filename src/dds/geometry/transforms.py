@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from typing import Union
 
 import numpy as np
 
@@ -10,7 +11,7 @@ from ..utils import ensure_finite_triplet, ensure_positive_triplet, normalize_ax
 from .sdf import SDF3, SDFCallable, as_sdf3
 
 
-def _positive_scale(factor: float | Sequence[float]) -> np.ndarray:
+def _positive_scale(factor: Union[float, Sequence[float]]) -> np.ndarray:
     if isinstance(factor, (int, float)):
         value = float(factor)
         if value <= 0.0:
@@ -19,7 +20,7 @@ def _positive_scale(factor: float | Sequence[float]) -> np.ndarray:
     return np.asarray(ensure_positive_triplet(factor, "scale factor"), dtype=float)
 
 
-def translate(other: SDF3 | SDFCallable, offset: Sequence[float] | np.ndarray) -> SDF3:
+def translate(other: Union[SDF3, SDFCallable], offset: Union[Sequence[float], np.ndarray]) -> SDF3:
     """Translate an SDF in world coordinates."""
 
     sdf = as_sdf3(other)
@@ -27,7 +28,7 @@ def translate(other: SDF3 | SDFCallable, offset: Sequence[float] | np.ndarray) -
     return SDF3(lambda points: sdf._evaluate(points - vector), name="translate")
 
 
-def scale(other: SDF3 | SDFCallable, factor: float | Sequence[float]) -> SDF3:
+def scale(other: Union[SDF3, SDFCallable], factor: Union[float, Sequence[float]]) -> SDF3:
     """Scale an SDF by a scalar or per-axis factor."""
 
     sdf = as_sdf3(other)
@@ -36,7 +37,7 @@ def scale(other: SDF3 | SDFCallable, factor: float | Sequence[float]) -> SDF3:
     return SDF3(lambda points: sdf._evaluate(points / scale_vector) * metric_scale, name="scale")
 
 
-def rotation_matrix(angle: float, axis: Sequence[float] | np.ndarray = (0.0, 0.0, 1.0)) -> np.ndarray:
+def rotation_matrix(angle: float, axis: Union[Sequence[float], np.ndarray] = (0.0, 0.0, 1.0)) -> np.ndarray:
     """Return a Rodrigues rotation matrix for a column-vector rotation."""
 
     x, y, z = normalize_axis(axis, name="axis")
@@ -55,7 +56,7 @@ def rotation_matrix(angle: float, axis: Sequence[float] | np.ndarray = (0.0, 0.0
     return cosine * np.eye(3) + (1.0 - cosine) * outer + sine * skew
 
 
-def rotate(other: SDF3 | SDFCallable, angle: float, axis: Sequence[float] | np.ndarray = (0.0, 0.0, 1.0)) -> SDF3:
+def rotate(other: Union[SDF3, SDFCallable], angle: float, axis: Union[Sequence[float], np.ndarray] = (0.0, 0.0, 1.0)) -> SDF3:
     """Rotate an SDF around an axis through the origin."""
 
     sdf = as_sdf3(other)
@@ -72,10 +73,10 @@ def _perpendicular(vector: np.ndarray) -> np.ndarray:
 
 
 def orient(
-    other: SDF3 | SDFCallable,
-    axis: Sequence[float] | np.ndarray,
+    other: Union[SDF3, SDFCallable],
+    axis: Union[Sequence[float], np.ndarray],
     *,
-    source_axis: Sequence[float] | np.ndarray = (0.0, 0.0, 1.0),
+    source_axis: Union[Sequence[float], np.ndarray] = (0.0, 0.0, 1.0),
 ) -> SDF3:
     """Rotate an SDF so that `source_axis` aligns with `axis`."""
 

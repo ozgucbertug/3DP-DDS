@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -24,7 +24,7 @@ ChunkFieldName = Literal["implicit", "coverage"]
 @dataclass
 class _Chunk:
     implicit: npt.NDArray[np.float64]
-    coverage: npt.NDArray[np.float64] | None
+    coverage: Optional[npt.NDArray[np.float64]]
 
 
 @dataclass
@@ -165,7 +165,7 @@ class ChunkedField:
         self,
         field: ChunkFieldName = "implicit",
         *,
-        index_bounds: IndexBounds | None = None,
+        index_bounds: Optional[IndexBounds] = None,
     ) -> npt.NDArray[np.float64]:
         """Materialize the full field or an index-space region of interest.
 
@@ -216,7 +216,7 @@ class ChunkedField:
             output[output_slices] = values[chunk_slices]
         return output
 
-    def _validate_index_bounds(self, index_bounds: IndexBounds | None) -> IndexBounds:
+    def _validate_index_bounds(self, index_bounds: Optional[IndexBounds]) -> IndexBounds:
         if index_bounds is None:
             return (
                 (0, self.domain.grid_shape[0]),
@@ -333,7 +333,7 @@ class ChunkedField:
 
     def to_result(
         self,
-        deposits: Iterable[DepositInput] | DepositInput,
+        deposits: Union[Iterable[DepositInput], DepositInput],
         *,
         threshold: float = 0.5,
     ) -> "SimulationResult":
@@ -378,7 +378,7 @@ class ChunkedField:
 
 def accumulate_chunked_field(
     domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
+    deposits: Union[Iterable[DepositInput], DepositInput],
     *,
     chunk_shape: Sequence[int] = (32, 32, 32),
     include_coverage: bool = False,

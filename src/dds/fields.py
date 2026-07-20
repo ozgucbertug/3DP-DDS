@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import Literal
+from typing import Literal, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -41,7 +41,7 @@ def _apply_kernel_to_index_field(
 
 def accumulate_fields(
     domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
+    deposits: Union[Iterable[DepositInput], DepositInput],
     *,
     include_coverage: bool = False,
 ) -> dict[FieldName, npt.NDArray[np.float64]]:
@@ -65,7 +65,7 @@ def accumulate_fields(
 
 def accumulate_field(
     domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
+    deposits: Union[Iterable[DepositInput], DepositInput],
     *,
     field: FieldName = "implicit",
 ) -> npt.NDArray[np.float64]:
@@ -82,7 +82,7 @@ def accumulate_field(
 
 def accumulate_deposition_index(
     domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
+    deposits: Union[Iterable[DepositInput], DepositInput],
 ) -> npt.NDArray[np.intp]:
     """Record the zero-based index of the last deposit touching each voxel.
 
@@ -98,7 +98,7 @@ def accumulate_deposition_index(
 
 def accumulate_deposition_order(
     domain: Domain,
-    deposits: Iterable[DepositInput] | DepositInput,
+    deposits: Union[Iterable[DepositInput], DepositInput],
     *,
     threshold: float = 0.5,
 ) -> npt.NDArray[np.intp]:

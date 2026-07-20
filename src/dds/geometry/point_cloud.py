@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -17,7 +17,7 @@ class PointCloud:
     """A collection of 3D points with optional per-point RGB or RGBA colors."""
 
     points: npt.NDArray[np.float64]
-    colors: npt.NDArray[np.uint8] | None = None
+    colors: Optional[npt.NDArray[np.uint8]] = None
 
     def __post_init__(self) -> None:
         points = np.array(self.points, dtype=np.float64, copy=True)
@@ -88,7 +88,7 @@ class PointCloud:
         )
 
 
-def read_point_cloud(path: str | Path) -> PointCloud:
+def read_point_cloud(path: Union[str, Path]) -> PointCloud:
     """Read a point cloud from disk using trimesh."""
 
     trimesh = load_trimesh()
@@ -99,7 +99,7 @@ def read_point_cloud(path: str | Path) -> PointCloud:
     return PointCloud.from_trimesh(loaded)
 
 
-def write_point_cloud(path: str | Path, cloud: PointCloud) -> Path:
+def write_point_cloud(path: Union[str, Path], cloud: PointCloud) -> Path:
     """Write a point cloud to disk using trimesh."""
 
     if not isinstance(cloud, PointCloud):

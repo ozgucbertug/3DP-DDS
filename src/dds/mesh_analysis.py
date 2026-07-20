@@ -7,6 +7,7 @@ user-facing namespace), which re-exports them from ``geometry/__init__.py``.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -82,7 +83,7 @@ _oriented_face_data = compute_face_data
 
 def _overhang_angles_from_normals(
     normals: npt.NDArray[np.float64],
-    build_direction: tuple[float, float, float] | npt.ArrayLike,
+    build_direction: Union[tuple[float, float, float], npt.ArrayLike],
 ) -> npt.NDArray[np.float64]:
     if normals.size == 0:
         return np.empty((0,), dtype=float)
@@ -98,7 +99,7 @@ def _overhang_angles_from_normals(
 def face_normals(
     mesh: TriangleMesh,
     *,
-    precomputed: FaceData | None = None,
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.float64]:
     """Return one outward-facing normal per face."""
 
@@ -109,7 +110,7 @@ def face_normals(
 def vertex_normals(
     mesh: TriangleMesh,
     *,
-    precomputed: FaceData | None = None,
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.float64]:
     """Return vertex normals computed by trimesh."""
 
@@ -122,7 +123,7 @@ def vertex_normals(
 def face_centroids(
     mesh: TriangleMesh,
     *,
-    precomputed: FaceData | None = None,
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.float64]:
     """Return one centroid per face."""
 
@@ -136,7 +137,7 @@ def face_centroids(
 def face_areas(
     mesh: TriangleMesh,
     *,
-    precomputed: FaceData | None = None,
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.float64]:
     """Return one triangle area per face."""
 
@@ -150,8 +151,8 @@ def face_areas(
 def overhang_angles(
     mesh: TriangleMesh,
     *,
-    build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
-    precomputed: FaceData | None = None,
+    build_direction: Union[tuple[float, float, float], npt.ArrayLike] = (0.0, 0.0, 1.0),
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.float64]:
     """Measure face overhang angle relative to the downward build direction."""
 
@@ -162,8 +163,8 @@ def overhang_angles(
 def downfacing_mask(
     mesh: TriangleMesh,
     *,
-    build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
-    precomputed: FaceData | None = None,
+    build_direction: Union[tuple[float, float, float], npt.ArrayLike] = (0.0, 0.0, 1.0),
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.bool_]:
     """Return faces whose normals have a downward component."""
 
@@ -174,9 +175,9 @@ def downfacing_mask(
 def support_risk_mask(
     mesh: TriangleMesh,
     *,
-    build_direction: tuple[float, float, float] | npt.ArrayLike = (0.0, 0.0, 1.0),
+    build_direction: Union[tuple[float, float, float], npt.ArrayLike] = (0.0, 0.0, 1.0),
     critical_angle_deg: float = 45.0,
-    precomputed: FaceData | None = None,
+    precomputed: Optional[FaceData] = None,
 ) -> npt.NDArray[np.bool_]:
     """Return faces below the chosen overhang critical angle."""
 
@@ -232,7 +233,7 @@ def mesh_surface_area(mesh: TriangleMesh) -> float:
     return float(mesh.to_trimesh().area)
 
 
-def mesh_volume_estimate(mesh: TriangleMesh) -> float | None:
+def mesh_volume_estimate(mesh: TriangleMesh) -> Optional[float]:
     """Return the enclosed volume when the mesh is watertight."""
 
     if mesh.is_empty:

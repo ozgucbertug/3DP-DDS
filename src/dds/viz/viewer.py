@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any, Literal, Union, cast
+from typing import Any, Literal, Optional, Union, cast
 
 try:
     import pyvista as pv
@@ -112,9 +112,9 @@ class VisualHandle:
 
     def update(
         self,
-        source: object | None = None,
+        source: Optional[object] = None,
         *,
-        style: VisualStyle | None = None,
+        style: Optional[VisualStyle] = None,
     ) -> VisualHandle:
         self._viewer._update(self.name, source=source, style=style)
         return self
@@ -139,10 +139,10 @@ class Viewer:
         *,
         title: str = "3DP-DDS Viewer",
         off_screen: bool = False,
-        parent: QtWidgets.QWidget | None = None,
+        parent: Optional[QtWidgets.QWidget] = None,
     ) -> None:
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
-        self.window: QtWidgets.QMainWindow | None = QtWidgets.QMainWindow(parent)
+        self.window: Optional[QtWidgets.QMainWindow] = QtWidgets.QMainWindow(parent)
         assert self.window is not None
         self.window.setWindowTitle(title)
         self.window.resize(1100, 800)
@@ -179,7 +179,7 @@ class Viewer:
         self._name_counters[kind] = index
         return f"{kind}_{index}"
 
-    def _resolve_name(self, kind: str, name: str | None) -> str:
+    def _resolve_name(self, kind: str, name: Optional[str]) -> str:
         resolved = self._next_name(kind) if name is None else name
         if not resolved:
             raise ValueError("name must not be empty")
@@ -187,7 +187,7 @@ class Viewer:
             raise ValueError(f"A visual named {resolved!r} already exists")
         return resolved
 
-    def _capture_camera(self) -> tuple[Any, Any, Any, Any] | None:
+    def _capture_camera(self) -> Optional[tuple[Any, Any, Any, Any]]:
         camera = getattr(self.plotter, "camera", None)
         if camera is None:
             return None
@@ -198,7 +198,7 @@ class Viewer:
             float(camera.parallel_scale),
         )
 
-    def _restore_camera(self, state: tuple[Any, Any, Any, Any] | None) -> None:
+    def _restore_camera(self, state: Optional[tuple[Any, Any, Any, Any]]) -> None:
         if state is None:
             return
         camera = self.plotter.camera
@@ -230,7 +230,7 @@ class Viewer:
         source: VisualSource,
         style: VisualStyle,
         *,
-        name: str | None,
+        name: Optional[str],
     ) -> VisualHandle:
         resolved_name = self._resolve_name(kind, name)
         actors = self._build_actors(kind, source, style, resolved_name)
@@ -242,8 +242,8 @@ class Viewer:
         self,
         mesh: TriangleMesh,
         *,
-        style: MeshStyle | None = None,
-        name: str | None = None,
+        style: Optional[MeshStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(mesh, TriangleMesh):
             raise TypeError("mesh must be a TriangleMesh")
@@ -253,8 +253,8 @@ class Viewer:
         self,
         point: Point3D,
         *,
-        style: PointStyle | None = None,
-        name: str | None = None,
+        style: Optional[PointStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(point, Point3D):
             raise TypeError("point must be a Point3D")
@@ -264,8 +264,8 @@ class Viewer:
         self,
         cloud: PointCloud,
         *,
-        style: PointCloudStyle | None = None,
-        name: str | None = None,
+        style: Optional[PointCloudStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(cloud, PointCloud):
             raise TypeError("cloud must be a PointCloud")
@@ -280,8 +280,8 @@ class Viewer:
         self,
         points: Sequence[Point3D],
         *,
-        style: PointStyle | None = None,
-        name: str | None = None,
+        style: Optional[PointStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         resolved = tuple(points)
         if not resolved:
@@ -294,8 +294,8 @@ class Viewer:
         self,
         line: Line3D,
         *,
-        style: LineStyle | None = None,
-        name: str | None = None,
+        style: Optional[LineStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(line, Line3D):
             raise TypeError("line must be a Line3D")
@@ -305,8 +305,8 @@ class Viewer:
         self,
         polyline: Polyline3D,
         *,
-        style: LineStyle | None = None,
-        name: str | None = None,
+        style: Optional[LineStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(polyline, Polyline3D):
             raise TypeError("polyline must be a Polyline3D")
@@ -317,8 +317,8 @@ class Viewer:
         origin: Point3D,
         vector: Vector3D,
         *,
-        style: LineStyle | None = None,
-        name: str | None = None,
+        style: Optional[LineStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(origin, Point3D) or not isinstance(vector, Vector3D):
             raise TypeError("origin and vector must be Point3D and Vector3D")
@@ -330,8 +330,8 @@ class Viewer:
         self,
         pose: Pose3D,
         *,
-        style: FrameStyle | None = None,
-        name: str | None = None,
+        style: Optional[FrameStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(pose, Pose3D):
             raise TypeError("pose must be a Pose3D")
@@ -341,8 +341,8 @@ class Viewer:
         self,
         target: DepositionTarget,
         *,
-        style: TargetStyle | None = None,
-        name: str | None = None,
+        style: Optional[TargetStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         if not isinstance(target, DepositionTarget):
             raise TypeError("target must be a DepositionTarget")
@@ -352,8 +352,8 @@ class Viewer:
         self,
         deposit: Deposit,
         *,
-        style: DepositStyle | None = None,
-        name: str | None = None,
+        style: Optional[DepositStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         return self.add_deposits((deposit,), style=style, name=name)
 
@@ -361,8 +361,8 @@ class Viewer:
         self,
         deposits: Iterable[Deposit],
         *,
-        style: DepositStyle | None = None,
-        name: str | None = None,
+        style: Optional[DepositStyle] = None,
+        name: Optional[str] = None,
     ) -> VisualHandle:
         resolved = tuple(deposits)
         if not resolved:
@@ -378,7 +378,7 @@ class Viewer:
         self._record(name)
         return VisualHandle(self, name)
 
-    def remove(self, visual: str | VisualHandle) -> None:
+    def remove(self, visual: Union[str, VisualHandle]) -> None:
         name = visual.name if isinstance(visual, VisualHandle) else visual
         record = self._record(name)
         for actor in record.actors:
@@ -402,8 +402,8 @@ class Viewer:
         self,
         name: str,
         *,
-        source: object | None = None,
-        style: VisualStyle | None = None,
+        source: Optional[object] = None,
+        style: Optional[VisualStyle] = None,
     ) -> None:
         record = self._record(name)
         next_source = (
@@ -496,15 +496,15 @@ class Viewer:
         *,
         color: Any,
         opacity: float,
-        line_width: float | None = None,
-        point_size: float | None = None,
+        line_width: Optional[float] = None,
+        point_size: Optional[float] = None,
         render_points_as_spheres: bool = False,
         render_lines_as_tubes: bool = False,
         show_edges: bool = False,
         smooth_shading: bool = False,
-        scalars: str | None = None,
+        scalars: Optional[str] = None,
         rgb: bool = False,
-        preference: str | None = None,
+        preference: Optional[str] = None,
     ) -> Any:
         kwargs: dict[str, Any] = {
             "name": name,
