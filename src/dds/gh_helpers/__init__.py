@@ -1,0 +1,81 @@
+"""Grasshopper helpers for using DDS inside Rhino Python 3.
+
+The adapter package keeps RhinoCommon imports lazy so DDS core remains usable
+in normal Python environments and test runners without Rhino installed.
+"""
+
+from __future__ import annotations
+
+from .components import (
+    inspect_points,
+    make_bead_profile,
+    make_domain_from_box,
+    make_line_deposit,
+    make_mesh,
+    make_point_deposit,
+    make_polyline_deposit,
+    make_target,
+    make_target_from_plane,
+    run_simulation,
+)
+from .convert import (
+    bbox_to_domain,
+    box_to_domain,
+    coerce_deposits,
+    coerce_target,
+    coerce_targets,
+    convert_target_origin,
+    curve_to_deposit,
+    domain_to_rhino_box,
+    estimate_field_memory,
+    line_to_deposit,
+    plane_to_target,
+    point3d_to_tuple,
+    point_to_deposit,
+    polyline_to_deposit,
+    result_to_rhino_mesh,
+    summarize_domain,
+    summarize_result,
+    target_from_plane,
+    target_from_point,
+    targets_to_line_deposit,
+    targets_to_polyline_deposit,
+    triangle_mesh_to_rhino,
+    vector3d_to_tuple,
+)
+
+__all__ = [
+    "bbox_to_domain",
+    "box_to_domain",
+    "coerce_deposits",
+    "coerce_target",
+    "coerce_targets",
+    "convert_target_origin",
+    "curve_to_deposit",
+    "domain_to_rhino_box",
+    "estimate_field_memory",
+    "inspect_points",
+    "line_to_deposit",
+    "make_bead_profile",
+    "make_domain_from_box",
+    "make_line_deposit",
+    "make_mesh",
+    "make_point_deposit",
+    "make_polyline_deposit",
+    "make_target",
+    "make_target_from_plane",
+    "plane_to_target",
+    "point3d_to_tuple",
+    "point_to_deposit",
+    "polyline_to_deposit",
+    "result_to_rhino_mesh",
+    "run_simulation",
+    "summarize_domain",
+    "summarize_result",
+    "target_from_plane",
+    "target_from_point",
+    "targets_to_line_deposit",
+    "targets_to_polyline_deposit",
+    "triangle_mesh_to_rhino",
+    "vector3d_to_tuple",
+]
