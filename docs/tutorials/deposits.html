@@ -53,7 +53,14 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="domains-and-beads.html">Domains And Beads</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Deposits</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="chunked-fields.html">Chunked Fields</a></li>
@@ -62,7 +69,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/fields-and-thresholds.html">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
 </ul>
@@ -239,20 +252,109 @@
 <h1>Deposits<a class="headerlink" href="#deposits" title="Link to this heading"></a></h1>
 <p>Deposits combine top-referenced targets with bead dimensions. Coordinate
 triplets are interpreted as world <code class="docutils literal notranslate"><span class="pre">+Z</span></code> targets.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dds</span><span class="w"> </span><span class="kn">import</span> <span class="n">BeadProfile</span><span class="p">,</span> <span class="n">DepositionTarget</span><span class="p">,</span> <span class="n">LineDeposit</span><span class="p">,</span> <span class="n">PointDeposit</span>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/deposition_types.png"><img alt="Point, line, and polyline deposition primitives" src="../_images/deposition_types.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Left to right: one-target point deposition, two-target line sweep, and an
+ordered multi-target polyline sweep.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<section id="deposition-targets">
+<h2>Deposition Targets<a class="headerlink" href="#deposition-targets" title="Link to this heading"></a></h2>
+<p>A <a class="reference internal" href="../api/generated/dds.DepositionTarget.html#dds.DepositionTarget" title="dds.DepositionTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.DepositionTarget</span></code></a> stores a position and a normalized deposition
+normal. Its position marks the top of the bead. If only a coordinate triplet is
+provided, DDS uses the default normal <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">1)</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dds</span><span class="w"> </span><span class="kn">import</span> <span class="n">BeadProfile</span><span class="p">,</span> <span class="n">DepositionTarget</span>
 
 <span class="n">profile</span> <span class="o">=</span> <span class="n">BeadProfile</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
+<span class="n">tilted</span> <span class="o">=</span> <span class="n">DepositionTarget</span><span class="p">(</span>
+    <span class="n">position</span><span class="o">=</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span>
+    <span class="n">normal</span><span class="o">=</span><span class="p">(</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="point-deposits">
+<h2>Point Deposits<a class="headerlink" href="#point-deposits" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../api/generated/dds.PointDeposit.html#dds.PointDeposit" title="dds.PointDeposit"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.PointDeposit</span></code></a> combines one target with one bead profile. It
+evaluates a single oriented bead volume.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dds</span><span class="w"> </span><span class="kn">import</span> <span class="n">PointDeposit</span>
 
-<span class="n">point</span> <span class="o">=</span> <span class="n">PointDeposit</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span> <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span>
+<span class="n">point</span> <span class="o">=</span> <span class="n">PointDeposit</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">tilted</span><span class="p">,</span> <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="../_images/point_deposit.png"><img alt="A point deposit defined by one target and its normal" src="../_images/point_deposit.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">A point deposit has one position, one normal, and one bead profile.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="line-deposits">
+<h2>Line Deposits<a class="headerlink" href="#line-deposits" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../api/generated/dds.LineDeposit.html#dds.LineDeposit" title="dds.LineDeposit"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.LineDeposit</span></code></a> sweeps a bead profile between two targets. The start
+and end positions define the path segment; their normals define the orientation
+at its ends.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dds</span><span class="w"> </span><span class="kn">import</span> <span class="n">LineDeposit</span>
+
 <span class="n">line</span> <span class="o">=</span> <span class="n">LineDeposit</span><span class="p">(</span>
     <span class="n">start</span><span class="o">=</span><span class="n">DepositionTarget</span><span class="p">((</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span> <span class="n">normal</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)),</span>
-    <span class="n">end</span><span class="o">=</span><span class="n">DepositionTarget</span><span class="p">((</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span> <span class="n">normal</span><span class="o">=</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)),</span>
+    <span class="n">end</span><span class="o">=</span><span class="n">DepositionTarget</span><span class="p">((</span><span class="mf">10.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">),</span> <span class="n">normal</span><span class="o">=</span><span class="p">(</span><span class="mf">0.35</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)),</span>
     <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
 </div>
-<p>Use <a class="reference internal" href="../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit" title="dds.PolylineDeposit"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.PolylineDeposit</span></code></a> for one ordered multi-segment fabrication
-event.</p>
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="../_images/line_deposit.png"><img alt="A line deposit swept between start and end targets" src="../_images/line_deposit.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The finite segment is one deposition event, not merely a connection between
+two point deposits.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="polyline-deposits">
+<h2>Polyline Deposits<a class="headerlink" href="#polyline-deposits" title="Link to this heading"></a></h2>
+<p><a class="reference internal" href="../api/generated/dds.PolylineDeposit.html#dds.PolylineDeposit" title="dds.PolylineDeposit"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.PolylineDeposit</span></code></a> accepts an ordered sequence of two or more targets
+and applies one bead profile to every consecutive segment. Use it to represent
+one connected multi-segment fabrication event.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">dds</span><span class="w"> </span><span class="kn">import</span> <span class="n">PolylineDeposit</span>
+
+<span class="n">polyline</span> <span class="o">=</span> <span class="n">PolylineDeposit</span><span class="p">(</span>
+    <span class="n">targets</span><span class="o">=</span><span class="p">(</span>
+        <span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span>
+        <span class="p">(</span><span class="mf">6.0</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span>
+        <span class="n">DepositionTarget</span><span class="p">((</span><span class="mf">9.0</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">normal</span><span class="o">=</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)),</span>
+    <span class="p">),</span>
+    <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<figure class="align-center" id="id4">
+<a class="reference internal image-reference" href="../_images/polyline_deposit.png"><img alt="A polyline deposit passing through ordered deposition targets" src="../_images/polyline_deposit.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Consecutive targets become line segments while remaining one ordered
+polyline deposit.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="normal-interpolation">
+<h2>Normal Interpolation<a class="headerlink" href="#normal-interpolation" title="Link to this heading"></a></h2>
+<p>During a line or polyline sweep, DDS interpolates between endpoint normals and
+renormalizes the result. This allows the bead orientation to change smoothly
+along a path. Exactly antiparallel consecutive normals are rejected because
+their interpolation direction is ambiguous.</p>
+<figure class="align-center" id="id5">
+<a class="reference internal image-reference" href="../_images/normal_interpolation.png"><img alt="Interpolated deposition normals along a swept line" src="../_images/normal_interpolation.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The path position and deposition normal both vary along the sweep.</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
 </section>
 
 

@@ -23,3 +23,12 @@ Use :class:`dds.Simulator` when deposits arrive over time:
 
 Result snapshots are immutable. Later simulator changes do not mutate older
 snapshots.
+
+.. figure:: ../_images/deposition_sequence.png
+   :alt: Four immutable result snapshots as deposits are added
+   :align: center
+   :width: 100%
+
+   Left to right, each snapshot contains one additional deposition event. A
+   later simulator update creates a new result instead of mutating prior
+   results.

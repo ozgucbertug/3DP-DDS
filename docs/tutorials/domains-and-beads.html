@@ -53,7 +53,14 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Domains And Beads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deposits.html">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="chunked-fields.html">Chunked Fields</a></li>
@@ -62,7 +69,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/fields-and-thresholds.html">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
 </ul>
@@ -253,6 +266,14 @@ upper bounds, voxel size, grid shape, and a unit label.</p>
 <span class="p">)</span>
 </pre></div>
 </div>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/domain_voxels.png"><img alt="Deposition result inside a bounded voxel domain" src="../_images/domain_voxels.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The domain fixes the sampled workspace and its voxel resolution. Deposited
+geometry outside these bounds is not represented.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
 <p>Arrays use <code class="docutils literal notranslate"><span class="pre">(x,</span> <span class="pre">y,</span> <span class="pre">z)</span></code> order. World coordinates map to voxel indices through
 <a class="reference internal" href="../api/generated/dds.Domain.html#dds.Domain.world_to_index" title="dds.Domain.world_to_index"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dds.Domain.world_to_index()</span></code></a>; indices map back to voxel centers through
 <a class="reference internal" href="../api/generated/dds.Domain.html#dds.Domain.index_to_world" title="dds.Domain.index_to_world"><code class="xref py py-meth docutils literal notranslate"><span class="pre">dds.Domain.index_to_world()</span></code></a>.</p>
@@ -262,6 +283,14 @@ upper bounds, voxel size, grid shape, and a unit label.</p>
 <span class="n">profile</span> <span class="o">=</span> <span class="n">BeadProfile</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.6</span><span class="p">)</span>
 </pre></div>
 </div>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="../_images/bead_profile.png"><img alt="Bead width and height measured relative to a deposition target" src="../_images/bead_profile.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Width is measured transverse to the deposition normal; height is measured
+along it, extending opposite the normal from the top-referenced target.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
 <p>Every deposit must provide a <a class="reference internal" href="../api/generated/dds.BeadProfile.html#dds.BeadProfile" title="dds.BeadProfile"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.BeadProfile</span></code></a>.</p>
 </section>
 

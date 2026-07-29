@@ -53,7 +53,14 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/domains-and-beads.html">Domains And Beads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/deposits.html">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/chunked-fields.html">Chunked Fields</a></li>
@@ -62,7 +69,13 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Concepts</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="coordinate-conventions.html">Coordinate Conventions</a></li>
-<li class="toctree-l2 current"><a class="current reference internal" href="#">Fields And Thresholds</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="architecture.html">Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modeling-assumptions.html">Modeling Assumptions</a></li>
 </ul>
@@ -237,12 +250,70 @@
 
   <section id="fields-and-thresholds">
 <h1>Fields And Thresholds<a class="headerlink" href="#fields-and-thresholds" title="Link to this heading"></a></h1>
+<section id="implicit-field">
+<h2>Implicit Field<a class="headerlink" href="#implicit-field" title="Link to this heading"></a></h2>
 <p>The implicit field is the canonical fabricated geometry envelope. It is
 nonnegative, clipped to <code class="docutils literal notranslate"><span class="pre">[0,</span> <span class="pre">1]</span></code>, and composed with maximum operations.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/implicit_slice.png"><img alt="Scalar values through a slice of the implicit deposition field" src="../_images/implicit_slice.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">A deposition kernel assigns a scalar influence to nearby voxels. The field
+remains continuous-valued until a query applies a threshold.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="occupancy-and-surface-extraction">
+<h2>Occupancy And Surface Extraction<a class="headerlink" href="#occupancy-and-surface-extraction" title="Link to this heading"></a></h2>
 <p>Occupancy is obtained by thresholding the implicit field. The default threshold
 is commonly <code class="docutils literal notranslate"><span class="pre">0.5</span></code>.</p>
+<figure class="align-center" id="id2">
+<a class="reference internal image-reference" href="../_images/threshold_comparison.png"><img alt="The same implicit field extracted at three thresholds" src="../_images/threshold_comparison.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Left to right, surface extraction at thresholds <code class="docutils literal notranslate"><span class="pre">0.3</span></code>, <code class="docutils literal notranslate"><span class="pre">0.5</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">0.7</span></code>. The field is unchanged; only the selected isosurface changes.</span><a class="headerlink" href="#id2" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="composition-and-coverage">
+<h2>Composition And Coverage<a class="headerlink" href="#composition-and-coverage" title="Link to this heading"></a></h2>
+<p>Overlapping deposits are composed with a voxel-wise maximum. This produces the
+fabricated envelope without increasing its implicit value simply because
+several deposits overlap.</p>
 <p>Coverage is additive and useful for locating overlap. It is not physical mass,
 density, volume fraction, or flow.</p>
+<figure class="align-center" id="id3">
+<a class="reference internal image-reference" href="../_images/max_vs_coverage.png"><img alt="Maximum-composed implicit field beside additive coverage" src="../_images/max_vs_coverage.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Left: the maximum-composed implicit field. Right: additive coverage, where
+brighter regions indicate contributions from more than one deposit.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
+<section id="resolution-controls">
+<h2>Resolution Controls<a class="headerlink" href="#resolution-controls" title="Link to this heading"></a></h2>
+<p>Voxel size controls the sampled field itself. Smaller voxels preserve more
+geometric detail at greater memory and computation cost.</p>
+<figure class="align-center" id="id4">
+<a class="reference internal image-reference" href="../_images/voxel_resolution.png"><img alt="One deposition result sampled at three voxel sizes" src="../_images/voxel_resolution.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Left to right, voxel sizes <code class="docutils literal notranslate"><span class="pre">0.50</span></code>, <code class="docutils literal notranslate"><span class="pre">0.25</span></code>, and <code class="docutils literal notranslate"><span class="pre">0.12</span></code> in domain units.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Mesh <code class="docutils literal notranslate"><span class="pre">step_size</span></code> controls marching-cubes sampling of an existing result; it
+does not recompute the implicit field.</p>
+<figure class="align-center" id="id5">
+<a class="reference internal image-reference" href="../_images/mesh_step_size.png"><img alt="One field meshed using three marching-cubes step sizes" src="../_images/mesh_step_size.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Left to right, mesh step sizes <code class="docutils literal notranslate"><span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code>, and <code class="docutils literal notranslate"><span class="pre">3</span></code>. Larger values produce
+a lighter, coarser preview.</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+</section>
 </section>
 
 

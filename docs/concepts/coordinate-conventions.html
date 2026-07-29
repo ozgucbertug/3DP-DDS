@@ -53,7 +53,14 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/domains-and-beads.html">Domains And Beads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/deposits.html">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/chunked-fields.html">Chunked Fields</a></li>
@@ -62,7 +69,13 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Concepts</a><ul class="current">
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Coordinate Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fields-and-thresholds.html">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="architecture.html">Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="modeling-assumptions.html">Modeling Assumptions</a></li>
 </ul>
@@ -242,6 +255,22 @@ the same axis order and NumPy <code class="docutils literal notranslate"><span c
 <p>Targets are top-referenced. A deposition target is usually a nozzle target at
 the top of the bead, not the bead center. Bead height extends opposite the
 target normal.</p>
+<p>A <a class="reference internal" href="../api/generated/dds.DepositionTarget.html#dds.DepositionTarget" title="dds.DepositionTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.DepositionTarget</span></code></a> is defined by a world-space <code class="docutils literal notranslate"><span class="pre">position</span></code> and a
+<code class="docutils literal notranslate"><span class="pre">normal</span></code> vector. The constructor normalizes the vector, so its magnitude does
+not encode a process parameter. The position fixes the bead top; the normal
+defines the deposition axis and the direction away from the deposited
+material.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/target_anatomy.png"><img alt="Top-referenced deposition target, normal, and bead extent" src="../_images/target_anatomy.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The bead extends from the target opposite the normal by
+<a class="reference internal" href="../api/generated/dds.BeadProfile.html#dds.BeadProfile.height" title="dds.BeadProfile.height"><code class="xref py py-attr docutils literal notranslate"><span class="pre">dds.BeadProfile.height</span></code></a>.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>If a coordinate triplet is supplied where a target is accepted, DDS creates a
+target with the default normal <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">0,</span> <span class="pre">1)</span></code>. Create an explicit
+<a class="reference internal" href="../api/generated/dds.DepositionTarget.html#dds.DepositionTarget" title="dds.DepositionTarget"><code class="xref py py-class docutils literal notranslate"><span class="pre">dds.DepositionTarget</span></code></a> when the deposition axis is not world <code class="docutils literal notranslate"><span class="pre">+Z</span></code>.</p>
 </section>
 
 

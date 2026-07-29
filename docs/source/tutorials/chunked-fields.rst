@@ -17,5 +17,13 @@ touches the domain. It is useful for large workspaces with localized paths.
    dense = chunked.to_dense("implicit")
    result = chunked.to_result(deposits, threshold=0.5)
 
+.. figure:: ../_images/chunked_storage.png
+   :alt: Sparse active chunks within a much larger simulation domain
+   :align: center
+   :width: 100%
+
+   The outer wireframe is the full domain. Only the highlighted chunks touched
+   by the localized deposition path are allocated.
+
 Chunked storage is a standalone sparse workflow. Use :class:`dds.Simulator`
 when you need mutable dense snapshots.

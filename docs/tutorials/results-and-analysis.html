@@ -53,7 +53,14 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Tutorials</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="domains-and-beads.html">Domains And Beads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="deposits.html">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="deposits.html#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="chunked-fields.html">Chunked Fields</a></li>
@@ -62,7 +69,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../concepts/index.html">Concepts</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../concepts/fields-and-thresholds.html">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../concepts/fields-and-thresholds.html#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/architecture.html">Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
 </ul>
@@ -249,6 +262,18 @@ queries live on <a class="reference internal" href="../api/generated/dds.Simulat
 <p>The implicit field is not itself a signed-distance field. Use
 <code class="xref py py-meth docutils literal notranslate"><span class="pre">dds.analysis.simulation.SimulationAnalysis.surface_sdf()</span></code> when metric
 distance is needed.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/analysis_fields.png"><img alt="Occupancy, deposition index, and signed-distance query fields" src="../_images/analysis_fields.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Left to right: thresholded occupancy, last-touch deposition index, and
+signed distance to the extracted surface.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p>Analysis fields are derived from an immutable result and cached on first use.
+Occupancy depends on the result threshold. The deposition-index field identifies
+the latest deposit contributing to each represented location; <code class="docutils literal notranslate"><span class="pre">-1</span></code> marks
+locations with no contribution.</p>
 </section>
 
 

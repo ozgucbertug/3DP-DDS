@@ -1,0 +1,126 @@
+{
+  "generator": "scripts/render_docs_figures.py",
+  "figures": [
+    {
+      "id": "hero_multi_deposit",
+      "file": "hero_multi_deposit.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "domain_voxels",
+      "file": "domain_voxels.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "implicit_slice",
+      "file": "implicit_slice.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "threshold_comparison",
+      "file": "threshold_comparison.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "max_vs_coverage",
+      "file": "max_vs_coverage.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "target_anatomy",
+      "file": "target_anatomy.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "bead_profile",
+      "file": "bead_profile.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "point_deposit",
+      "file": "point_deposit.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "line_deposit",
+      "file": "line_deposit.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "polyline_deposit",
+      "file": "polyline_deposit.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "deposition_types",
+      "file": "deposition_types.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "normal_interpolation",
+      "file": "normal_interpolation.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "kernel_tiles",
+      "file": "kernel_tiles.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "deposition_sequence",
+      "file": "deposition_sequence.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "voxel_resolution",
+      "file": "voxel_resolution.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "mesh_step_size",
+      "file": "mesh_step_size.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "example_wall",
+      "file": "example_wall.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "chunked_storage",
+      "file": "chunked_storage.png",
+      "width": 1920,
+      "height": 1080
+    },
+    {
+      "id": "analysis_fields",
+      "file": "analysis_fields.png",
+      "width": 1920,
+      "height": 1080
+    }
+  ],
+  "palette": {
+    "background": "transparent",
+    "mesh": "#93AEC7",
+    "path": "#243746",
+    "target": "#D64292",
+    "normal": "#0097A7"
+  }
+}

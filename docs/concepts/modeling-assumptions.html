@@ -53,7 +53,14 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="../tutorials/index.html">Tutorials</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/domains-and-beads.html">Domains And Beads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../tutorials/deposits.html">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../tutorials/deposits.html#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="../tutorials/chunked-fields.html">Chunked Fields</a></li>
@@ -62,7 +69,13 @@
 </li>
 <li class="toctree-l1 current"><a class="reference internal" href="index.html">Concepts</a><ul class="current">
 <li class="toctree-l2"><a class="reference internal" href="coordinate-conventions.html">Coordinate Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fields-and-thresholds.html">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="fields-and-thresholds.html#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="architecture.html">Architecture</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Modeling Assumptions</a></li>
 </ul>
@@ -242,6 +255,14 @@
 sagging, curing, cooling, thermal history, collision, reachability, robot
 dynamics, controller timing, bead deformation, uncertainty propagation, or
 experimental calibration.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="../_images/example_wall.png"><img alt="Simulated envelope of the repository example wall" src="../_images/example_wall.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">The example wall is a geometric deposited envelope. Its shape does not imply
+material-flow, curing, thermal, collision, or robot-behavior predictions.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
 <p>For quantitative work, report domain bounds, length unit, voxel size,
 threshold, bead profile, and path definition. Run convergence checks across
 voxel sizes when the result is used as evidence.</p>

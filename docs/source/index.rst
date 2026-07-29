@@ -10,6 +10,14 @@ The current model is intentionally geometric. It does not simulate thermal
 history, material flow, curing, robot dynamics, controller behavior, or bead
 deformation.
 
+.. figure:: _images/hero_multi_deposit.png
+   :alt: Point, line, and polyline deposition results with target normals
+   :align: center
+   :width: 100%
+
+   Point, line, and polyline deposition primitives share the same
+   implicit-field backend.
+
 .. note::
 
    This documentation was generated automatically with assistance from a large

@@ -52,7 +52,14 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorials/index.html">Tutorials</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="tutorials/domains-and-beads.html">Domains And Beads</a></li>
-<li class="toctree-l2"><a class="reference internal" href="tutorials/deposits.html">Deposits</a></li>
+<li class="toctree-l2"><a class="reference internal" href="tutorials/deposits.html">Deposits</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="tutorials/deposits.html#deposition-targets">Deposition Targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials/deposits.html#point-deposits">Point Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials/deposits.html#line-deposits">Line Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials/deposits.html#polyline-deposits">Polyline Deposits</a></li>
+<li class="toctree-l3"><a class="reference internal" href="tutorials/deposits.html#normal-interpolation">Normal Interpolation</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="tutorials/simulation-workflows.html">Simulation Workflows</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorials/results-and-analysis.html">Results And Analysis</a></li>
 <li class="toctree-l2"><a class="reference internal" href="tutorials/chunked-fields.html">Chunked Fields</a></li>
@@ -61,7 +68,13 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="concepts/index.html">Concepts</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="concepts/coordinate-conventions.html">Coordinate Conventions</a></li>
-<li class="toctree-l2"><a class="reference internal" href="concepts/fields-and-thresholds.html">Fields And Thresholds</a></li>
+<li class="toctree-l2"><a class="reference internal" href="concepts/fields-and-thresholds.html">Fields And Thresholds</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="concepts/fields-and-thresholds.html#implicit-field">Implicit Field</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts/fields-and-thresholds.html#occupancy-and-surface-extraction">Occupancy And Surface Extraction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts/fields-and-thresholds.html#composition-and-coverage">Composition And Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="concepts/fields-and-thresholds.html#resolution-controls">Resolution Controls</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="concepts/architecture.html">Architecture</a></li>
 <li class="toctree-l2"><a class="reference internal" href="concepts/modeling-assumptions.html">Modeling Assumptions</a></li>
 </ul>
@@ -242,6 +255,14 @@ analysis queries for occupancy, interfaces, signed distance, and support risk.</
 <p>The current model is intentionally geometric. It does not simulate thermal
 history, material flow, curing, robot dynamics, controller behavior, or bead
 deformation.</p>
+<figure class="align-center" id="id1">
+<a class="reference internal image-reference" href="_images/hero_multi_deposit.png"><img alt="Point, line, and polyline deposition results with target normals" src="_images/hero_multi_deposit.png" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Point, line, and polyline deposition primitives share the same
+implicit-field backend.</span><a class="headerlink" href="#id1" title="Link to this image"></a></p>
+</figcaption>
+</figure>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This documentation was generated automatically with assistance from a large

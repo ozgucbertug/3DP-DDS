@@ -19,6 +19,14 @@ upper bounds, voxel size, grid shape, and a unit label.
        length_unit="mm",
    )
 
+.. figure:: ../_images/domain_voxels.png
+   :alt: Deposition result inside a bounded voxel domain
+   :align: center
+   :width: 100%
+
+   The domain fixes the sampled workspace and its voxel resolution. Deposited
+   geometry outside these bounds is not represented.
+
 Arrays use ``(x, y, z)`` order. World coordinates map to voxel indices through
 :meth:`dds.Domain.world_to_index`; indices map back to voxel centers through
 :meth:`dds.Domain.index_to_world`.
@@ -30,5 +38,13 @@ Bead dimensions are explicit:
    from dds import BeadProfile
 
    profile = BeadProfile(width=1.2, height=0.6)
+
+.. figure:: ../_images/bead_profile.png
+   :alt: Bead width and height measured relative to a deposition target
+   :align: center
+   :width: 100%
+
+   Width is measured transverse to the deposition normal; height is measured
+   along it, extending opposite the normal from the top-referenced target.
 
 Every deposit must provide a :class:`dds.BeadProfile`.
