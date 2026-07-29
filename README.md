@@ -18,6 +18,20 @@ The current scope is deposited geometry. Material flow, thermal history,
 curing, robot dynamics, controller behavior, and bead deformation are
 intentionally outside the model.
 
+![Point, line, and polyline deposition results with target normals](docs/_images/hero_multi_deposit.png)
+
+## Core Model
+
+Deposits are defined from top-referenced targets and bead dimensions. A target
+stores a world-space position and deposition normal; coordinate triplets use
+world `+Z` by default. The same implicit-field backend evaluates point, line,
+and polyline primitives, then derives occupancy and surface geometry from a
+chosen threshold.
+
+| Deposition primitives | Field composition |
+| --- | --- |
+| ![Point, line, and polyline primitives](docs/_images/deposition_types.png) | ![Maximum-composed implicit field and additive coverage](docs/_images/max_vs_coverage.png) |
+
 **Documentation:** [ozgucbertug.github.io/3DP-DDS](https://ozgucbertug.github.io/3DP-DDS/)
 
 ## Installation
